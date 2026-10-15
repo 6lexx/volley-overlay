@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test source URL</title>
+<style>
+  /* Page de diagnostic pour Streamlabs Mobile.
+     Si tu vois ta caméra derrière les cadres → la transparence fonctionne. */
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: transparent !important;
+    overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  /* Cadre rouge = bords réels de la page dans le calque */
+  .frame {
+    position: fixed; inset: 0;
+    border: 6px solid #ff3b3b;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+  /* Zone sûre 5 % (marges où éviter de placer du texte) */
+  .safe {
+    position: fixed; inset: 5%;
+    border: 2px dashed rgba(255,255,255,.7);
+  }
+  .corner {
+    position: fixed; width: 9vh; height: 9vh;
+    background: #ffd400; color: #000;
+    font: 700 3vh/9vh system-ui, sans-serif; text-align: center;
+  }
+  .tl { top: 0; left: 0; } .tr { top: 0; right: 0; }
+  .bl { bottom: 0; left: 0; } .br { bottom: 0; right: 0; }
+
+  /* Faux score, taille réaliste pour juger la lisibilité en 720p */
+  .score {
+    position: fixed; top: 6vh; left: 6vw;
+    display: flex; gap: .4em; align-items: center;
+    background: rgba(10,10,14,.82); color: #fff;
+    border-radius: 1.2vh; padding: 1vh 1.6vh;
+    font-weight: 800; font-size: 5vh;
+  }
+  .score .t { padding: .1em .35em; border-radius: .25em; font-size: .7em; }
+  .a { background: #E8A33D; color: #111; } .b { background: #3D7BE8; }
+
+  .info {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,.75); color: #fff;
+    padding: 2vh 3vh; border-radius: 1.2vh;
+    font-size: 3.2vh; line-height: 1.45; text-align: left;
+    white-space: nowrap;
+  }
+  .info b { color: #ffd400; }
+</style>
+</head>
+<body>
+  <div class="frame"></div>
+  <div class="safe"></div>
+  <div class="corner tl">HG</div><div class="corner tr">HD</div>
+  <div class="corner bl">BG</div><div class="corner br">BD</div>
+
+  <div class="score">
+    <span class="t a">MCL</span><span>18</span><span style="opacity:.5">–</span><span>16</span><span class="t b">ADV</span>
+  </div>
+
+  <div class="info" id="info"></div>
+
+<script>
+  // Compteur de rechargements (localStorage) : détecte si l'appli recharge la page
+  let reloads = 0, storageOk = false;
+  try {
+    reloads = Number(localStorage.getItem('testReloads') || 0) + 1;
+    localStorage.setItem('testReloads', reloads);
+    storageOk = true;
+  } catch (e) {}
+
+  const loadedAt = new Date().toLocaleTimeString('fr-FR');
+  const start = Date.now();
+  const el = document.getElementById('info');
+
+  function render() {
+    const s = Math.floor((Date.now() - start) / 1000);
+    el.innerHTML =
+      `Viewport : <b>${innerWidth} × ${innerHeight}</b> (ratio ${(innerWidth/innerHeight).toFixed(2)})<br>` +
+      `Pixel ratio : <b>${devicePixelRatio}</b><br>` +
+      `Chargée à : <b>${loadedAt}</b> — depuis <b>${s}s</b><br>` +
+      `Chargements : <b>${reloads}</b> · localStorage : <b>${storageOk ? 'OK' : 'NON'}</b><br>` +
+      `Version : <b>v1</b>`;
+  }
+  render();
+  setInterval(render, 1000);       // vérifie que la page continue de se rafraîchir
+  addEventListener('resize', render);
+</script>
+</body>
+</html>
