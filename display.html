@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay score</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     THÈME — tout le visuel se règle ici
+     Les tailles sont en vh : elles suivent la hauteur de l'image
+     (lisible en 720p comme en 1080p).
+     ========================================================= */
+  :root {
+    /* Typo */
+    --font:        "Barlow Condensed", system-ui, sans-serif;
+
+    /* Couleurs générales */
+    --panel:       rgba(12, 13, 18, .90);
+    --panel-foot:  rgba(12, 13, 18, .78);
+    --divider:     rgba(255, 255, 255, .10);
+    --text:        #ffffff;
+    --muted:       rgba(255, 255, 255, .72);
+    --points-bg:   #ffffff;
+    --points-text: #0c0d12;
+    --serve:       #ffd400;
+    --pip-on:      #ffffff;
+    --pip-off:     rgba(255, 255, 255, .22);
+
+    /* Placement (modifiable aussi via ?pos=tl|tr|bl|br) */
+    --top:    4.5vh;
+    --left:   3.5vw;
+    --right:  auto;
+    --bottom: auto;
+
+    /* Taille globale (modifiable aussi via ?scale=1.2) */
+    --scale:  1;
+
+    /* Dimensions dérivées */
+    --row-h:      calc(6.6vh * var(--scale));
+    --name-size:  calc(4.1vh * var(--scale));
+    --num-size:   calc(4.9vh * var(--scale));
+    --small-size: calc(2.6vh * var(--scale));
+    --radius:     calc(1vh * var(--scale));
+    --stripe-w:   calc(.9vh * var(--scale));
+
+    /* Animations */
+    --anim:  .22s;
+    --fade:  .35s;
+  }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: transparent !important;
+    overflow: hidden;
+  }
+
+  /* ---------- Bloc score ---------- */
+  .bug {
+    position: fixed;
+    top: var(--top); left: var(--left); right: var(--right); bottom: var(--bottom);
+    font-family: var(--font); color: var(--text);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: 0 .6vh 2vh rgba(0, 0, 0, .35);
+    transition: opacity var(--fade) ease, transform var(--fade) ease;
+  }
+  .bug.hidden { opacity: 0; transform: translateY(-1.5vh); }
+
+  .row {
+    display: grid;
+    grid-template-columns: var(--stripe-w) auto calc(var(--row-h) * .95) calc(var(--row-h) * 1.3);
+    height: var(--row-h);
+    background: var(--panel);
+  }
+  .row + .row { border-top: 1px solid var(--divider); }
+
+  .stripe { background: var(--c); }
+
+  .name {
+    display: flex; align-items: center; gap: calc(1vh * var(--scale));
+    padding: 0 calc(1.4vh * var(--scale)) 0 calc(1.2vh * var(--scale));
+    min-width: calc(11vh * var(--scale));
+    font-size: var(--name-size); font-weight: 700; letter-spacing: .03em;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .name img { height: calc(var(--row-h) * .62); width: auto; }
+  .tlabel { flex: 1; }
+
+  /* Indicateur de service */
+  .serve {
+    width: calc(1.4vh * var(--scale)); height: calc(1.4vh * var(--scale));
+    border-radius: 50%; background: var(--serve);
+    opacity: 0; transform: scale(.4);
+    transition: opacity var(--anim), transform var(--anim);
+  }
+  .row.serving .serve { opacity: 1; transform: scale(1); }
+
+  /* Temps morts restants (barres) */
+  .pips {
+    display: flex; flex-direction: column; gap: calc(.6vh * var(--scale));
+    margin-left: calc(.6vh * var(--scale));
+  }
+  .pip  {
+    width: calc(1.8vh * var(--scale)); height: calc(.5vh * var(--scale));
+    border-radius: 1vh; background: var(--pip-on);
+    transition: background var(--anim);
+  }
+  .pip.used { background: var(--pip-off); }
+
+  .sets, .pts {
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--num-size); font-weight: 800;
+    font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .sets { background: var(--c); color: var(--ct); }
+  .pts  { background: var(--points-bg); color: var(--points-text); }
+
+  .num { display: inline-block; }
+  .num.bump { animation: bump var(--anim) ease-out; }
+  @keyframes bump {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.22); }
+    100% { transform: scale(1); }
+  }
+
+  .row.winner .tlabel { color: var(--serve); }
+
+  /* ---------- Pied : set en cours + historique ---------- */
+  .foot {
+    display: flex; align-items: center; gap: calc(1.2vh * var(--scale));
+    padding: calc(.6vh * var(--scale)) calc(1.2vh * var(--scale));
+    background: var(--panel-foot);
+    font-size: var(--small-size); font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .foot .setlabel { color: var(--text); }
+  .foot .hist { display: flex; gap: calc(.9vh * var(--scale)); font-variant-numeric: tabular-nums; }
+  .foot .hist span.won-top { color: var(--text); }
+  .foot:empty { display: none; }
+
+  /* Debug (?debug=1) */
+  .debug {
+    position: fixed; right: 1vh; bottom: 1vh;
+    font: 600 2vh system-ui, sans-serif; color: #fff;
+    background: rgba(0, 0, 0, .6); padding: .5vh 1vh; border-radius: .6vh;
+  }
+</style>
+</head>
+<body>
+
+<div class="bug hidden" id="bug">
+  <div class="row" data-pos="0">
+    <div class="stripe"></div>
+    <div class="name"><span class="logo"></span><span class="tlabel"></span><span class="serve"></span><span class="pips"></span></div>
+    <div class="sets"><span class="num"></span></div>
+    <div class="pts"><span class="num"></span></div>
+  </div>
+  <div class="row" data-pos="1">
+    <div class="stripe"></div>
+    <div class="name"><span class="logo"></span><span class="tlabel"></span><span class="serve"></span><span class="pips"></span></div>
+    <div class="sets"><span class="num"></span></div>
+    <div class="pts"><span class="num"></span></div>
+  </div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<div class="debug" id="debug" hidden></div>
+
+<script src="config.js"></script>
+<script type="module">
+// ===========================================================
+//  Paramètres d'URL
+//    m=volley-silex    identifiant du match (obligatoire hors démo)
+//    pos=tl|tr|bl|br   coin d'ancrage (défaut : tl, haut gauche)
+//    scale=1.2         taille globale
+//    demo=1            faux match animé, sans Firebase (pour le design)
+//    debug=1           affiche l'état de connexion (ne pas utiliser en live)
+// ===========================================================
+const qs    = new URLSearchParams(location.search);
+const M     = qs.get("m");
+const DEMO  = qs.get("demo") === "1";
+const DEBUG = qs.get("debug") === "1";
+
+const root = document.documentElement.style;
+const pos = qs.get("pos");
+if (pos === "tr" || pos === "br") { root.setProperty("--left", "auto"); root.setProperty("--right", "3.5vw"); }
+if (pos === "bl" || pos === "br") { root.setProperty("--top", "auto");  root.setProperty("--bottom", "6vh"); }
+if (qs.get("scale")) root.setProperty("--scale", qs.get("scale"));
+
+const $ = (id) => document.getElementById(id);
+const dbg = (msg) => { if (DEBUG) { $("debug").hidden = false; $("debug").textContent = msg; } };
+
+// ===========================================================
+//  Rendu
+// ===========================================================
+const other = (t) => (t === "A" ? "B" : "A");
+const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
+
+function norm(s) {
+  s.score    = s.score    ?? { A: 0, B: 0 };
+  s.sets     = s.sets     ?? { A: 0, B: 0 };
+  s.timeouts = s.timeouts ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets", "timeouts"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.history = toArr(s.history);
+  s.visible = s.visible !== false;
+  return s;
+}
+
+function textOn(hex) {
+  const n = parseInt(String(hex).replace("#", ""), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111111" : "#FFFFFF";
+}
+
+// Met à jour un nombre et déclenche l'animation seulement s'il change
+function setNum(el, value) {
+  const v = String(value);
+  if (el.textContent === v) return;
+  const first = el.textContent === "";
+  el.textContent = v;
+  if (!first) {
+    el.classList.remove("bump");
+    void el.offsetWidth;            // relance l'animation
+    el.classList.add("bump");
+  }
+}
+
+let last = null;
+
+function render(s) {
+  if (!s || !s.meta) { $("bug").classList.add("hidden"); return; }
+  last = s;
+  const teams = s.meta.teams;
+  const R = s.meta.rules;
+  const order = s.swapped ? ["B", "A"] : ["A", "B"];
+
+  document.querySelectorAll(".row").forEach((row) => {
+    const t = order[Number(row.dataset.pos)];
+    const team = teams[t];
+    row.style.setProperty("--c", team.color);
+    row.style.setProperty("--ct", team.textColor || textOn(team.color));
+    row.classList.toggle("serving", s.phase === "playing" && s.serving === t);
+    row.classList.toggle("winner", s.phase === "matchEnd" && s.winner === t);
+
+    row.querySelector(".tlabel").textContent = team.short;
+
+    const logo = row.querySelector(".logo");
+    if (team.logo) {
+      if (logo.dataset.src !== team.logo) {
+        logo.dataset.src = team.logo;
+        logo.innerHTML = "";
+        const img = new Image();
+        img.src = team.logo; img.alt = "";
+        logo.appendChild(img);
+      }
+    } else if (logo.dataset.src) { logo.innerHTML = ""; delete logo.dataset.src; }
+
+    // Barres de temps morts : pleines = restants
+    const pips = row.querySelector(".pips");
+    const total = R.timeoutsPerSet || 0;
+    if (pips.children.length !== total) {
+      pips.replaceChildren(...Array.from({ length: total }, () => {
+        const p = document.createElement("span"); p.className = "pip"; return p;
+      }));
+    }
+    [...pips.children].forEach((p, i) => p.classList.toggle("used", i >= total - s.timeouts[t]));
+
+    setNum(row.querySelector(".sets .num"), s.sets[t]);
+    setNum(row.querySelector(".pts .num"),  s.score[t]);
+  });
+
+  // Pied : libellé + historique des sets (dans l'ordre d'affichage)
+  const tieBreak = s.setIndex === 2 * R.setsToWin - 1;
+  let label;
+  if (s.phase === "matchEnd")    label = `Victoire ${teams[s.winner].short}`;
+  else if (s.phase === "setEnd") label = `Fin du set ${s.setIndex}`;
+  else                           label = tieBreak ? "Tie-break" : `Set ${s.setIndex}`;
+
+  const foot = $("foot");
+  foot.replaceChildren();
+  const lab = document.createElement("span");
+  lab.className = "setlabel"; lab.textContent = label;
+  foot.appendChild(lab);
+  if (s.history.length) {
+    const hist = document.createElement("span");
+    hist.className = "hist";
+    s.history.forEach((h) => {
+      const sp = document.createElement("span");
+      sp.textContent = `${h[order[0]]}-${h[order[1]]}`;
+      hist.appendChild(sp);
+    });
+    foot.appendChild(hist);
+  }
+
+  $("bug").classList.toggle("hidden", !s.visible);
+}
+
+// ===========================================================
+//  Canal d'événements — branché, pas encore exploité.
+//  Écoute dans une autre page/script :
+//    window.addEventListener("volley:event", (e) => console.log(e.detail))
+// ===========================================================
+function onVolleyEvent(ev) {
+  window.dispatchEvent(new CustomEvent("volley:event", { detail: ev }));
+  if (DEBUG) console.log("[event]", ev);
+}
+
+// ===========================================================
+//  Cache local : réaffiche le dernier état connu au rechargement
+// ===========================================================
+const CACHE_KEY = `volley-display-${M || "demo"}`;
+function saveCache(s) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(s)); } catch {} }
+function loadCache()  { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch { return null; } }
+
+// ===========================================================
+//  Mode démo (aucune connexion Firebase)
+// ===========================================================
+if (DEMO) {
+  const CFG = window.SCORE_CONFIG || {};
+  const s = norm({
+    meta: {
+      rules: CFG.rules || { setsToWin: 3, pointsPerSet: 25, pointsTieBreak: 15, minLead: 2, timeoutsPerSet: 2 },
+      teams: {
+        A: CFG.home || { short: "MCL", color: "#E8A33D" },
+        B: CFG.awayDefault || { short: "ADV", color: "#3D7BE8" }
+      }
+    },
+    phase: "playing", setIndex: 3, serving: "A",
+    score: { A: 18, B: 16 }, sets: { A: 1, B: 1 },
+    history: [{ A: 25, B: 21, winner: "A" }, { A: 23, B: 25, winner: "B" }],
+    timeouts: { A: 1, B: 0 }, visible: true, swapped: false
+  });
+  render(s);
+  setInterval(() => {
+    const t = Math.random() < .5 ? "A" : "B";
+    s.score[t]++; s.serving = t;
+    if (s.score[t] >= 25 && s.score[t] - s.score[other(t)] >= 2) s.score = { A: 0, B: 0 };
+    render(s);
+  }, 2500);
+} else {
+  startLive();
+}
+
+// ===========================================================
+//  Mode live (Firebase, lecture seule, sans compte)
+// ===========================================================
+async function startLive() {
+  const CFG = window.SCORE_CONFIG;
+  if (!M || !CFG?.firebase) { dbg("Paramètre m ou config.js manquant"); return; }
+
+  // 1. Affichage immédiat du dernier état connu
+  const cached = loadCache();
+  if (cached) render(norm(cached));
+
+  // 2. Connexion temps réel (pas de polling : Firebase pousse les changements)
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const { getDatabase, ref, onValue, onChildAdded, query, limitToLast } =
+    await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+
+  const app = initializeApp(CFG.firebase);
+  const db  = getDatabase(app);
+
+  onValue(ref(db, ".info/connected"), (snap) => dbg(snap.val() ? "connecté" : "hors ligne"));
+
+  onValue(ref(db, `matches/${M}/core/state`), (snap) => {
+    if (!snap.exists()) { render(null); return; }
+    const s = norm(snap.val());
+    saveCache(s);
+    render(s);
+  }, (err) => dbg("Lecture refusée : " + err.code));
+
+  // Événements : on ignore ceux déjà présents au chargement
+  const evQuery = query(ref(db, `matches/${M}/events`), limitToLast(1));
+  let ready = false;
+  onChildAdded(evQuery, (snap) => { if (ready) onVolleyEvent(snap.val()); });
+  onValue(evQuery, () => { ready = true; }, { onlyOnce: true });
+}
+</script>
+</body>
+</html>
