@@ -15,7 +15,7 @@ window.SCORE_CONFIG = {
     databaseURL: "https://volley-overlay-59f09-default-rtdb.europe-west1.firebasedatabase.app",
     projectId:   "volley-overlay-59f09",
     appId:       "1:490432783373:web:a358da2d36195d42846144"
-  },,
+  },
 
   // --- Règles du match (copiées dans l'état au moment du "Nouveau match" :
   //     modifier ce fichier en cours de match ne casse pas le match en cours)
