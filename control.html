@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0f13">
+<title>Contrôle score</title>
+<style>
+  /* =========================================================
+     Variables de thème — à personnaliser librement
+     ========================================================= */
+  :root {
+    --bg:        #0e0f13;
+    --surface:   #1b1d24;
+    --surface-2: #2a2d38;
+    --text:      #f5f6f8;
+    --muted:     #a3a8b8;
+    --ok:        #22c55e;
+    --danger:    #ff4d4f;
+    --warn:      #ffb020;
+    --undo-bg:   #f5f6f8;
+    --undo-text: #0e0f13;
+
+    --font:      system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --radius:    18px;
+    --gap:       12px;
+
+    --score-size: clamp(64px, 18vw, 140px);
+    --plus-h:     clamp(110px, 24vh, 220px);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font);
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button {
+    font: inherit; color: inherit; border: 0; cursor: pointer;
+    touch-action: manipulation;           /* pas de zoom au double-tap */
+    transition: transform .08s, filter .08s;
+  }
+  button:active { transform: scale(.97); filter: brightness(1.15); }
+  button:disabled { opacity: .35; pointer-events: none; }
+
+  .app {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: var(--gap);
+    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);
+  }
+
+  /* ---------- En-tête ---------- */
+  .header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--danger); flex: none; }
+  .dot.on { background: var(--ok); }
+  .set-label { font-weight: 800; font-size: 20px; }
+  .history { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  .chip {
+    background: var(--surface-2); color: var(--muted);
+    padding: 4px 8px; border-radius: 8px; font-size: 14px; font-weight: 700;
+  }
+  .offline-msg { width: 100%; color: var(--warn); font-size: 14px; font-weight: 600; display: none; }
+  .offline-msg.show { display: block; }
+
+  /* ---------- Équipes ---------- */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+  .team {
+    background: var(--surface); border-radius: var(--radius);
+    display: flex; flex-direction: column; gap: 10px; padding: 10px;
+  }
+  .tname {
+    background: var(--c); color: var(--ct);
+    border-radius: 12px; padding: 8px 10px;
+    font-weight: 900; font-size: 22px; text-align: center; letter-spacing: .04em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .serve { font-size: 20px; visibility: hidden; }
+  .team.serving .serve { visibility: visible; }
+  .tsets { text-align: center; color: var(--muted); font-weight: 700; font-size: 15px; }
+  .tscore {
+    text-align: center; font-weight: 900; line-height: 1;
+    font-size: var(--score-size); font-variant-numeric: tabular-nums;
+  }
+  .plus {
+    height: var(--plus-h); border-radius: var(--radius);
+    background: var(--c); color: var(--ct);
+    font-size: 54px; font-weight: 900;
+    box-shadow: inset 0 -6px 0 rgba(0,0,0,.25);
+  }
+  .tm {
+    min-height: 56px; border-radius: 14px;
+    background: var(--surface-2); font-size: 17px; font-weight: 700;
+  }
+
+  /* ---------- Annuler : gros, isolé, couleur à part ---------- */
+  .undo {
+    margin-top: 14px;
+    min-height: 76px; border-radius: var(--radius);
+    background: var(--undo-bg); color: var(--undo-text);
+    font-size: 24px; font-weight: 900;
+  }
+
+  /* ---------- Outils ---------- */
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .tool {
+    min-height: 56px; border-radius: 14px;
+    background: var(--surface); font-size: 16px; font-weight: 700;
+    border: 2px solid var(--surface-2);
+  }
+  .tool.off { border-color: var(--warn); color: var(--warn); }
+  .tool.danger { color: var(--danger); }
+
+  /* ---------- Bandeaux ---------- */
+  .banner {
+    display: none; grid-column: 1 / -1;
+    background: var(--warn); color: #111; border-radius: 14px;
+    padding: 12px; font-weight: 800; font-size: 18px;
+    align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .banner.show { display: flex; }
+  .banner button { background: #111; color: #fff; border-radius: 10px; padding: 10px 14px; font-weight: 800; }
+  .banner .ghost { background: transparent; color: #111; text-decoration: underline; }
+  .banner.end { background: var(--ok); }
+
+  /* ---------- Modales ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(0,0,0,.78);
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal.show { display: flex; }
+  .card {
+    background: var(--surface); border-radius: 22px; padding: 20px;
+    width: 100%; max-width: 460px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .card h2 { margin: 0; font-size: 24px; }
+  .card p  { margin: 0; font-size: 20px; font-weight: 700; }
+  .btn-big {
+    min-height: 72px; border-radius: 16px; font-size: 22px; font-weight: 900;
+    background: var(--ok); color: #06210f;
+  }
+  .btn-sec {
+    min-height: 60px; border-radius: 16px; font-size: 18px; font-weight: 700;
+    background: var(--surface-2);
+  }
+
+  /* ---------- Formulaire nouveau match ---------- */
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: var(--muted); }
+  input[type=text] {
+    font: inherit; font-size: 20px; color: var(--text);
+    background: var(--bg); border: 2px solid var(--surface-2); border-radius: 12px;
+    padding: 12px;
+  }
+  input[type=color] { width: 100%; height: 56px; border: 0; border-radius: 12px; background: none; padding: 0; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { min-height: 56px; border-radius: 12px; background: var(--surface-2); font-weight: 800; }
+  .seg button.sel { background: var(--text); color: var(--bg); }
+
+  /* ---------- Erreur bloquante ---------- */
+  .fatal { padding: 24px; font-size: 20px; line-height: 1.4; }
+  .fatal b { color: var(--danger); }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px);
+    transform: translateX(-50%) translateY(150%);
+    background: var(--text); color: var(--bg); font-weight: 800;
+    padding: 12px 18px; border-radius: 12px; transition: transform .2s; z-index: 20;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app" id="app" hidden>
+  <header class="header">
+    <span class="dot" id="dot" title="Connexion"></span>
+    <span class="set-label" id="setLabel">Set 1</span>
+    <div class="history" id="history"></div>
+    <div class="offline-msg" id="offlineMsg">Hors ligne : les actions partiront dès le retour du réseau.</div>
+  </header>
+
+  <main class="teams" id="teams">
+    <div class="banner" id="tbBanner">
+      <span>Tie-break : changement de côté</span>
+      <button id="tbSwitch">Inverser</button>
+      <button class="ghost" id="tbDismiss">Ignorer</button>
+    </div>
+    <div class="banner end" id="endBanner">
+      <span id="endText"></span>
+      <button id="endNew">Nouveau match</button>
+    </div>
+    <!-- deux colonnes générées en JS -->
+    <section class="team" data-pos="0">
+      <div class="tname"><span class="serve">🏐</span><span class="tshort"></span></div>
+      <div class="tsets"></div>
+      <div class="tscore">0</div>
+      <button class="plus">+1</button>
+      <button class="tm">Temps mort</button>
+    </section>
+    <section class="team" data-pos="1">
+      <div class="tname"><span class="serve">🏐</span><span class="tshort"></span></div>
+      <div class="tsets"></div>
+      <div class="tscore">0</div>
+      <button class="plus">+1</button>
+      <button class="tm">Temps mort</button>
+    </section>
+  </main>
+
+  <button class="undo" id="undoBtn">↶ ANNULER</button>
+
+  <nav class="tools">
+    <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
+    <button class="tool" id="serveBtn">🏐 Changer service</button>
+    <button class="tool" id="visBtn">Overlay : visible</button>
+    <button class="tool danger" id="newBtn">Nouveau match</button>
+  </nav>
+</div>
+
+<!-- Fin de set -->
+<div class="modal" id="setModal">
+  <div class="card">
+    <h2 id="setModalTitle">Fin du set</h2>
+    <p id="setModalText"></p>
+    <button class="btn-big" id="confirmSet">✓ Valider le set</button>
+    <button class="btn-sec" id="cancelSet">↶ Annuler le dernier point</button>
+  </div>
+</div>
+
+<!-- Nouveau match -->
+<div class="modal" id="newModal">
+  <div class="card">
+    <h2>Nouveau match</h2>
+    <label>Adversaire
+      <input type="text" id="awayName" maxlength="24" autocomplete="off">
+    </label>
+    <div class="row">
+      <label>Abréviation
+        <input type="text" id="awayShort" maxlength="4" autocomplete="off" style="text-transform:uppercase">
+      </label>
+      <label>Couleur
+        <input type="color" id="awayColor">
+      </label>
+    </div>
+    <label>Premier service</label>
+    <div class="seg" id="firstServe">
+      <button data-team="A" id="fsA">Nous</button>
+      <button data-team="B" id="fsB">Eux</button>
+    </div>
+    <button class="btn-big" id="startMatch">Lancer le match</button>
+    <button class="btn-sec" id="cancelNew">Annuler</button>
+  </div>
+</div>
+
+<div class="fatal" id="fatal" hidden></div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, update, push, onValue, runTransaction, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ===========================================================
+//  Paramètres
+// ===========================================================
+const CFG = window.SCORE_CONFIG;
+const qs  = new URLSearchParams(location.search);
+const M   = qs.get("m");
+const K   = qs.get("k");
+const UNDO_DEPTH = CFG?.control?.undoDepth ?? 30;
+const TAP_LOCK_MS = 600;   // anti double-tap sur +1 et temps mort
+
+const $ = (id) => document.getElementById(id);
+
+function fatal(html) {
+  $("app").hidden = true;
+  $("fatal").hidden = false;
+  $("fatal").innerHTML = html;
+}
+
+if (!CFG || !CFG.firebase || String(CFG.firebase.apiKey).includes("A_REMPLIR")) {
+  fatal("<b>config.js</b> introuvable ou pas encore rempli.");
+  throw new Error("config");
+}
+if (!M || !K || /[.#$\[\]\/]/.test(M)) {
+  fatal("Lien incomplet.<br>Format attendu :<br><code>control.html?m=ID_MATCH&amp;k=CLE</code>");
+  throw new Error("url");
+}
+
+// ===========================================================
+//  Firebase
+// ===========================================================
+const app  = initializeApp(CFG.firebase);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+const matchRef  = ref(db, `matches/${M}`);
+const coreRef   = ref(db, `matches/${M}/core`);
+const stateRef  = ref(db, `matches/${M}/core/state`);
+const eventsRef = ref(db, `matches/${M}/events`);
+
+let state = null;        // dernier état connu (normalisé)
+let started = false;
+
+onAuthStateChanged(auth, (user) => {
+  if (!user || started) return;
+  started = true;
+  // Enregistre ce téléphone comme contrôleur (refusé par les règles si la clé est fausse).
+  set(ref(db, `controllers/${M}/${user.uid}`), K).catch(() => {
+    fatal("<b>Clé invalide.</b><br>Vérifie le lien de contrôle (paramètre <code>k</code>).");
+  });
+  startListeners();
+});
+signInAnonymously(auth).catch((e) => {
+  fatal(`<b>Connexion impossible</b> (${e.code}).<br>L'authentification anonyme est-elle activée dans Firebase ?`);
+});
+
+function startListeners() {
+  $("app").hidden = false;
+
+  onValue(ref(db, ".info/connected"), (snap) => {
+    const on = snap.val() === true;
+    $("dot").classList.toggle("on", on);
+    $("offlineMsg").classList.toggle("show", !on);
+  });
+
+  onValue(stateRef, (snap) => {
+    state = snap.exists() ? norm(snap.val()) : null;
+    render();
+  }, (err) => fatal(`<b>Lecture refusée</b> (${err.code}).<br>Le secret <code>secrets/${M}</code> existe-t-il ?`));
+}
+
+// ===========================================================
+//  Modèle
+// ===========================================================
+const other = (t) => (t === "A" ? "B" : "A");
+const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+// Firebase supprime les null et les tableaux vides : on remet les valeurs par défaut.
+function norm(s) {
+  s.score    = s.score    ?? { A: 0, B: 0 };
+  s.sets     = s.sets     ?? { A: 0, B: 0 };
+  s.timeouts = s.timeouts ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets", "timeouts"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.history  = toArr(s.history);
+  s.swapped  = !!s.swapped;
+  s.visible  = s.visible !== false;
+  s.tbSwitched = !!s.tbSwitched;
+  s.pendingWinner ??= null;
+  s.winner ??= null;
+  return s;
+}
+
+const isTieBreak = (s) => s.setIndex === 2 * s.meta.rules.setsToWin - 1;
+const setTarget  = (s) => (isTieBreak(s) ? s.meta.rules.pointsTieBreak : s.meta.rules.pointsPerSet);
+
+function newMatchState(away, firstServer) {
+  return {
+    v: 1,
+    meta: {
+      rules: { ...CFG.rules },
+      teams: { A: { ...CFG.home }, B: away },
+      startedAt: Date.now()
+    },
+    phase: "playing",
+    setIndex: 1,
+    score: { A: 0, B: 0 },
+    sets: { A: 0, B: 0 },
+    history: [],
+    serving: firstServer,
+    firstServer,
+    timeouts: { A: 0, B: 0 },
+    swapped: false,
+    visible: true,
+    tbSwitched: false,
+    pendingWinner: null,
+    winner: null,
+    updatedAt: Date.now()
+  };
+}
+
+// Chaque action reçoit une copie de l'état et renvoie le nouvel état,
+// ou undefined si l'action n'est pas permise (rien n'est écrit).
+const ACTIONS = {
+  point(s, t) {
+    if (s.phase !== "playing") return;
+    s.score[t]++;
+    s.serving = t;
+    const lead = s.score[t] - s.score[other(t)];
+    if (s.score[t] >= setTarget(s) && lead >= s.meta.rules.minLead) {
+      s.phase = "setEnd";
+      s.pendingWinner = t;
+    }
+    return s;
+  },
+  timeout(s, t) {
+    if (s.phase !== "playing" || s.timeouts[t] >= s.meta.rules.timeoutsPerSet) return;
+    s.timeouts[t]++;
+    return s;
+  },
+  confirmSet(s) {
+    if (s.phase !== "setEnd") return;
+    const w = s.pendingWinner;
+    s.history.push({ A: s.score.A, B: s.score.B, winner: w });
+    s.sets[w]++;
+    s.pendingWinner = null;
+    if (s.sets[w] >= s.meta.rules.setsToWin) {
+      s.phase = "matchEnd";
+      s.winner = w;
+      return s;
+    }
+    s.setIndex++;
+    s.score = { A: 0, B: 0 };
+    s.timeouts = { A: 0, B: 0 };
+    s.firstServer = other(s.firstServer);   // le service alterne à chaque set
+    s.serving = s.firstServer;
+    s.tbSwitched = false;
+    s.phase = "playing";
+    return s;
+  },
+  toggleServe(s) {
+    s.serving = other(s.serving);
+    if (s.score.A + s.score.B === 0) s.firstServer = s.serving;
+    return s;
+  },
+  // Actions d'affichage : hors pile d'annulation
+  swap(s)          { s.swapped = !s.swapped; return s; },
+  toggleVisible(s) { s.visible = !s.visible; return s; },
+  tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
+  tbDismiss(s)     { s.tbSwitched = true; return s; }
+};
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss"]);
+
+// ===========================================================
+//  Écritures (transactions : sûres même à deux contrôleurs)
+// ===========================================================
+async function act(name, arg) {
+  let after = null;
+  try {
+    const res = await runTransaction(coreRef, (cur) => {
+      if (cur === null) return null;          // cache local vide : Firebase relance avec la vraie valeur
+      if (!cur.state) return;                 // pas de match : on annule
+      const before = norm(clone(cur.state));
+      const next = ACTIONS[name](norm(clone(cur.state)), arg);
+      if (!next) return;
+      next.updatedAt = Date.now();
+      const out = { ...cur, state: next };
+      if (!NO_UNDO.has(name)) {
+        const { meta, ...snap } = before;
+        out.undo = [snap, ...toArr(cur.undo)].slice(0, UNDO_DEPTH);
+      }
+      after = next;
+      return out;
+    });
+    if (res.committed && after) emitFor(name, arg, after);
+  } catch (e) {
+    toast("Erreur d'écriture : " + (e.code || e.message));
+  }
+}
+
+async function undo() {
+  let did = false;
+  try {
+    await runTransaction(coreRef, (cur) => {
+      if (cur === null) return null;
+      const stack = toArr(cur.undo);
+      if (!cur.state || stack.length === 0) return;
+      const [prev, ...rest] = stack;
+      did = true;
+      return {
+        ...cur,
+        state: {
+          ...prev,
+          meta: cur.state.meta,
+          // l'annulation ne touche pas aux réglages d'affichage
+          visible: cur.state.visible,
+          swapped: cur.state.swapped,
+          tbSwitched: cur.state.tbSwitched,
+          updatedAt: Date.now()
+        },
+        undo: rest
+      };
+    });
+    if (did) { emit("undo", null); toast("Annulé"); }
+    else toast("Rien à annuler");
+  } catch (e) {
+    toast("Erreur : " + (e.code || e.message));
+  }
+}
+
+async function startNewMatch(away, firstServer) {
+  const s = newMatchState(away, firstServer);
+  await update(matchRef, { core: { state: s }, events: null });
+  emit("matchStart", null, s);
+}
+
+// ===========================================================
+//  Canal d'événements (pour les futures alertes)
+// ===========================================================
+function emit(type, team, s = state) {
+  const ev = { type, ts: serverTimestamp() };
+  if (team) ev.team = team;
+  if (s) { ev.set = s.setIndex; ev.score = { A: s.score.A, B: s.score.B }; }
+  push(eventsRef, ev).catch(() => {});
+}
+function emitFor(name, arg, s) {
+  if (name === "point")      emit("point", arg, s);
+  if (name === "timeout")    emit("timeout", arg, s);
+  if (name === "confirmSet") {
+    const last = s.history[s.history.length - 1];
+    emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s);
+  }
+}
+
+// ===========================================================
+//  Rendu
+// ===========================================================
+function luminanceText(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111111" : "#FFFFFF";
+}
+
+const order = () => (state?.swapped ? ["B", "A"] : ["A", "B"]);
+
+function render() {
+  if (!state) {           // aucun match en base : on propose d'en créer un
+    openNewMatch(false);
+    return;
+  }
+  const s = state;
+  const R = s.meta.rules;
+  const teams = s.meta.teams;
+
+  $("setLabel").textContent = s.phase === "matchEnd"
+    ? "Match terminé"
+    : `Set ${s.setIndex}${isTieBreak(s) ? " · tie-break" : ""}`;
+
+  const hist = $("history");
+  hist.replaceChildren(...s.history.map((h) => {
+    const c = document.createElement("span");
+    c.className = "chip";
+    const [l, r] = order();
+    c.textContent = `${h[l]}-${h[r]}`;
+    return c;
+  }));
+
+  document.querySelectorAll(".team").forEach((el) => {
+    const t = order()[Number(el.dataset.pos)];
+    const team = teams[t];
+    el.dataset.team = t;
+    el.style.setProperty("--c", team.color);
+    el.style.setProperty("--ct", team.textColor || luminanceText(team.color));
+    el.classList.toggle("serving", s.serving === t && s.phase === "playing");
+    el.querySelector(".tshort").textContent = team.short;
+    el.querySelector(".tsets").textContent = `Sets : ${s.sets[t]}`;
+    el.querySelector(".tscore").textContent = s.score[t];
+    el.querySelector(".plus").disabled = s.phase !== "playing";
+    const tm = el.querySelector(".tm");
+    tm.textContent = `Temps mort ${s.timeouts[t]}/${R.timeoutsPerSet}`;
+    tm.disabled = s.phase !== "playing" || s.timeouts[t] >= R.timeoutsPerSet;
+  });
+
+  // Rappel changement de côté au tie-break
+  const showTb = isTieBreak(s) && s.phase === "playing" && R.tieBreakSwitchAt > 0
+    && !s.tbSwitched && Math.max(s.score.A, s.score.B) >= R.tieBreakSwitchAt;
+  $("tbBanner").classList.toggle("show", showTb);
+
+  // Fin de match
+  $("endBanner").classList.toggle("show", s.phase === "matchEnd");
+  if (s.phase === "matchEnd") {
+    $("endText").textContent = `${teams[s.winner].short} gagne ${s.sets[s.winner]}-${s.sets[other(s.winner)]}`;
+  }
+
+  // Fin de set : confirmation
+  const showSet = s.phase === "setEnd";
+  $("setModal").classList.toggle("show", showSet);
+  if (showSet) {
+    const w = s.pendingWinner;
+    $("setModalTitle").textContent = `Fin du set ${s.setIndex}`;
+    $("setModalText").textContent = `${teams[w].short} remporte le set ${s.score[w]}-${s.score[other(w)]}`;
+  }
+
+  const vis = $("visBtn");
+  vis.textContent = s.visible ? "Overlay : visible" : "Overlay : MASQUÉ";
+  vis.classList.toggle("off", !s.visible);
+}
+
+// ===========================================================
+//  Nouveau match
+// ===========================================================
+let firstServe = "A";
+function selectFirstServe(t) {
+  firstServe = t;
+  $("fsA").classList.toggle("sel", t === "A");
+  $("fsB").classList.toggle("sel", t === "B");
+}
+function openNewMatch(cancellable) {
+  const prev = state?.meta?.teams?.B ?? CFG.awayDefault;
+  $("awayName").value  = prev.name;
+  $("awayShort").value = prev.short;
+  $("awayColor").value = prev.color;
+  selectFirstServe("A");
+  $("cancelNew").hidden = !cancellable;
+  $("newModal").classList.add("show");
+}
+$("fsA").onclick = () => selectFirstServe("A");
+$("fsB").onclick = () => selectFirstServe("B");
+$("cancelNew").onclick = () => $("newModal").classList.remove("show");
+$("startMatch").onclick = async () => {
+  const name  = $("awayName").value.trim() || CFG.awayDefault.name;
+  const short = ($("awayShort").value.trim() || name.slice(0, 3)).toUpperCase();
+  const color = $("awayColor").value;
+  const away  = { name, short, color, textColor: luminanceText(color) };
+  if (CFG.awayDefault.logo) away.logo = CFG.awayDefault.logo;
+  $("newModal").classList.remove("show");
+  await startNewMatch(away, firstServe);
+  toast("Match lancé");
+};
+$("newBtn").onclick = () => {
+  if (state && state.phase !== "matchEnd" &&
+      !confirm("Un match est en cours. Tout remettre à zéro ?")) return;
+  openNewMatch(!!state);
+};
+$("endNew").onclick = () => openNewMatch(true);
+
+// ===========================================================
+//  Boutons
+// ===========================================================
+const lastTap = {};
+function guarded(key, fn) {
+  const now = Date.now();
+  if (now - (lastTap[key] || 0) < TAP_LOCK_MS) return;
+  lastTap[key] = now;
+  navigator.vibrate?.(25);
+  fn();
+}
+
+document.querySelectorAll(".team").forEach((el) => {
+  el.querySelector(".plus").onclick = () => guarded("p" + el.dataset.team, () => act("point", el.dataset.team));
+  el.querySelector(".tm").onclick   = () => guarded("t" + el.dataset.team, () => act("timeout", el.dataset.team));
+});
+
+$("undoBtn").onclick   = () => guarded("undo", undo);
+$("confirmSet").onclick = () => guarded("set", () => act("confirmSet"));
+$("cancelSet").onclick  = () => guarded("undo", undo);
+$("swapBtn").onclick    = () => act("swap");
+$("serveBtn").onclick   = () => act("toggleServe");
+$("visBtn").onclick     = () => act("toggleVisible");
+$("tbSwitch").onclick   = () => act("tbSwitch");
+$("tbDismiss").onclick  = () => act("tbDismiss");
+
+// ===========================================================
+//  Divers : écran allumé, toast
+// ===========================================================
+async function keepAwake() {
+  try { await navigator.wakeLock?.request("screen"); } catch {}
+}
+keepAwake();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") keepAwake();
+});
+document.addEventListener("click", keepAwake, { once: true });
+
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+</script>
+</body>
+</html>
