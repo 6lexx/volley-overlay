@@ -332,8 +332,11 @@ function startListeners() {
     $("offlineMsg").classList.toggle("show", !on);
   });
 
-  onValue(stateRef, (snap) => {
-    state = snap.exists() ? norm(snap.val()) : null;
+  // On écoute tout le nœud "core" (état + pile d'annulation) : les transactions
+  // partent alors avec les vraies données au lieu d'un cache vide.
+  onValue(coreRef, (snap) => {
+    const core = snap.val();
+    state = core && core.state ? norm(core.state) : null;
     render();
   }, (err) => fatal(`<b>Lecture refusée</b> (${err.code}).<br>Le secret <code>secrets/${M}</code> existe-t-il ?`));
 }
@@ -447,8 +450,7 @@ async function act(name, arg) {
   let after = null;
   try {
     const res = await runTransaction(coreRef, (cur) => {
-      if (cur === null) return null;          // cache local vide : Firebase relance avec la vraie valeur
-      if (!cur.state) return;                 // pas de match : on annule
+      if (cur === null || !cur.state) return; // pas de match : on n'écrit rien
       const before = norm(clone(cur.state));
       const next = ACTIONS[name](norm(clone(cur.state)), arg);
       if (!next) return;
@@ -471,7 +473,7 @@ async function undo() {
   let did = false;
   try {
     await runTransaction(coreRef, (cur) => {
-      if (cur === null) return null;
+      if (cur === null) return;
       const stack = toArr(cur.undo);
       if (!cur.state || stack.length === 0) return;
       const [prev, ...rest] = stack;
@@ -534,9 +536,11 @@ const order = () => (state?.swapped ? ["B", "A"] : ["A", "B"]);
 
 function render() {
   if (!state) {           // aucun match en base : on propose d'en créer un
-    openNewMatch(false);
+    if (!$("newModal").classList.contains("show")) openNewMatch(false);
     return;
   }
+  // Un match existe : on referme l'écran "Nouveau match" s'il s'était ouvert tout seul
+  if (autoOpened) { $("newModal").classList.remove("show"); autoOpened = false; }
   const s = state;
   const R = s.meta.rules;
   const teams = s.meta.teams;
@@ -599,6 +603,7 @@ function render() {
 //  Nouveau match
 // ===========================================================
 let firstServe = "A";
+let autoOpened = false;   // écran ouvert automatiquement (pas par le bouton)
 function selectFirstServe(t) {
   firstServe = t;
   $("fsA").classList.toggle("sel", t === "A");
@@ -611,6 +616,7 @@ function openNewMatch(cancellable) {
   $("awayColor").value = prev.color;
   selectFirstServe("A");
   $("cancelNew").hidden = !cancellable;
+  autoOpened = !cancellable;
   $("newModal").classList.add("show");
 }
 $("fsA").onclick = () => selectFirstServe("A");
