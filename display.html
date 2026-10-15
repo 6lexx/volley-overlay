@@ -257,7 +257,7 @@ function render(s) {
   const order = s.swapped ? ["B", "A"] : ["A", "B"];
 
   // --- Écusson du club
-  const logo = teams.A.logo || window.SCORE_CONFIG?.home?.logo;
+  const logo = window.SCORE_CONFIG?.home?.logo || teams.A.logo;   // config.js prioritaire
   const crest = $("crest");
   if (logo && crest.dataset.src !== logo) {
     crest.dataset.src = logo;
