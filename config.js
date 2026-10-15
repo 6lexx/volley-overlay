@@ -10,12 +10,12 @@ window.SCORE_CONFIG = {
   // --- Firebase (Paramètres du projet > Vos applications > Config SDK)
   // Ces valeurs ne sont pas secrètes : la sécurité est assurée par les règles.
   firebase: {
-    apiKey:            "A_REMPLIR",
-    authDomain:        "A_REMPLIR.firebaseapp.com",
-    databaseURL:       "https://A_REMPLIR-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId:         "A_REMPLIR",
-    appId:             "A_REMPLIR"
-  },
+    apiKey:      "AIzaSyDIcfrcXxCxHwl9GA0v6jr7avvJTEn5gqM",
+    authDomain:  "volley-overlay-59f09.firebaseapp.com",
+    databaseURL: "https://volley-overlay-59f09-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:   "volley-overlay-59f09",
+    appId:       "1:490432783373:web:a358da2d36195d42846144"
+  },,
 
   // --- Règles du match (copiées dans l'état au moment du "Nouveau match" :
   //     modifier ce fichier en cours de match ne casse pas le match en cours)
