@@ -30,13 +30,13 @@ window.SCORE_CONFIG = {
 
   // --- Mon équipe (fixe)
   home: {
-    name:      "Mon Club",
-    short:     "MCL",        // 3-4 lettres : c'est ce qui s'affiche en 720p
-    color:     "#E8A33D",
-    textColor: "#111111",
-    logo:      null          // ex. "assets/logo.png" (chemin relatif au dépôt)
+    name:      "Ramonville",
+    short:     "RMV",
+    color:     "#D3121F",
+    textColor: "#FFFFFF",
+    logo:      null
   },
-
+  
   // --- Adversaire par défaut (modifiable avant chaque match depuis control.html)
   awayDefault: {
     name:      "Adversaire",
