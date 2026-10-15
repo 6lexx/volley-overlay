@@ -3,29 +3,33 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0e0f13">
-<title>Contrôle score</title>
+<meta name="theme-color" content="#0d0b0c">
+<title>Contrôle score · Ramonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
-     Variables de thème — à personnaliser librement
+     Thème — sombre, rouge et noir
      ========================================================= */
   :root {
-    --bg:        #0e0f13;
-    --surface:   #1b1d24;
-    --surface-2: #2a2d38;
-    --text:      #f5f6f8;
-    --muted:     #a3a8b8;
+    --bg:        #0d0b0c;
+    --surface:   #1a1516;
+    --surface-2: #2a2224;
+    --line:      #3a2f31;
+    --text:      #f7f3f3;
+    --muted:     #a89c9e;
+    --red:       #D3121F;
+    --red-deep:  #8E0A13;
     --ok:        #22c55e;
-    --danger:    #ff4d4f;
     --warn:      #ffb020;
-    --undo-bg:   #f5f6f8;
-    --undo-text: #0e0f13;
 
-    --font:      system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --radius:    18px;
-    --gap:       12px;
+    --num:   "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --font:  "Barlow Condensed", system-ui, -apple-system, sans-serif;
+    --radius: 16px;
+    --gap:    12px;
 
-    --score-size: clamp(64px, 18vw, 140px);
+    --score-size: clamp(72px, 22vw, 150px);
     --plus-h:     clamp(110px, 24vh, 220px);
   }
 
@@ -33,17 +37,18 @@
   html, body {
     margin: 0; height: 100%;
     background: var(--bg); color: var(--text);
-    font-family: var(--font);
+    font-family: var(--font); font-size: 18px;
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
   button {
-    font: inherit; color: inherit; border: 0; cursor: pointer;
-    touch-action: manipulation;           /* pas de zoom au double-tap */
+    font: inherit; font-weight: 700; color: inherit; border: 0; cursor: pointer;
+    touch-action: manipulation;
     transition: transform .08s, filter .08s;
   }
   button:active { transform: scale(.97); filter: brightness(1.15); }
   button:disabled { opacity: .35; pointer-events: none; }
+  button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
 
   .app {
     min-height: 100dvh;
@@ -55,180 +60,233 @@
 
   /* ---------- En-tête ---------- */
   .header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--danger); flex: none; }
-  .dot.on { background: var(--ok); }
-  .set-label { font-weight: 800; font-size: 20px; }
+  .badge {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: #fff; display: grid; place-items: center; overflow: hidden;
+    box-shadow: 0 0 0 3px var(--red);
+  }
+  .badge img { width: 92%; height: 92%; object-fit: contain; }
+  .badge:empty { display: none; }
+  .set-label { font: 900 26px/1 var(--num); letter-spacing: .02em; }
   .history { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   .chip {
     background: var(--surface-2); color: var(--muted);
-    padding: 4px 8px; border-radius: 8px; font-size: 14px; font-weight: 700;
+    padding: 4px 8px; font-size: 16px; font-weight: 700;
+    transform: skewX(-12deg);
   }
-  .offline-msg { width: 100%; color: var(--warn); font-size: 14px; font-weight: 600; display: none; }
+  .chip > span { display: inline-block; transform: skewX(12deg); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--warn); flex: none; }
+  .dot.on { background: var(--ok); }
+  .offline-msg { width: 100%; color: var(--warn); font-size: 16px; display: none; }
   .offline-msg.show { display: block; }
 
   /* ---------- Équipes ---------- */
-  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-content: start; }
   .team {
     background: var(--surface); border-radius: var(--radius);
+    border-top: 5px solid var(--c);
     display: flex; flex-direction: column; gap: 10px; padding: 10px;
   }
   .tname {
-    background: var(--c); color: var(--ct);
-    border-radius: 12px; padding: 8px 10px;
-    font-weight: 900; font-size: 22px; text-align: center; letter-spacing: .04em;
     display: flex; align-items: center; justify-content: center; gap: 8px;
+    font: 900 30px/1 var(--num); letter-spacing: .04em;
   }
-  .serve { font-size: 20px; visibility: hidden; }
+  .serve { font-size: 22px; visibility: hidden; }
   .team.serving .serve { visibility: visible; }
-  .tsets { text-align: center; color: var(--muted); font-weight: 700; font-size: 15px; }
+  .dia { display: flex; justify-content: center; gap: 9px; }
+  .dia i {
+    width: 13px; height: 13px; transform: rotate(45deg);
+    border: 2px solid var(--c); background: transparent;
+  }
+  .dia i.on { background: var(--c); }
   .tscore {
-    text-align: center; font-weight: 900; line-height: 1;
-    font-size: var(--score-size); font-variant-numeric: tabular-nums;
+    text-align: center; font: 900 var(--score-size)/1 var(--num);
+    font-variant-numeric: tabular-nums;
   }
   .plus {
     height: var(--plus-h); border-radius: var(--radius);
     background: var(--c); color: var(--ct);
-    font-size: 54px; font-weight: 900;
-    box-shadow: inset 0 -6px 0 rgba(0,0,0,.25);
-  }
-  .tm {
-    min-height: 56px; border-radius: 14px;
-    background: var(--surface-2); font-size: 17px; font-weight: 700;
+    font: 900 60px/1 var(--num);
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .28);
   }
 
-  /* ---------- Annuler : gros, isolé, couleur à part ---------- */
+  /* ---------- Annuler : gros, isolé ---------- */
   .undo {
-    margin-top: 14px;
-    min-height: 76px; border-radius: var(--radius);
-    background: var(--undo-bg); color: var(--undo-text);
-    font-size: 24px; font-weight: 900;
+    margin-top: 14px; min-height: 76px; border-radius: var(--radius);
+    background: var(--bg); color: var(--text);
+    border: 3px solid var(--text);
+    font: 900 28px/1 var(--num); letter-spacing: .04em;
   }
 
   /* ---------- Outils ---------- */
   .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
   .tool {
     min-height: 56px; border-radius: 14px;
-    background: var(--surface); font-size: 16px; font-weight: 700;
-    border: 2px solid var(--surface-2);
+    background: var(--surface); border: 2px solid var(--line); font-size: 18px;
+  }
+  .tool.events {
+    grid-column: 1 / -1; min-height: 62px;
+    background: var(--red); border-color: var(--red); color: #fff; font-size: 20px;
   }
   .tool.off { border-color: var(--warn); color: var(--warn); }
-  .tool.danger { color: var(--danger); }
+  .tool.danger { color: #ff6b73; }
 
   /* ---------- Bandeaux ---------- */
   .banner {
     display: none; grid-column: 1 / -1;
-    background: var(--warn); color: #111; border-radius: 14px;
-    padding: 12px; font-weight: 800; font-size: 18px;
-    align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--surface-2); border-left: 6px solid var(--red);
+    border-radius: 12px; padding: 12px;
+    font-size: 20px; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .banner.show { display: flex; }
-  .banner button { background: #111; color: #fff; border-radius: 10px; padding: 10px 14px; font-weight: 800; }
-  .banner .ghost { background: transparent; color: #111; text-decoration: underline; }
-  .banner.end { background: var(--ok); }
+  .banner button { background: var(--red); color: #fff; border-radius: 10px; padding: 10px 14px; }
+  .banner .ghost { background: transparent; color: var(--muted); text-decoration: underline; }
 
   /* ---------- Modales ---------- */
   .modal {
     position: fixed; inset: 0; z-index: 10;
-    background: rgba(0,0,0,.78);
+    background: rgba(0, 0, 0, .8);
     display: none; align-items: center; justify-content: center; padding: 16px;
   }
   .modal.show { display: flex; }
   .card {
-    background: var(--surface); border-radius: 22px; padding: 20px;
+    background: var(--surface); border-radius: 20px; padding: 20px;
+    border-top: 6px solid var(--red);
     width: 100%; max-width: 460px;
     display: flex; flex-direction: column; gap: 14px;
   }
-  .card h2 { margin: 0; font-size: 24px; }
-  .card p  { margin: 0; font-size: 20px; font-weight: 700; }
+  .card h2 { margin: 0; font: 900 30px/1 var(--num); }
+  .card p  { margin: 0; font-size: 22px; font-weight: 700; }
   .btn-big {
-    min-height: 72px; border-radius: 16px; font-size: 22px; font-weight: 900;
-    background: var(--ok); color: #06210f;
+    min-height: 72px; border-radius: 14px;
+    background: var(--red); color: #fff; font: 900 28px/1 var(--num); letter-spacing: .03em;
   }
-  .btn-sec {
-    min-height: 60px; border-radius: 16px; font-size: 18px; font-weight: 700;
-    background: var(--surface-2);
-  }
+  .btn-sec { min-height: 58px; border-radius: 14px; background: var(--surface-2); font-size: 20px; }
 
-  /* ---------- Formulaire nouveau match ---------- */
   label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: var(--muted); }
   input[type=text] {
-    font: inherit; font-size: 20px; color: var(--text);
-    background: var(--bg); border: 2px solid var(--surface-2); border-radius: 12px;
-    padding: 12px;
+    font: inherit; font-size: 22px; color: var(--text);
+    background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 12px;
   }
+  input[type=text]:focus { border-color: var(--red); outline: none; }
   input[type=color] { width: 100%; height: 56px; border: 0; border-radius: 12px; background: none; padding: 0; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .seg button { min-height: 56px; border-radius: 12px; background: var(--surface-2); font-weight: 800; }
-  .seg button.sel { background: var(--text); color: var(--bg); }
+  .seg button { min-height: 56px; border-radius: 12px; background: var(--surface-2); font-size: 20px; }
+  .seg button.sel { background: var(--red); color: #fff; }
 
-  /* ---------- Erreur bloquante ---------- */
-  .fatal { padding: 24px; font-size: 20px; line-height: 1.4; }
-  .fatal b { color: var(--danger); }
+  /* ---------- Panneau latéral des événements ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 15; background: rgba(0, 0, 0, .6);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .sidebar {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 16;
+    width: min(88vw, 420px);
+    background: var(--surface); border-left: 4px solid var(--red);
+    transform: translateX(105%); transition: transform .25s ease;
+    display: flex; flex-direction: column;
+    padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
+  .sidebar.show { transform: translateX(0); }
+  .side-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .side-head h2 { margin: 0; flex: 1; font: 900 28px/1 var(--num); }
+  .close { width: 52px; height: 52px; border-radius: 12px; background: var(--surface-2); font-size: 24px; }
+  .side-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .side-list h3 { margin: 14px 0 4px; font-size: 16px; color: var(--muted); font-weight: 700; }
+  .ev {
+    background: var(--bg); border: 2px solid var(--line); border-radius: 14px;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .ev-name { font: 900 24px/1 var(--num); letter-spacing: .02em; }
+  .ev-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ev-btns.single { grid-template-columns: 1fr; }
+  .ev-btns button { min-height: 52px; border-radius: 10px; font-size: 20px; }
+  .ev-btns .go   { background: var(--red); color: #fff; }
+  .ev-btns .team-btn { background: var(--c); color: var(--ct); }
+  .side-note { color: var(--muted); font-size: 16px; margin: 12px 0 0; }
 
-  /* ---------- Toast ---------- */
+  .fatal { padding: 24px; font-size: 22px; line-height: 1.4; }
+  .fatal b { color: #ff6b73; }
+
   .toast {
     position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px);
-    transform: translateX(-50%) translateY(150%);
-    background: var(--text); color: var(--bg); font-weight: 800;
-    padding: 12px 18px; border-radius: 12px; transition: transform .2s; z-index: 20;
+    transform: translateX(-50%) translateY(160%);
+    background: var(--text); color: var(--bg); font-weight: 700; font-size: 20px;
+    padding: 12px 18px; border-radius: 12px; transition: transform .2s; z-index: 30;
+    white-space: nowrap;
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app" id="app" hidden>
   <header class="header">
-    <span class="dot" id="dot" title="Connexion"></span>
+    <div class="badge" id="badge"></div>
     <span class="set-label" id="setLabel">Set 1</span>
+    <span class="dot" id="dot" title="Connexion"></span>
     <div class="history" id="history"></div>
     <div class="offline-msg" id="offlineMsg">Hors ligne : les actions partiront dès le retour du réseau.</div>
   </header>
 
-  <main class="teams" id="teams">
+  <main class="teams">
     <div class="banner" id="tbBanner">
       <span>Tie-break : changement de côté</span>
       <button id="tbSwitch">Inverser</button>
       <button class="ghost" id="tbDismiss">Ignorer</button>
     </div>
-    <div class="banner end" id="endBanner">
+    <div class="banner" id="endBanner">
       <span id="endText"></span>
       <button id="endNew">Nouveau match</button>
     </div>
-    <!-- deux colonnes générées en JS -->
     <section class="team" data-pos="0">
       <div class="tname"><span class="serve">🏐</span><span class="tshort"></span></div>
-      <div class="tsets"></div>
+      <div class="dia"></div>
       <div class="tscore">0</div>
       <button class="plus">+1</button>
-      <button class="tm">Temps mort</button>
     </section>
     <section class="team" data-pos="1">
-      <div class="tname"><span class="serve">🏐</span><span class="tshort"></span></div>
-      <div class="tsets"></div>
+      <div class="tname"><span class="tshort"></span><span class="serve">🏐</span></div>
+      <div class="dia"></div>
       <div class="tscore">0</div>
       <button class="plus">+1</button>
-      <button class="tm">Temps mort</button>
     </section>
   </main>
 
-  <button class="undo" id="undoBtn">↶ ANNULER</button>
+  <button class="undo" id="undoBtn">↶ Annuler</button>
 
   <nav class="tools">
+    <button class="tool events" id="eventsBtn">Événements à l'écran</button>
     <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
-    <button class="tool" id="visBtn">Overlay : visible</button>
+    <button class="tool" id="visBtn">Overlay visible</button>
     <button class="tool danger" id="newBtn">Nouveau match</button>
   </nav>
 </div>
+
+<!-- Panneau latéral : événements -->
+<div class="scrim" id="scrim"></div>
+<aside class="sidebar" id="sidebar" aria-label="Événements à l'écran">
+  <div class="side-head">
+    <h2>Événements</h2>
+    <button class="close" id="closeSide" aria-label="Fermer">✕</button>
+  </div>
+  <div class="side-list" id="sideList"></div>
+  <p class="side-note">Ces événements sont déjà envoyés à l'overlay. Leur affichage à l'écran arrive à la prochaine étape.</p>
+</aside>
 
 <!-- Fin de set -->
 <div class="modal" id="setModal">
   <div class="card">
     <h2 id="setModalTitle">Fin du set</h2>
     <p id="setModalText"></p>
-    <button class="btn-big" id="confirmSet">✓ Valider le set</button>
+    <button class="btn-big" id="confirmSet">Valider le set</button>
     <button class="btn-sec" id="cancelSet">↶ Annuler le dernier point</button>
   </div>
 </div>
@@ -249,9 +307,9 @@
       </label>
     </div>
     <label>Premier service</label>
-    <div class="seg" id="firstServe">
-      <button data-team="A" id="fsA">Nous</button>
-      <button data-team="B" id="fsB">Eux</button>
+    <div class="seg">
+      <button id="fsA">Nous</button>
+      <button id="fsB">Eux</button>
     </div>
     <button class="btn-big" id="startMatch">Lancer le match</button>
     <button class="btn-sec" id="cancelNew">Annuler</button>
@@ -276,7 +334,28 @@ const qs  = new URLSearchParams(location.search);
 const M   = qs.get("m");
 const K   = qs.get("k");
 const UNDO_DEPTH = CFG?.control?.undoDepth ?? 30;
-const TAP_LOCK_MS = 600;   // anti double-tap sur +1 et temps mort
+const TAP_LOCK_MS = 600;   // anti double-tap sur +1
+
+// Couleur imposée pour notre équipe (thème rouge et noir)
+const HOME_COLOR = getComputedStyle(document.documentElement).getPropertyValue("--red").trim();
+
+// Liste des événements proposés dans le panneau latéral.
+// team: true → on choisit l'équipe concernée.
+const EVENT_LIST = [
+  { group: "Avant le match", items: [
+    { type: "warmup",    label: "Échauffement" },
+    { type: "teamIntro", label: "Présentation des équipes" }
+  ]},
+  { group: "Pendant le jeu", items: [
+    { type: "ace",     label: "Ace",        team: true },
+    { type: "timeout", label: "Temps mort", team: true }
+  ]},
+  { group: "Entre les sets", items: [
+    { type: "interSet", label: "Inter-set" },
+    { type: "setWin",   label: "Victoire du set",   team: true },
+    { type: "matchWin", label: "Victoire du match", team: true }
+  ]}
+];
 
 const $ = (id) => document.getElementById(id);
 
@@ -295,6 +374,13 @@ if (!M || !K || /[.#$\[\]\/]/.test(M)) {
   throw new Error("url");
 }
 
+// Logo du club dans l'en-tête
+if (CFG.home?.logo) {
+  const img = new Image();
+  img.src = CFG.home.logo; img.alt = CFG.home.name || "";
+  $("badge").appendChild(img);
+}
+
 // ===========================================================
 //  Firebase
 // ===========================================================
@@ -304,16 +390,14 @@ const db   = getDatabase(app);
 
 const matchRef  = ref(db, `matches/${M}`);
 const coreRef   = ref(db, `matches/${M}/core`);
-const stateRef  = ref(db, `matches/${M}/core/state`);
 const eventsRef = ref(db, `matches/${M}/events`);
 
-let state = null;        // dernier état connu (normalisé)
+let state = null;
 let started = false;
 
 onAuthStateChanged(auth, (user) => {
   if (!user || started) return;
   started = true;
-  // Enregistre ce téléphone comme contrôleur (refusé par les règles si la clé est fausse).
   set(ref(db, `controllers/${M}/${user.uid}`), K).catch(() => {
     fatal("<b>Clé invalide.</b><br>Vérifie le lien de contrôle (paramètre <code>k</code>).");
   });
@@ -332,8 +416,8 @@ function startListeners() {
     $("offlineMsg").classList.toggle("show", !on);
   });
 
-  // On écoute tout le nœud "core" (état + pile d'annulation) : les transactions
-  // partent alors avec les vraies données au lieu d'un cache vide.
+  // Tout le nœud "core" (état + pile d'annulation) : les transactions
+  // partent ainsi avec les vraies données.
   onValue(coreRef, (snap) => {
     const core = snap.val();
     state = core && core.state ? norm(core.state) : null;
@@ -348,12 +432,10 @@ const other = (t) => (t === "A" ? "B" : "A");
 const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
-// Firebase supprime les null et les tableaux vides : on remet les valeurs par défaut.
 function norm(s) {
-  s.score    = s.score    ?? { A: 0, B: 0 };
-  s.sets     = s.sets     ?? { A: 0, B: 0 };
-  s.timeouts = s.timeouts ?? { A: 0, B: 0 };
-  for (const k of ["score", "sets", "timeouts"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.score = s.score ?? { A: 0, B: 0 };
+  s.sets  = s.sets  ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets"]) { s[k].A ??= 0; s[k].B ??= 0; }
   s.history  = toArr(s.history);
   s.swapped  = !!s.swapped;
   s.visible  = s.visible !== false;
@@ -381,7 +463,6 @@ function newMatchState(away, firstServer) {
     history: [],
     serving: firstServer,
     firstServer,
-    timeouts: { A: 0, B: 0 },
     swapped: false,
     visible: true,
     tbSwitched: false,
@@ -391,8 +472,6 @@ function newMatchState(away, firstServer) {
   };
 }
 
-// Chaque action reçoit une copie de l'état et renvoie le nouvel état,
-// ou undefined si l'action n'est pas permise (rien n'est écrit).
 const ACTIONS = {
   point(s, t) {
     if (s.phase !== "playing") return;
@@ -403,11 +482,6 @@ const ACTIONS = {
       s.phase = "setEnd";
       s.pendingWinner = t;
     }
-    return s;
-  },
-  timeout(s, t) {
-    if (s.phase !== "playing" || s.timeouts[t] >= s.meta.rules.timeoutsPerSet) return;
-    s.timeouts[t]++;
     return s;
   },
   confirmSet(s) {
@@ -423,8 +497,7 @@ const ACTIONS = {
     }
     s.setIndex++;
     s.score = { A: 0, B: 0 };
-    s.timeouts = { A: 0, B: 0 };
-    s.firstServer = other(s.firstServer);   // le service alterne à chaque set
+    s.firstServer = other(s.firstServer);
     s.serving = s.firstServer;
     s.tbSwitched = false;
     s.phase = "playing";
@@ -435,7 +508,6 @@ const ACTIONS = {
     if (s.score.A + s.score.B === 0) s.firstServer = s.serving;
     return s;
   },
-  // Actions d'affichage : hors pile d'annulation
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
@@ -444,13 +516,13 @@ const ACTIONS = {
 const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss"]);
 
 // ===========================================================
-//  Écritures (transactions : sûres même à deux contrôleurs)
+//  Écritures
 // ===========================================================
 async function act(name, arg) {
   let after = null;
   try {
     const res = await runTransaction(coreRef, (cur) => {
-      if (cur === null || !cur.state) return; // pas de match : on n'écrit rien
+      if (cur === null || !cur.state) return;
       const before = norm(clone(cur.state));
       const next = ACTIONS[name](norm(clone(cur.state)), arg);
       if (!next) return;
@@ -483,7 +555,6 @@ async function undo() {
         state: {
           ...prev,
           meta: cur.state.meta,
-          // l'annulation ne touche pas aux réglages d'affichage
           visible: cur.state.visible,
           swapped: cur.state.swapped,
           tbSwitched: cur.state.tbSwitched,
@@ -506,20 +577,19 @@ async function startNewMatch(away, firstServer) {
 }
 
 // ===========================================================
-//  Canal d'événements (pour les futures alertes)
+//  Canal d'événements
 // ===========================================================
-function emit(type, team, s = state) {
-  const ev = { type, ts: serverTimestamp() };
+function emit(type, team, s = state, extra = {}) {
+  const ev = { type, ts: serverTimestamp(), ...extra };
   if (team) ev.team = team;
   if (s) { ev.set = s.setIndex; ev.score = { A: s.score.A, B: s.score.B }; }
-  push(eventsRef, ev).catch(() => {});
+  return push(eventsRef, ev);
 }
 function emitFor(name, arg, s) {
-  if (name === "point")      emit("point", arg, s);
-  if (name === "timeout")    emit("timeout", arg, s);
+  if (name === "point") emit("point", arg, s).catch(() => {});
   if (name === "confirmSet") {
     const last = s.history[s.history.length - 1];
-    emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s);
+    emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s).catch(() => {});
   }
 }
 
@@ -531,15 +601,15 @@ function luminanceText(hex) {
   const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111111" : "#FFFFFF";
 }
-
+const teamColor = (t) => (t === "A" ? HOME_COLOR : state.meta.teams.B.color);
+const teamText  = (t) => (t === "A" ? "#FFFFFF" : (state.meta.teams.B.textColor || luminanceText(teamColor(t))));
 const order = () => (state?.swapped ? ["B", "A"] : ["A", "B"]);
 
 function render() {
-  if (!state) {           // aucun match en base : on propose d'en créer un
+  if (!state) {
     if (!$("newModal").classList.contains("show")) openNewMatch(false);
     return;
   }
-  // Un match existe : on referme l'écran "Nouveau match" s'il s'était ouvert tout seul
   if (autoOpened) { $("newModal").classList.remove("show"); autoOpened = false; }
   const s = state;
   const R = s.meta.rules;
@@ -547,45 +617,44 @@ function render() {
 
   $("setLabel").textContent = s.phase === "matchEnd"
     ? "Match terminé"
-    : `Set ${s.setIndex}${isTieBreak(s) ? " · tie-break" : ""}`;
+    : isTieBreak(s) ? "Tie-break" : `Set ${s.setIndex}`;
 
-  const hist = $("history");
-  hist.replaceChildren(...s.history.map((h) => {
+  $("history").replaceChildren(...s.history.map((h) => {
     const c = document.createElement("span");
     c.className = "chip";
+    const inner = document.createElement("span");
     const [l, r] = order();
-    c.textContent = `${h[l]}-${h[r]}`;
+    inner.textContent = `${h[l]}-${h[r]}`;
+    c.appendChild(inner);
     return c;
   }));
 
   document.querySelectorAll(".team").forEach((el) => {
     const t = order()[Number(el.dataset.pos)];
-    const team = teams[t];
     el.dataset.team = t;
-    el.style.setProperty("--c", team.color);
-    el.style.setProperty("--ct", team.textColor || luminanceText(team.color));
+    el.style.setProperty("--c", teamColor(t));
+    el.style.setProperty("--ct", teamText(t));
     el.classList.toggle("serving", s.serving === t && s.phase === "playing");
-    el.querySelector(".tshort").textContent = team.short;
-    el.querySelector(".tsets").textContent = `Sets : ${s.sets[t]}`;
+    el.querySelector(".tshort").textContent = teams[t].short;
     el.querySelector(".tscore").textContent = s.score[t];
     el.querySelector(".plus").disabled = s.phase !== "playing";
-    const tm = el.querySelector(".tm");
-    tm.textContent = `Temps mort ${s.timeouts[t]}/${R.timeoutsPerSet}`;
-    tm.disabled = s.phase !== "playing" || s.timeouts[t] >= R.timeoutsPerSet;
+
+    const dia = el.querySelector(".dia");
+    if (dia.children.length !== R.setsToWin) {
+      dia.replaceChildren(...Array.from({ length: R.setsToWin }, () => document.createElement("i")));
+    }
+    [...dia.children].forEach((d, i) => d.classList.toggle("on", i < s.sets[t]));
   });
 
-  // Rappel changement de côté au tie-break
   const showTb = isTieBreak(s) && s.phase === "playing" && R.tieBreakSwitchAt > 0
     && !s.tbSwitched && Math.max(s.score.A, s.score.B) >= R.tieBreakSwitchAt;
   $("tbBanner").classList.toggle("show", showTb);
 
-  // Fin de match
   $("endBanner").classList.toggle("show", s.phase === "matchEnd");
   if (s.phase === "matchEnd") {
     $("endText").textContent = `${teams[s.winner].short} gagne ${s.sets[s.winner]}-${s.sets[other(s.winner)]}`;
   }
 
-  // Fin de set : confirmation
   const showSet = s.phase === "setEnd";
   $("setModal").classList.toggle("show", showSet);
   if (showSet) {
@@ -595,15 +664,79 @@ function render() {
   }
 
   const vis = $("visBtn");
-  vis.textContent = s.visible ? "Overlay : visible" : "Overlay : MASQUÉ";
+  vis.textContent = s.visible ? "Overlay visible" : "Overlay masqué";
   vis.classList.toggle("off", !s.visible);
+
+  if ($("sidebar").classList.contains("show")) renderEvents();
 }
+
+// ===========================================================
+//  Panneau des événements
+// ===========================================================
+function renderEvents() {
+  const list = $("sideList");
+  list.replaceChildren();
+  EVENT_LIST.forEach((group) => {
+    const h = document.createElement("h3");
+    h.textContent = group.group;
+    list.appendChild(h);
+
+    group.items.forEach((item) => {
+      const box = document.createElement("div");
+      box.className = "ev";
+      const name = document.createElement("div");
+      name.className = "ev-name";
+      name.textContent = item.label;
+      const btns = document.createElement("div");
+      btns.className = "ev-btns";
+
+      if (item.team && state) {
+        order().forEach((t) => {
+          const b = document.createElement("button");
+          b.className = "team-btn";
+          b.style.setProperty("--c", teamColor(t));
+          b.style.setProperty("--ct", teamText(t));
+          b.textContent = state.meta.teams[t].short;
+          b.onclick = () => sendEvent(item, t);
+          btns.appendChild(b);
+        });
+      } else {
+        btns.classList.add("single");
+        const b = document.createElement("button");
+        b.className = "go";
+        b.textContent = "Afficher";
+        b.onclick = () => sendEvent(item, null);
+        btns.appendChild(b);
+      }
+      box.append(name, btns);
+      list.appendChild(box);
+    });
+  });
+}
+
+function sendEvent(item, team) {
+  guarded("ev" + item.type, async () => {
+    try {
+      await emit(item.type, team, state, { manual: true });
+      const who = team ? ` ${state.meta.teams[team].short}` : "";
+      toast(`Envoyé : ${item.label}${who}`);
+    } catch (e) {
+      toast("Erreur : " + (e.code || e.message));
+    }
+  });
+}
+
+function openSide()  { renderEvents(); $("sidebar").classList.add("show"); $("scrim").classList.add("show"); }
+function closeSide() { $("sidebar").classList.remove("show"); $("scrim").classList.remove("show"); }
+$("eventsBtn").onclick = openSide;
+$("closeSide").onclick = closeSide;
+$("scrim").onclick = closeSide;
 
 // ===========================================================
 //  Nouveau match
 // ===========================================================
 let firstServe = "A";
-let autoOpened = false;   // écran ouvert automatiquement (pas par le bouton)
+let autoOpened = false;
 function selectFirstServe(t) {
   firstServe = t;
   $("fsA").classList.toggle("sel", t === "A");
@@ -653,10 +786,9 @@ function guarded(key, fn) {
 
 document.querySelectorAll(".team").forEach((el) => {
   el.querySelector(".plus").onclick = () => guarded("p" + el.dataset.team, () => act("point", el.dataset.team));
-  el.querySelector(".tm").onclick   = () => guarded("t" + el.dataset.team, () => act("timeout", el.dataset.team));
 });
 
-$("undoBtn").onclick   = () => guarded("undo", undo);
+$("undoBtn").onclick    = () => guarded("undo", undo);
 $("confirmSet").onclick = () => guarded("set", () => act("confirmSet"));
 $("cancelSet").onclick  = () => guarded("undo", undo);
 $("swapBtn").onclick    = () => act("swap");
@@ -666,7 +798,7 @@ $("tbSwitch").onclick   = () => act("tbSwitch");
 $("tbDismiss").onclick  = () => act("tbDismiss");
 
 // ===========================================================
-//  Divers : écran allumé, toast
+//  Divers
 // ===========================================================
 async function keepAwake() {
   try { await navigator.wakeLock?.request("screen"); } catch {}
@@ -683,7 +815,7 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
 }
 </script>
 </body>
