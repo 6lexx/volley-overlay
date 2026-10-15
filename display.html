@@ -38,12 +38,12 @@
     --skew: -12deg;
 
     /* Dimensions dérivées */
-    --score-size: calc(10vh  * var(--scale));
-    --name-size:  calc(3.8vh * var(--scale));
-    --tab-size:   calc(2.8vh * var(--scale));
-    --dia-size:   calc(1.9vh * var(--scale));
-    --ball-size:  calc(3.3vh * var(--scale));
-    --crest-size: calc(14vh  * var(--scale));
+    --score-size: calc(8.2vh * var(--scale));
+    --name-size:  calc(3.3vh * var(--scale));
+    --tab-size:   calc(2.5vh * var(--scale));
+    --dia-size:   calc(1.6vh * var(--scale));
+    --ball-size:  calc(2.8vh * var(--scale));
+    --crest-size: calc(11vh  * var(--scale));
 
     /* Animations */
     --anim: .22s;
@@ -108,7 +108,7 @@
   .slab {
     display: flex; align-items: center;
     background: var(--red);
-    padding: calc(.8vh * var(--scale)) calc(2.6vh * var(--scale)) calc(.8vh * var(--scale)) calc(5.6vh * var(--scale));
+    padding: calc(.8vh * var(--scale)) calc(2.6vh * var(--scale)) calc(.8vh * var(--scale)) calc(4.6vh * var(--scale));
     box-shadow: 0 .6vh 1.6vh rgba(0, 0, 0, .35);
   }
   .slab > .unskew { gap: calc(1.6vh * var(--scale)); }
@@ -147,7 +147,7 @@
   .n.bump { animation: bump var(--anim) ease-out; }
   @keyframes bump { 45% { transform: scale(1.18); } }
 
-  .sep { width: calc(.6vh * var(--scale)); height: calc(7vh * var(--scale)); background: var(--white); opacity: .9; }
+  .sep { width: calc(.5vh * var(--scale)); height: calc(5.8vh * var(--scale)); background: var(--white); opacity: .9; }
 
   .debug {
     position: fixed; left: 1vh; top: 1vh;
