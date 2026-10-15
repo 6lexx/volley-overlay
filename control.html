@@ -377,6 +377,7 @@ if (!M || !K || /[.#$\[\]\/]/.test(M)) {
 // Logo du club dans l'en-tête
 if (CFG.home?.logo) {
   const img = new Image();
+  img.onerror = () => $("badge").replaceChildren();   // logo introuvable : pas d'image cassée
   img.src = CFG.home.logo; img.alt = CFG.home.name || "";
   $("badge").appendChild(img);
 }
