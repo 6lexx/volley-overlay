@@ -107,7 +107,8 @@
   .tlabel { border-bottom: calc(.4vh * var(--scale)) solid var(--mark, transparent); padding-bottom: .1vh; }
 
   .ball {
-    width: var(--ball-size); height: var(--ball-size);
+    font-size: var(--ball-size); line-height: 1;
+    display: inline-block;
     opacity: 0; transform: scale(.3) rotate(-90deg);
     transition: opacity var(--anim), transform .35s cubic-bezier(.2, .9, .3, 1.3);
   }
@@ -146,28 +147,20 @@
 </head>
 <body>
 
-<!-- Ballon (indicateur de service) -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="ball" viewBox="0 0 24 24">
-    <circle cx="12" cy="12" r="10.5" fill="#fff" stroke="#8E0A13" stroke-width="1.6"/>
-    <path d="M12 1.5c-2 4-2 9 1 13M3 8c4 0 9 1 12 5M5 19c3-3 8-5 13-4" fill="none" stroke="#D3121F" stroke-width="1.8" stroke-linecap="round"/>
-  </symbol>
-</svg>
-
 <div class="bug hidden" id="bug">
   <div class="tabs" id="tabs"></div>
 
   <div class="slab skew">
     <div class="unskew">
       <div class="side" data-pos="0">
-        <div class="tn"><svg class="ball"><use href="#ball"/></svg><span class="tlabel"></span></div>
+        <div class="tn"><span class="ball" aria-hidden="true">🏐</span><span class="tlabel"></span></div>
         <div class="dia"></div>
       </div>
       <span class="n" data-pos="0"></span>
       <span class="sep"></span>
       <span class="n" data-pos="1"></span>
       <div class="side" data-pos="1">
-        <div class="tn"><span class="tlabel"></span><svg class="ball"><use href="#ball"/></svg></div>
+        <div class="tn"><span class="tlabel"></span><span class="ball" aria-hidden="true">🏐</span></div>
         <div class="dia"></div>
       </div>
     </div>
@@ -320,7 +313,7 @@ if (DEMO) {
     meta: {
       rules,
       teams: {
-        A: CFG.home || { short: "RAM", color: "#D3121F" },
+        A: CFG.home || { name: "Ramonville", short: "RMV", color: "#D3121F" },
         B: CFG.awayDefault || { short: "ADV", color: "#1E5AA8" }
       }
     },
