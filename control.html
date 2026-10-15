@@ -2,401 +2,820 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overlay score</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b0c">
+<title>Contrôle score · Ramonville</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
-     THÈME — tout le visuel se règle ici.
-     Tailles en vh : elles suivent la hauteur de l'image.
+     Thème — sombre, rouge et noir
      ========================================================= */
   :root {
-    /* Couleurs du club */
-    --red:       #D3121F;   /* plaque principale */
+    --bg:        #0d0b0c;
+    --surface:   #1a1516;
+    --surface-2: #2a2224;
+    --line:      #3a2f31;
+    --text:      #f7f3f3;
+    --muted:     #a89c9e;
+    --red:       #D3121F;
     --red-deep:  #8E0A13;
-    --white:     #FFFFFF;
-    --ink:       #1A1416;   /* texte sombre, losange "set en cours" */
-    --loser:     #8A8085;   /* score perdant dans l'historique */
+    --ok:        #22c55e;
+    --warn:      #ffb020;
 
-    /* Typo */
     --num:   "Big Shoulders Display", "Arial Narrow", sans-serif;
-    --small: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font:  "Barlow Condensed", system-ui, -apple-system, sans-serif;
+    --radius: 16px;
+    --gap:    12px;
 
-    /* Placement (aussi via ?pos=br|bl|tr|tl) — défaut : bas droite */
-    --top:    auto;
-    --bottom: 6vh;
-    --left:   auto;
-    --right:  4vw;
-    --align:  flex-end;
-
-    /* Taille globale (aussi via ?scale=1.2) */
-    --scale: 1;
-
-    /* Inclinaison des losanges */
-    --skew: -12deg;
-
-    /* Dimensions dérivées */
-    --score-size: calc(10vh  * var(--scale));
-    --name-size:  calc(3.8vh * var(--scale));
-    --tab-size:   calc(2.8vh * var(--scale));
-    --dia-size:   calc(1.9vh * var(--scale));
-    --ball-size:  calc(3.3vh * var(--scale));
-    --crest-size: calc(14vh  * var(--scale));
-
-    /* Animations */
-    --anim: .22s;
-    --fade: .35s;
+    --score-size: clamp(72px, 22vw, 150px);
+    --plus-h:     clamp(110px, 24vh, 220px);
   }
 
+  * { box-sizing: border-box; }
   html, body {
-    margin: 0; padding: 0; height: 100%;
-    background: transparent !important;
-    overflow: hidden;
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: 18px;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button {
+    font: inherit; font-weight: 700; color: inherit; border: 0; cursor: pointer;
+    touch-action: manipulation;
+    transition: transform .08s, filter .08s;
+  }
+  button:active { transform: scale(.97); filter: brightness(1.15); }
+  button:disabled { opacity: .35; pointer-events: none; }
+  button:focus-visible { outline: 3px solid var(--text); outline-offset: 2px; }
+
+  .app {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: var(--gap);
+    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);
   }
 
-  .bug {
-    position: fixed;
-    top: var(--top); bottom: var(--bottom); left: var(--left); right: var(--right);
-    display: flex; flex-direction: column; align-items: var(--align);
-    gap: calc(.9vh * var(--scale));
-    transition: opacity var(--fade) ease, transform var(--fade) ease;
+  /* ---------- En-tête ---------- */
+  .header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: #fff; display: grid; place-items: center; overflow: hidden;
+    box-shadow: 0 0 0 3px var(--red);
   }
-  .bug.hidden { opacity: 0; transform: translateY(2vh); }
-  .bug.top { flex-direction: column-reverse; }   /* en haut : losanges sous la plaque */
+  .badge img { width: 92%; height: 92%; object-fit: contain; }
+  .badge:empty { display: none; }
+  .set-label { font: 900 26px/1 var(--num); letter-spacing: .02em; }
+  .history { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  .chip {
+    background: var(--surface-2); color: var(--muted);
+    padding: 4px 8px; font-size: 16px; font-weight: 700;
+    transform: skewX(-12deg);
+  }
+  .chip > span { display: inline-block; transform: skewX(12deg); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--warn); flex: none; }
+  .dot.on { background: var(--ok); }
+  .offline-msg { width: 100%; color: var(--warn); font-size: 16px; display: none; }
+  .offline-msg.show { display: block; }
 
-  /* Tout ce qui est incliné : le parent penche, le contenu se redresse */
-  .skew   { transform: skewX(var(--skew)); }
-  .unskew { transform: skewX(calc(var(--skew) * -1)); display: inline-flex; align-items: center; }
-
-  /* ---------- Losanges d'info : scores des sets + set en cours ---------- */
-  .tabs { display: flex; gap: calc(.8vh * var(--scale)); }
-  .tab {
-    background: var(--white); color: var(--ink);
-    font: 700 var(--tab-size)/1 var(--small);
-    padding: calc(.9vh * var(--scale)) calc(1.5vh * var(--scale));
-    box-shadow: 0 .4vh 1vh rgba(0, 0, 0, .3);
+  /* ---------- Équipes ---------- */
+  .teams { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); align-content: start; }
+  .team {
+    background: var(--surface); border-radius: var(--radius);
+    border-top: 5px solid var(--c);
+    display: flex; flex-direction: column; gap: 10px; padding: 10px;
+  }
+  .tname {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font: 900 30px/1 var(--num); letter-spacing: .04em;
+  }
+  .serve { font-size: 22px; visibility: hidden; }
+  .team.serving .serve { visibility: visible; }
+  .dia { display: flex; justify-content: center; gap: 9px; }
+  .dia i {
+    width: 13px; height: 13px; transform: rotate(45deg);
+    border: 2px solid var(--c); background: transparent;
+  }
+  .dia i.on { background: var(--c); }
+  .tscore {
+    text-align: center; font: 900 var(--score-size)/1 var(--num);
     font-variant-numeric: tabular-nums;
   }
-  .tab .w { color: var(--red); }
-  .tab .l { color: var(--loser); }
-  .tab .dash { color: var(--loser); margin: 0 .25em; }
-  .tab.now  { background: var(--ink); color: var(--white); }
-  .tab.win  { background: var(--red); color: var(--white); }
-  .tab.enter { animation: tabIn .45s cubic-bezier(.2, .9, .3, 1.2); }
-  @keyframes tabIn {
-    from { opacity: 0; transform: skewX(var(--skew)) translateX(3vh); }
-    to   { opacity: 1; transform: skewX(var(--skew)) translateX(0); }
+  .plus {
+    height: var(--plus-h); border-radius: var(--radius);
+    background: var(--c); color: var(--ct);
+    font: 900 60px/1 var(--num);
+    box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .28);
   }
 
-  /* ---------- Écusson du club (pastille blanche, chevauche la plaque) ---------- */
-  .plate { display: flex; align-items: center; }
-  .crest {
-    position: relative; z-index: 2; flex: none;
-    width: var(--crest-size); height: var(--crest-size);
-    margin-right: calc(var(--crest-size) * -.32);
-    border-radius: 50%; background: var(--white);
-    border: calc(.6vh * var(--scale)) solid var(--red);
-    box-shadow: 0 .6vh 1.6vh rgba(0, 0, 0, .35);
-    display: grid; place-items: center; overflow: hidden;
+  /* ---------- Annuler : gros, isolé ---------- */
+  .undo {
+    margin-top: 14px; min-height: 76px; border-radius: var(--radius);
+    background: var(--bg); color: var(--text);
+    border: 3px solid var(--text);
+    font: 900 28px/1 var(--num); letter-spacing: .04em;
   }
-  .crest img { width: 94%; height: 94%; object-fit: contain; }
-  .crest:empty { display: none; }
 
-  /* ---------- Plaque rouge : noms, sets, scores ---------- */
-  .slab {
-    display: flex; align-items: center;
-    background: var(--red);
-    padding: calc(.8vh * var(--scale)) calc(2.6vh * var(--scale)) calc(.8vh * var(--scale)) calc(5.6vh * var(--scale));
-    box-shadow: 0 .6vh 1.6vh rgba(0, 0, 0, .35);
+  /* ---------- Outils ---------- */
+  .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
+  .tool {
+    min-height: 56px; border-radius: 14px;
+    background: var(--surface); border: 2px solid var(--line); font-size: 18px;
   }
-  .slab > .unskew { gap: calc(1.6vh * var(--scale)); }
-
-  .side { display: flex; flex-direction: column; align-items: center; gap: calc(.7vh * var(--scale)); }
-  .tn {
-    display: flex; align-items: center; gap: calc(.6vh * var(--scale));
-    font: 800 var(--name-size)/1 var(--num); color: var(--white);
-    letter-spacing: .04em; white-space: nowrap;
+  .tool.events {
+    grid-column: 1 / -1; min-height: 62px;
+    background: var(--red); border-color: var(--red); color: #fff; font-size: 20px;
   }
-  .tlabel { border-bottom: calc(.4vh * var(--scale)) solid var(--mark, transparent); padding-bottom: .1vh; }
+  .tool.off { border-color: var(--warn); color: var(--warn); }
+  .tool.danger { color: #ff6b73; }
 
-  .ball {
-    font-size: var(--ball-size); line-height: 1;
-    display: inline-block;
-    opacity: 0; transform: scale(.3) rotate(-90deg);
-    transition: opacity var(--anim), transform .35s cubic-bezier(.2, .9, .3, 1.3);
+  /* ---------- Bandeaux ---------- */
+  .banner {
+    display: none; grid-column: 1 / -1;
+    background: var(--surface-2); border-left: 6px solid var(--red);
+    border-radius: 12px; padding: 12px;
+    font-size: 20px; align-items: center; gap: 10px; flex-wrap: wrap;
   }
-  .side.serving .ball { opacity: 1; transform: scale(1) rotate(0); }
+  .banner.show { display: flex; }
+  .banner button { background: var(--red); color: #fff; border-radius: 10px; padding: 10px 14px; }
+  .banner .ghost { background: transparent; color: var(--muted); text-decoration: underline; }
 
-  /* Sets : losanges vides qui se remplissent */
-  .dia { display: flex; gap: calc(.9vh * var(--scale)); }
-  .dia i {
-    width: var(--dia-size); height: var(--dia-size);
-    border: calc(.3vh * var(--scale)) solid var(--white); box-sizing: border-box;
-    transform: rotate(45deg);
-    background: transparent;
-    transition: background .4s ease;
+  /* ---------- Modales ---------- */
+  .modal {
+    position: fixed; inset: 0; z-index: 10;
+    background: rgba(0, 0, 0, .8);
+    display: none; align-items: center; justify-content: center; padding: 16px;
   }
-  .dia i.on { background: var(--white); }
-
-  .n {
-    font: 900 var(--score-size)/1 var(--num); color: var(--white);
-    font-variant-numeric: tabular-nums; width: 1.15em; text-align: center;
+  .modal.show { display: flex; }
+  .card {
+    background: var(--surface); border-radius: 20px; padding: 20px;
+    border-top: 6px solid var(--red);
+    width: 100%; max-width: 460px;
+    display: flex; flex-direction: column; gap: 14px;
   }
-  .n.bump { animation: bump var(--anim) ease-out; }
-  @keyframes bump { 45% { transform: scale(1.18); } }
-
-  .sep { width: calc(.6vh * var(--scale)); height: calc(7vh * var(--scale)); background: var(--white); opacity: .9; }
-
-  .debug {
-    position: fixed; left: 1vh; top: 1vh;
-    font: 600 2vh system-ui, sans-serif; color: #fff;
-    background: rgba(0, 0, 0, .6); padding: .5vh 1vh; border-radius: .6vh;
+  .card h2 { margin: 0; font: 900 30px/1 var(--num); }
+  .card p  { margin: 0; font-size: 22px; font-weight: 700; }
+  .btn-big {
+    min-height: 72px; border-radius: 14px;
+    background: var(--red); color: #fff; font: 900 28px/1 var(--num); letter-spacing: .03em;
   }
+  .btn-sec { min-height: 58px; border-radius: 14px; background: var(--surface-2); font-size: 20px; }
+
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: var(--muted); }
+  input[type=text] {
+    font: inherit; font-size: 22px; color: var(--text);
+    background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 12px;
+  }
+  input[type=text]:focus { border-color: var(--red); outline: none; }
+  input[type=color] { width: 100%; height: 56px; border: 0; border-radius: 12px; background: none; padding: 0; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { min-height: 56px; border-radius: 12px; background: var(--surface-2); font-size: 20px; }
+  .seg button.sel { background: var(--red); color: #fff; }
+
+  /* ---------- Panneau latéral des événements ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 15; background: rgba(0, 0, 0, .6);
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+  .sidebar {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 16;
+    width: min(88vw, 420px);
+    background: var(--surface); border-left: 4px solid var(--red);
+    transform: translateX(105%); transition: transform .25s ease;
+    display: flex; flex-direction: column;
+    padding: calc(env(safe-area-inset-top) + 14px) 14px calc(env(safe-area-inset-bottom) + 14px);
+  }
+  .sidebar.show { transform: translateX(0); }
+  .side-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .side-head h2 { margin: 0; flex: 1; font: 900 28px/1 var(--num); }
+  .close { width: 52px; height: 52px; border-radius: 12px; background: var(--surface-2); font-size: 24px; }
+  .side-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .side-list h3 { margin: 14px 0 4px; font-size: 16px; color: var(--muted); font-weight: 700; }
+  .ev {
+    background: var(--bg); border: 2px solid var(--line); border-radius: 14px;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .ev-name { font: 900 24px/1 var(--num); letter-spacing: .02em; }
+  .ev-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ev-btns.single { grid-template-columns: 1fr; }
+  .ev-btns button { min-height: 52px; border-radius: 10px; font-size: 20px; }
+  .ev-btns .go   { background: var(--red); color: #fff; }
+  .ev-btns .team-btn { background: var(--c); color: var(--ct); }
+  .side-note { color: var(--muted); font-size: 16px; margin: 12px 0 0; }
+
+  .fatal { padding: 24px; font-size: 22px; line-height: 1.4; }
+  .fatal b { color: #ff6b73; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 20px);
+    transform: translateX(-50%) translateY(160%);
+    background: var(--text); color: var(--bg); font-weight: 700; font-size: 20px;
+    padding: 12px 18px; border-radius: 12px; transition: transform .2s; z-index: 30;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
+    *, *::before, *::after { transition: none !important; }
   }
 </style>
 </head>
 <body>
 
-<div class="bug hidden" id="bug">
-  <div class="tabs" id="tabs"></div>
+<div class="app" id="app" hidden>
+  <header class="header">
+    <div class="badge" id="badge"></div>
+    <span class="set-label" id="setLabel">Set 1</span>
+    <span class="dot" id="dot" title="Connexion"></span>
+    <div class="history" id="history"></div>
+    <div class="offline-msg" id="offlineMsg">Hors ligne : les actions partiront dès le retour du réseau.</div>
+  </header>
 
-  <div class="plate">
-  <div class="crest" id="crest"></div>
-  <div class="slab skew">
-    <div class="unskew">
-      <div class="side" data-pos="0">
-        <div class="tn"><span class="ball" aria-hidden="true">🏐</span><span class="tlabel"></span></div>
-        <div class="dia"></div>
-      </div>
-      <span class="n" data-pos="0"></span>
-      <span class="sep"></span>
-      <span class="n" data-pos="1"></span>
-      <div class="side" data-pos="1">
-        <div class="tn"><span class="tlabel"></span><span class="ball" aria-hidden="true">🏐</span></div>
-        <div class="dia"></div>
-      </div>
+  <main class="teams">
+    <div class="banner" id="tbBanner">
+      <span>Tie-break : changement de côté</span>
+      <button id="tbSwitch">Inverser</button>
+      <button class="ghost" id="tbDismiss">Ignorer</button>
     </div>
+    <div class="banner" id="endBanner">
+      <span id="endText"></span>
+      <button id="endNew">Nouveau match</button>
+    </div>
+    <section class="team" data-pos="0">
+      <div class="tname"><span class="serve">🏐</span><span class="tshort"></span></div>
+      <div class="dia"></div>
+      <div class="tscore">0</div>
+      <button class="plus">+1</button>
+    </section>
+    <section class="team" data-pos="1">
+      <div class="tname"><span class="tshort"></span><span class="serve">🏐</span></div>
+      <div class="dia"></div>
+      <div class="tscore">0</div>
+      <button class="plus">+1</button>
+    </section>
+  </main>
+
+  <button class="undo" id="undoBtn">↶ Annuler</button>
+
+  <nav class="tools">
+    <button class="tool events" id="eventsBtn">Événements à l'écran</button>
+    <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
+    <button class="tool" id="serveBtn">🏐 Changer service</button>
+    <button class="tool" id="visBtn">Overlay visible</button>
+    <button class="tool danger" id="newBtn">Nouveau match</button>
+  </nav>
+</div>
+
+<!-- Panneau latéral : événements -->
+<div class="scrim" id="scrim"></div>
+<aside class="sidebar" id="sidebar" aria-label="Événements à l'écran">
+  <div class="side-head">
+    <h2>Événements</h2>
+    <button class="close" id="closeSide" aria-label="Fermer">✕</button>
   </div>
+  <div class="side-list" id="sideList"></div>
+  <p class="side-note">Ces événements sont déjà envoyés à l'overlay. Leur affichage à l'écran arrive à la prochaine étape.</p>
+</aside>
+
+<!-- Fin de set -->
+<div class="modal" id="setModal">
+  <div class="card">
+    <h2 id="setModalTitle">Fin du set</h2>
+    <p id="setModalText"></p>
+    <button class="btn-big" id="confirmSet">Valider le set</button>
+    <button class="btn-sec" id="cancelSet">↶ Annuler le dernier point</button>
   </div>
 </div>
 
-<div class="debug" id="debug" hidden></div>
+<!-- Nouveau match -->
+<div class="modal" id="newModal">
+  <div class="card">
+    <h2>Nouveau match</h2>
+    <label>Adversaire
+      <input type="text" id="awayName" maxlength="24" autocomplete="off">
+    </label>
+    <div class="row">
+      <label>Abréviation
+        <input type="text" id="awayShort" maxlength="4" autocomplete="off" style="text-transform:uppercase">
+      </label>
+      <label>Couleur
+        <input type="color" id="awayColor">
+      </label>
+    </div>
+    <label>Premier service</label>
+    <div class="seg">
+      <button id="fsA">Nous</button>
+      <button id="fsB">Eux</button>
+    </div>
+    <button class="btn-big" id="startMatch">Lancer le match</button>
+    <button class="btn-sec" id="cancelNew">Annuler</button>
+  </div>
+</div>
+
+<div class="fatal" id="fatal" hidden></div>
+<div class="toast" id="toast"></div>
 
 <script src="config.js"></script>
 <script type="module">
-// ===========================================================
-//  Paramètres d'URL
-//    m=volley-silex    identifiant du match (obligatoire hors démo)
-//    pos=br|bl|tr|tl   coin d'ancrage (défaut : br, bas droite)
-//    scale=1.2         taille globale
-//    demo=1            faux match animé, sans Firebase (pour le design)
-//    debug=1           affiche l'état de connexion (pas en live)
-// ===========================================================
-const qs    = new URLSearchParams(location.search);
-const M     = qs.get("m");
-const DEMO  = qs.get("demo") === "1";
-const DEBUG = qs.get("debug") === "1";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, update, push, onValue, runTransaction, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const rootStyle = document.documentElement.style;
-const pos = qs.get("pos") || "br";
-if (pos[0] === "t") {
-  rootStyle.setProperty("--top", "4.5vh"); rootStyle.setProperty("--bottom", "auto");
-  document.getElementById("bug").classList.add("top");
-}
-if (pos[1] === "l") {
-  rootStyle.setProperty("--left", "4vw"); rootStyle.setProperty("--right", "auto");
-  rootStyle.setProperty("--align", "flex-start");
-}
-if (qs.get("scale")) rootStyle.setProperty("--scale", qs.get("scale"));
+// ===========================================================
+//  Paramètres
+// ===========================================================
+const CFG = window.SCORE_CONFIG;
+const qs  = new URLSearchParams(location.search);
+const M   = qs.get("m");
+const K   = qs.get("k");
+const UNDO_DEPTH = CFG?.control?.undoDepth ?? 30;
+const TAP_LOCK_MS = 600;   // anti double-tap sur +1
+
+// Couleur imposée pour notre équipe (thème rouge et noir)
+const HOME_COLOR = getComputedStyle(document.documentElement).getPropertyValue("--red").trim();
+
+// Liste des événements proposés dans le panneau latéral.
+// team: true → on choisit l'équipe concernée.
+const EVENT_LIST = [
+  { group: "Avant le match", items: [
+    { type: "warmup",    label: "Échauffement" },
+    { type: "teamIntro", label: "Présentation des équipes" }
+  ]},
+  { group: "Pendant le jeu", items: [
+    { type: "ace",     label: "Ace",        team: true },
+    { type: "timeout", label: "Temps mort", team: true }
+  ]},
+  { group: "Entre les sets", items: [
+    { type: "interSet", label: "Inter-set" },
+    { type: "setWin",   label: "Victoire du set",   team: true },
+    { type: "matchWin", label: "Victoire du match", team: true }
+  ]}
+];
 
 const $ = (id) => document.getElementById(id);
-const dbg = (msg) => { if (DEBUG) { $("debug").hidden = false; $("debug").textContent = msg; } };
+
+function fatal(html) {
+  $("app").hidden = true;
+  $("fatal").hidden = false;
+  $("fatal").innerHTML = html;
+}
+
+if (!CFG || !CFG.firebase || String(CFG.firebase.apiKey).includes("A_REMPLIR")) {
+  fatal("<b>config.js</b> introuvable ou pas encore rempli.");
+  throw new Error("config");
+}
+if (!M || !K || /[.#$\[\]\/]/.test(M)) {
+  fatal("Lien incomplet.<br>Format attendu :<br><code>control.html?m=ID_MATCH&amp;k=CLE</code>");
+  throw new Error("url");
+}
+
+// Logo du club dans l'en-tête
+if (CFG.home?.logo) {
+  const img = new Image();
+  img.src = CFG.home.logo; img.alt = CFG.home.name || "";
+  $("badge").appendChild(img);
+}
+
+// ===========================================================
+//  Firebase
+// ===========================================================
+const app  = initializeApp(CFG.firebase);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+const matchRef  = ref(db, `matches/${M}`);
+const coreRef   = ref(db, `matches/${M}/core`);
+const eventsRef = ref(db, `matches/${M}/events`);
+
+let state = null;
+let started = false;
+
+onAuthStateChanged(auth, (user) => {
+  if (!user || started) return;
+  started = true;
+  set(ref(db, `controllers/${M}/${user.uid}`), K).catch(() => {
+    fatal("<b>Clé invalide.</b><br>Vérifie le lien de contrôle (paramètre <code>k</code>).");
+  });
+  startListeners();
+});
+signInAnonymously(auth).catch((e) => {
+  fatal(`<b>Connexion impossible</b> (${e.code}).<br>L'authentification anonyme est-elle activée dans Firebase ?`);
+});
+
+function startListeners() {
+  $("app").hidden = false;
+
+  onValue(ref(db, ".info/connected"), (snap) => {
+    const on = snap.val() === true;
+    $("dot").classList.toggle("on", on);
+    $("offlineMsg").classList.toggle("show", !on);
+  });
+
+  // Tout le nœud "core" (état + pile d'annulation) : les transactions
+  // partent ainsi avec les vraies données.
+  onValue(coreRef, (snap) => {
+    const core = snap.val();
+    state = core && core.state ? norm(core.state) : null;
+    render();
+  }, (err) => fatal(`<b>Lecture refusée</b> (${err.code}).<br>Le secret <code>secrets/${M}</code> existe-t-il ?`));
+}
+
+// ===========================================================
+//  Modèle
+// ===========================================================
+const other = (t) => (t === "A" ? "B" : "A");
+const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function norm(s) {
+  s.score = s.score ?? { A: 0, B: 0 };
+  s.sets  = s.sets  ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.history  = toArr(s.history);
+  s.swapped  = !!s.swapped;
+  s.visible  = s.visible !== false;
+  s.tbSwitched = !!s.tbSwitched;
+  s.pendingWinner ??= null;
+  s.winner ??= null;
+  return s;
+}
+
+const isTieBreak = (s) => s.setIndex === 2 * s.meta.rules.setsToWin - 1;
+const setTarget  = (s) => (isTieBreak(s) ? s.meta.rules.pointsTieBreak : s.meta.rules.pointsPerSet);
+
+function newMatchState(away, firstServer) {
+  return {
+    v: 1,
+    meta: {
+      rules: { ...CFG.rules },
+      teams: { A: { ...CFG.home }, B: away },
+      startedAt: Date.now()
+    },
+    phase: "playing",
+    setIndex: 1,
+    score: { A: 0, B: 0 },
+    sets: { A: 0, B: 0 },
+    history: [],
+    serving: firstServer,
+    firstServer,
+    swapped: false,
+    visible: true,
+    tbSwitched: false,
+    pendingWinner: null,
+    winner: null,
+    updatedAt: Date.now()
+  };
+}
+
+const ACTIONS = {
+  point(s, t) {
+    if (s.phase !== "playing") return;
+    s.score[t]++;
+    s.serving = t;
+    const lead = s.score[t] - s.score[other(t)];
+    if (s.score[t] >= setTarget(s) && lead >= s.meta.rules.minLead) {
+      s.phase = "setEnd";
+      s.pendingWinner = t;
+    }
+    return s;
+  },
+  confirmSet(s) {
+    if (s.phase !== "setEnd") return;
+    const w = s.pendingWinner;
+    s.history.push({ A: s.score.A, B: s.score.B, winner: w });
+    s.sets[w]++;
+    s.pendingWinner = null;
+    if (s.sets[w] >= s.meta.rules.setsToWin) {
+      s.phase = "matchEnd";
+      s.winner = w;
+      return s;
+    }
+    s.setIndex++;
+    s.score = { A: 0, B: 0 };
+    s.firstServer = other(s.firstServer);
+    s.serving = s.firstServer;
+    s.tbSwitched = false;
+    s.phase = "playing";
+    return s;
+  },
+  toggleServe(s) {
+    s.serving = other(s.serving);
+    if (s.score.A + s.score.B === 0) s.firstServer = s.serving;
+    return s;
+  },
+  swap(s)          { s.swapped = !s.swapped; return s; },
+  toggleVisible(s) { s.visible = !s.visible; return s; },
+  tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
+  tbDismiss(s)     { s.tbSwitched = true; return s; }
+};
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss"]);
+
+// ===========================================================
+//  Écritures
+// ===========================================================
+async function act(name, arg) {
+  let after = null;
+  try {
+    const res = await runTransaction(coreRef, (cur) => {
+      if (cur === null || !cur.state) return;
+      const before = norm(clone(cur.state));
+      const next = ACTIONS[name](norm(clone(cur.state)), arg);
+      if (!next) return;
+      next.updatedAt = Date.now();
+      const out = { ...cur, state: next };
+      if (!NO_UNDO.has(name)) {
+        const { meta, ...snap } = before;
+        out.undo = [snap, ...toArr(cur.undo)].slice(0, UNDO_DEPTH);
+      }
+      after = next;
+      return out;
+    });
+    if (res.committed && after) emitFor(name, arg, after);
+  } catch (e) {
+    toast("Erreur d'écriture : " + (e.code || e.message));
+  }
+}
+
+async function undo() {
+  let did = false;
+  try {
+    await runTransaction(coreRef, (cur) => {
+      if (cur === null) return;
+      const stack = toArr(cur.undo);
+      if (!cur.state || stack.length === 0) return;
+      const [prev, ...rest] = stack;
+      did = true;
+      return {
+        ...cur,
+        state: {
+          ...prev,
+          meta: cur.state.meta,
+          visible: cur.state.visible,
+          swapped: cur.state.swapped,
+          tbSwitched: cur.state.tbSwitched,
+          updatedAt: Date.now()
+        },
+        undo: rest
+      };
+    });
+    if (did) { emit("undo", null); toast("Annulé"); }
+    else toast("Rien à annuler");
+  } catch (e) {
+    toast("Erreur : " + (e.code || e.message));
+  }
+}
+
+async function startNewMatch(away, firstServer) {
+  const s = newMatchState(away, firstServer);
+  await update(matchRef, { core: { state: s }, events: null });
+  emit("matchStart", null, s);
+}
+
+// ===========================================================
+//  Canal d'événements
+// ===========================================================
+function emit(type, team, s = state, extra = {}) {
+  const ev = { type, ts: serverTimestamp(), ...extra };
+  if (team) ev.team = team;
+  if (s) { ev.set = s.setIndex; ev.score = { A: s.score.A, B: s.score.B }; }
+  return push(eventsRef, ev);
+}
+function emitFor(name, arg, s) {
+  if (name === "point") emit("point", arg, s).catch(() => {});
+  if (name === "confirmSet") {
+    const last = s.history[s.history.length - 1];
+    emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s).catch(() => {});
+  }
+}
 
 // ===========================================================
 //  Rendu
 // ===========================================================
-const other = (t) => (t === "A" ? "B" : "A");
-const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
-
-function norm(s) {
-  s.score    = s.score    ?? { A: 0, B: 0 };
-  s.sets     = s.sets     ?? { A: 0, B: 0 };
-  s.timeouts = s.timeouts ?? { A: 0, B: 0 };
-  for (const k of ["score", "sets", "timeouts"]) { s[k].A ??= 0; s[k].B ??= 0; }
-  s.history = toArr(s.history);
-  s.visible = s.visible !== false;
-  return s;
+function luminanceText(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111111" : "#FFFFFF";
 }
+const teamColor = (t) => (t === "A" ? HOME_COLOR : state.meta.teams.B.color);
+const teamText  = (t) => (t === "A" ? "#FFFFFF" : (state.meta.teams.B.textColor || luminanceText(teamColor(t))));
+const order = () => (state?.swapped ? ["B", "A"] : ["A", "B"]);
 
-function setNum(el, value) {
-  const v = String(value);
-  if (el.textContent === v) return;
-  const first = el.textContent === "";
-  el.textContent = v;
-  if (!first) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
-}
-
-function el(tag, cls, text) {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text != null) e.textContent = text;
-  return e;
-}
-
-let shownSets = -1;   // nombre de sets déjà affichés (pour animer le nouveau)
-
-function render(s) {
-  if (!s || !s.meta) { $("bug").classList.add("hidden"); return; }
-  const teams = s.meta.teams;
+function render() {
+  if (!state) {
+    if (!$("newModal").classList.contains("show")) openNewMatch(false);
+    return;
+  }
+  if (autoOpened) { $("newModal").classList.remove("show"); autoOpened = false; }
+  const s = state;
   const R = s.meta.rules;
-  const order = s.swapped ? ["B", "A"] : ["A", "B"];
+  const teams = s.meta.teams;
 
-  // --- Écusson du club
-  const logo = teams.A.logo || window.SCORE_CONFIG?.home?.logo;
-  const crest = $("crest");
-  if (logo && crest.dataset.src !== logo) {
-    crest.dataset.src = logo;
-    const img = new Image(); img.src = logo; img.alt = "";
-    crest.replaceChildren(img);
-  } else if (!logo && crest.dataset.src) { crest.replaceChildren(); delete crest.dataset.src; }
+  $("setLabel").textContent = s.phase === "matchEnd"
+    ? "Match terminé"
+    : isTieBreak(s) ? "Tie-break" : `Set ${s.setIndex}`;
 
-  // --- Plaque : noms, ballon de service, losanges de sets, scores
-  document.querySelectorAll(".side").forEach((side) => {
-    const t = order[Number(side.dataset.pos)];
-    side.querySelector(".tlabel").textContent = teams[t].short;
-    // Repère de couleur sous le nom de l'adversaire (l'équipe A est déjà en rouge)
-    side.style.setProperty("--mark", t === "B" ? teams.B.color : "transparent");
-    side.classList.toggle("serving", s.phase === "playing" && s.serving === t);
+  $("history").replaceChildren(...s.history.map((h) => {
+    const c = document.createElement("span");
+    c.className = "chip";
+    const inner = document.createElement("span");
+    const [l, r] = order();
+    inner.textContent = `${h[l]}-${h[r]}`;
+    c.appendChild(inner);
+    return c;
+  }));
 
-    const dia = side.querySelector(".dia");
+  document.querySelectorAll(".team").forEach((el) => {
+    const t = order()[Number(el.dataset.pos)];
+    el.dataset.team = t;
+    el.style.setProperty("--c", teamColor(t));
+    el.style.setProperty("--ct", teamText(t));
+    el.classList.toggle("serving", s.serving === t && s.phase === "playing");
+    el.querySelector(".tshort").textContent = teams[t].short;
+    el.querySelector(".tscore").textContent = s.score[t];
+    el.querySelector(".plus").disabled = s.phase !== "playing";
+
+    const dia = el.querySelector(".dia");
     if (dia.children.length !== R.setsToWin) {
-      dia.replaceChildren(...Array.from({ length: R.setsToWin }, () => el("i")));
+      dia.replaceChildren(...Array.from({ length: R.setsToWin }, () => document.createElement("i")));
     }
-    // Losanges remplis depuis le score : côté gauche vers l'extérieur, côté droit aussi
-    const kids = [...dia.children];
-    if (side.dataset.pos === "0") kids.reverse();
-    kids.forEach((d, i) => d.classList.toggle("on", i < s.sets[t]));
+    [...dia.children].forEach((d, i) => d.classList.toggle("on", i < s.sets[t]));
   });
-  document.querySelectorAll(".n").forEach((n) => setNum(n, s.score[order[Number(n.dataset.pos)]]));
 
-  // --- Losanges d'info : score de chaque set terminé + set en cours
-  const tabs = $("tabs");
-  tabs.replaceChildren();
-  s.history.forEach((h, i) => {
-    const tab = el("div", "tab skew");
-    const inner = el("span", "unskew");
-    const [a, b] = order;
-    inner.append(
-      el("span", h.winner === a ? "w" : "l", h[a]),
-      el("span", "dash", "-"),
-      el("span", h.winner === b ? "w" : "l", h[b])
-    );
-    tab.appendChild(inner);
-    if (shownSets >= 0 && i >= shownSets) tab.classList.add("enter");
-    tabs.appendChild(tab);
-  });
-  shownSets = s.history.length;
+  const showTb = isTieBreak(s) && s.phase === "playing" && R.tieBreakSwitchAt > 0
+    && !s.tbSwitched && Math.max(s.score.A, s.score.B) >= R.tieBreakSwitchAt;
+  $("tbBanner").classList.toggle("show", showTb);
 
-  const tieBreak = s.setIndex === 2 * R.setsToWin - 1;
-  let label, cls = "now";
-  if (s.phase === "matchEnd")    { label = `Victoire ${teams[s.winner].short}`; cls = "win"; }
-  else if (s.phase === "setEnd") label = `Fin du set ${s.setIndex}`;
-  else                           label = tieBreak ? "Tie-break" : `Set ${s.setIndex}`;
-  const now = el("div", `tab skew ${cls}`);
-  now.appendChild(el("span", "unskew", label));
-  tabs.appendChild(now);
+  $("endBanner").classList.toggle("show", s.phase === "matchEnd");
+  if (s.phase === "matchEnd") {
+    $("endText").textContent = `${teams[s.winner].short} gagne ${s.sets[s.winner]}-${s.sets[other(s.winner)]}`;
+  }
 
-  $("bug").classList.toggle("hidden", !s.visible);
+  const showSet = s.phase === "setEnd";
+  $("setModal").classList.toggle("show", showSet);
+  if (showSet) {
+    const w = s.pendingWinner;
+    $("setModalTitle").textContent = `Fin du set ${s.setIndex}`;
+    $("setModalText").textContent = `${teams[w].short} remporte le set ${s.score[w]}-${s.score[other(w)]}`;
+  }
+
+  const vis = $("visBtn");
+  vis.textContent = s.visible ? "Overlay visible" : "Overlay masqué";
+  vis.classList.toggle("off", !s.visible);
+
+  if ($("sidebar").classList.contains("show")) renderEvents();
 }
 
 // ===========================================================
-//  Canal d'événements — branché, pas encore exploité.
-//    window.addEventListener("volley:event", (e) => console.log(e.detail))
+//  Panneau des événements
 // ===========================================================
-function onVolleyEvent(ev) {
-  window.dispatchEvent(new CustomEvent("volley:event", { detail: ev }));
-  if (DEBUG) console.log("[event]", ev);
-}
+function renderEvents() {
+  const list = $("sideList");
+  list.replaceChildren();
+  EVENT_LIST.forEach((group) => {
+    const h = document.createElement("h3");
+    h.textContent = group.group;
+    list.appendChild(h);
 
-// ===========================================================
-//  Cache local : réaffiche le dernier état connu au rechargement
-// ===========================================================
-const CACHE_KEY = `volley-display-${M || "demo"}`;
-function saveCache(s) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(s)); } catch {} }
-function loadCache()  { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch { return null; } }
+    group.items.forEach((item) => {
+      const box = document.createElement("div");
+      box.className = "ev";
+      const name = document.createElement("div");
+      name.className = "ev-name";
+      name.textContent = item.label;
+      const btns = document.createElement("div");
+      btns.className = "ev-btns";
 
-// ===========================================================
-//  Mode démo : un match complet en accéléré (sans Firebase)
-// ===========================================================
-if (DEMO) {
-  const CFG = window.SCORE_CONFIG || {};
-  const rules = CFG.rules || { setsToWin: 3, pointsPerSet: 25, pointsTieBreak: 15, minLead: 2, timeoutsPerSet: 2 };
-  const s = norm({
-    meta: {
-      rules,
-      teams: {
-        A: CFG.home || { name: "Ramonville", short: "RMV", color: "#D3121F" },
-        B: CFG.awayDefault || { short: "ADV", color: "#1E5AA8" }
+      if (item.team && state) {
+        order().forEach((t) => {
+          const b = document.createElement("button");
+          b.className = "team-btn";
+          b.style.setProperty("--c", teamColor(t));
+          b.style.setProperty("--ct", teamText(t));
+          b.textContent = state.meta.teams[t].short;
+          b.onclick = () => sendEvent(item, t);
+          btns.appendChild(b);
+        });
+      } else {
+        btns.classList.add("single");
+        const b = document.createElement("button");
+        b.className = "go";
+        b.textContent = "Afficher";
+        b.onclick = () => sendEvent(item, null);
+        btns.appendChild(b);
       }
-    },
-    phase: "playing", setIndex: 3, serving: "A",
-    score: { A: 18, B: 16 }, sets: { A: 1, B: 1 },
-    history: [{ A: 25, B: 21, winner: "A" }, { A: 23, B: 25, winner: "B" }],
-    visible: true, swapped: false
+      box.append(name, btns);
+      list.appendChild(box);
+    });
   });
-  render(s);
-  setInterval(() => {
-    if (s.phase === "matchEnd") return;
-    const t = Math.random() < .55 ? "A" : "B";
-    s.score[t]++; s.serving = t;
-    const target = s.setIndex === 2 * rules.setsToWin - 1 ? rules.pointsTieBreak : rules.pointsPerSet;
-    if (s.score[t] >= target && s.score[t] - s.score[other(t)] >= rules.minLead) {
-      s.history.push({ A: s.score.A, B: s.score.B, winner: t });
-      s.sets[t]++;
-      if (s.sets[t] >= rules.setsToWin) { s.phase = "matchEnd"; s.winner = t; }
-      else { s.setIndex++; s.score = { A: 0, B: 0 }; }
-    }
-    render(s);
-  }, 1200);
-} else {
-  startLive();
 }
 
+function sendEvent(item, team) {
+  guarded("ev" + item.type, async () => {
+    try {
+      await emit(item.type, team, state, { manual: true });
+      const who = team ? ` ${state.meta.teams[team].short}` : "";
+      toast(`Envoyé : ${item.label}${who}`);
+    } catch (e) {
+      toast("Erreur : " + (e.code || e.message));
+    }
+  });
+}
+
+function openSide()  { renderEvents(); $("sidebar").classList.add("show"); $("scrim").classList.add("show"); }
+function closeSide() { $("sidebar").classList.remove("show"); $("scrim").classList.remove("show"); }
+$("eventsBtn").onclick = openSide;
+$("closeSide").onclick = closeSide;
+$("scrim").onclick = closeSide;
+
 // ===========================================================
-//  Mode live (Firebase, lecture seule, sans compte)
+//  Nouveau match
 // ===========================================================
-async function startLive() {
-  const CFG = window.SCORE_CONFIG;
-  if (!M || !CFG?.firebase) { dbg("Paramètre m ou config.js manquant"); return; }
+let firstServe = "A";
+let autoOpened = false;
+function selectFirstServe(t) {
+  firstServe = t;
+  $("fsA").classList.toggle("sel", t === "A");
+  $("fsB").classList.toggle("sel", t === "B");
+}
+function openNewMatch(cancellable) {
+  const prev = state?.meta?.teams?.B ?? CFG.awayDefault;
+  $("awayName").value  = prev.name;
+  $("awayShort").value = prev.short;
+  $("awayColor").value = prev.color;
+  selectFirstServe("A");
+  $("cancelNew").hidden = !cancellable;
+  autoOpened = !cancellable;
+  $("newModal").classList.add("show");
+}
+$("fsA").onclick = () => selectFirstServe("A");
+$("fsB").onclick = () => selectFirstServe("B");
+$("cancelNew").onclick = () => $("newModal").classList.remove("show");
+$("startMatch").onclick = async () => {
+  const name  = $("awayName").value.trim() || CFG.awayDefault.name;
+  const short = ($("awayShort").value.trim() || name.slice(0, 3)).toUpperCase();
+  const color = $("awayColor").value;
+  const away  = { name, short, color, textColor: luminanceText(color) };
+  if (CFG.awayDefault.logo) away.logo = CFG.awayDefault.logo;
+  $("newModal").classList.remove("show");
+  await startNewMatch(away, firstServe);
+  toast("Match lancé");
+};
+$("newBtn").onclick = () => {
+  if (state && state.phase !== "matchEnd" &&
+      !confirm("Un match est en cours. Tout remettre à zéro ?")) return;
+  openNewMatch(!!state);
+};
+$("endNew").onclick = () => openNewMatch(true);
 
-  const cached = loadCache();
-  if (cached) render(norm(cached));
+// ===========================================================
+//  Boutons
+// ===========================================================
+const lastTap = {};
+function guarded(key, fn) {
+  const now = Date.now();
+  if (now - (lastTap[key] || 0) < TAP_LOCK_MS) return;
+  lastTap[key] = now;
+  navigator.vibrate?.(25);
+  fn();
+}
 
-  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-  const { getDatabase, ref, onValue, onChildAdded, query, limitToLast } =
-    await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+document.querySelectorAll(".team").forEach((el) => {
+  el.querySelector(".plus").onclick = () => guarded("p" + el.dataset.team, () => act("point", el.dataset.team));
+});
 
-  const app = initializeApp(CFG.firebase);
-  const db  = getDatabase(app);
+$("undoBtn").onclick    = () => guarded("undo", undo);
+$("confirmSet").onclick = () => guarded("set", () => act("confirmSet"));
+$("cancelSet").onclick  = () => guarded("undo", undo);
+$("swapBtn").onclick    = () => act("swap");
+$("serveBtn").onclick   = () => act("toggleServe");
+$("visBtn").onclick     = () => act("toggleVisible");
+$("tbSwitch").onclick   = () => act("tbSwitch");
+$("tbDismiss").onclick  = () => act("tbDismiss");
 
-  onValue(ref(db, ".info/connected"), (snap) => dbg(snap.val() ? "connecté" : "hors ligne"));
+// ===========================================================
+//  Divers
+// ===========================================================
+async function keepAwake() {
+  try { await navigator.wakeLock?.request("screen"); } catch {}
+}
+keepAwake();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") keepAwake();
+});
+document.addEventListener("click", keepAwake, { once: true });
 
-  onValue(ref(db, `matches/${M}/core/state`), (snap) => {
-    if (!snap.exists()) { render(null); return; }
-    const s = norm(snap.val());
-    saveCache(s);
-    render(s);
-  }, (err) => dbg("Lecture refusée : " + err.code));
-
-  const evQuery = query(ref(db, `matches/${M}/events`), limitToLast(1));
-  let ready = false;
-  onChildAdded(evQuery, (snap) => { if (ready) onVolleyEvent(snap.val()); });
-  onValue(evQuery, () => { ready = true; }, { onlyOnce: true });
+let toastTimer;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
 }
 </script>
 </body>
