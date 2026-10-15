@@ -34,7 +34,7 @@ window.SCORE_CONFIG = {
     short:     "RMV",
     color:     "#D3121F",
     textColor: "#FFFFFF",
-    logo:      null
+    logo: "assets/logo-ramonville.png"
   },
   
   // --- Adversaire par défaut (modifiable avant chaque match depuis control.html)
