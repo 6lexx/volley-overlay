@@ -6,49 +6,47 @@
 <title>Overlay score</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
   /* =========================================================
-     THÈME — tout le visuel se règle ici
-     Les tailles sont en vh : elles suivent la hauteur de l'image
-     (lisible en 720p comme en 1080p).
+     THÈME — tout le visuel se règle ici.
+     Tailles en vh : elles suivent la hauteur de l'image.
      ========================================================= */
   :root {
+    /* Couleurs du club */
+    --red:       #D3121F;   /* plaque principale */
+    --red-deep:  #8E0A13;
+    --white:     #FFFFFF;
+    --ink:       #1A1416;   /* texte sombre, losange "set en cours" */
+    --loser:     #8A8085;   /* score perdant dans l'historique */
+
     /* Typo */
-    --font:        "Barlow Condensed", system-ui, sans-serif;
+    --num:   "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --small: "Barlow Condensed", "Arial Narrow", sans-serif;
 
-    /* Couleurs générales */
-    --panel:       rgba(12, 13, 18, .90);
-    --panel-foot:  rgba(12, 13, 18, .78);
-    --divider:     rgba(255, 255, 255, .10);
-    --text:        #ffffff;
-    --muted:       rgba(255, 255, 255, .72);
-    --points-bg:   #ffffff;
-    --points-text: #0c0d12;
-    --serve:       #ffd400;
-    --pip-on:      #ffffff;
-    --pip-off:     rgba(255, 255, 255, .22);
+    /* Placement (aussi via ?pos=br|bl|tr|tl) — défaut : bas droite */
+    --top:    auto;
+    --bottom: 6vh;
+    --left:   auto;
+    --right:  4vw;
+    --align:  flex-end;
 
-    /* Placement (modifiable aussi via ?pos=tl|tr|bl|br) */
-    --top:    4.5vh;
-    --left:   3.5vw;
-    --right:  auto;
-    --bottom: auto;
+    /* Taille globale (aussi via ?scale=1.2) */
+    --scale: 1;
 
-    /* Taille globale (modifiable aussi via ?scale=1.2) */
-    --scale:  1;
+    /* Inclinaison des losanges */
+    --skew: -12deg;
 
     /* Dimensions dérivées */
-    --row-h:      calc(6.6vh * var(--scale));
-    --name-size:  calc(4.1vh * var(--scale));
-    --num-size:   calc(4.9vh * var(--scale));
-    --small-size: calc(2.6vh * var(--scale));
-    --radius:     calc(1vh * var(--scale));
-    --stripe-w:   calc(.9vh * var(--scale));
+    --score-size: calc(10vh  * var(--scale));
+    --name-size:  calc(3.8vh * var(--scale));
+    --tab-size:   calc(2.8vh * var(--scale));
+    --dia-size:   calc(1.9vh * var(--scale));
+    --ball-size:  calc(3.3vh * var(--scale));
 
     /* Animations */
-    --anim:  .22s;
-    --fade:  .35s;
+    --anim: .22s;
+    --fade: .35s;
   }
 
   html, body {
@@ -57,113 +55,123 @@
     overflow: hidden;
   }
 
-  /* ---------- Bloc score ---------- */
   .bug {
     position: fixed;
-    top: var(--top); left: var(--left); right: var(--right); bottom: var(--bottom);
-    font-family: var(--font); color: var(--text);
-    border-radius: var(--radius); overflow: hidden;
-    box-shadow: 0 .6vh 2vh rgba(0, 0, 0, .35);
+    top: var(--top); bottom: var(--bottom); left: var(--left); right: var(--right);
+    display: flex; flex-direction: column; align-items: var(--align);
+    gap: calc(.9vh * var(--scale));
     transition: opacity var(--fade) ease, transform var(--fade) ease;
   }
-  .bug.hidden { opacity: 0; transform: translateY(-1.5vh); }
+  .bug.hidden { opacity: 0; transform: translateY(2vh); }
+  .bug.top { flex-direction: column-reverse; }   /* en haut : losanges sous la plaque */
 
-  .row {
-    display: grid;
-    grid-template-columns: var(--stripe-w) auto calc(var(--row-h) * .95) calc(var(--row-h) * 1.3);
-    height: var(--row-h);
-    background: var(--panel);
+  /* Tout ce qui est incliné : le parent penche, le contenu se redresse */
+  .skew   { transform: skewX(var(--skew)); }
+  .unskew { transform: skewX(calc(var(--skew) * -1)); display: inline-flex; align-items: center; }
+
+  /* ---------- Losanges d'info : scores des sets + set en cours ---------- */
+  .tabs { display: flex; gap: calc(.8vh * var(--scale)); }
+  .tab {
+    background: var(--white); color: var(--ink);
+    font: 700 var(--tab-size)/1 var(--small);
+    padding: calc(.9vh * var(--scale)) calc(1.5vh * var(--scale));
+    box-shadow: 0 .4vh 1vh rgba(0, 0, 0, .3);
+    font-variant-numeric: tabular-nums;
   }
-  .row + .row { border-top: 1px solid var(--divider); }
-
-  .stripe { background: var(--c); }
-
-  .name {
-    display: flex; align-items: center; gap: calc(1vh * var(--scale));
-    padding: 0 calc(1.4vh * var(--scale)) 0 calc(1.2vh * var(--scale));
-    min-width: calc(11vh * var(--scale));
-    font-size: var(--name-size); font-weight: 700; letter-spacing: .03em;
-    text-transform: uppercase; white-space: nowrap;
-  }
-  .name img { height: calc(var(--row-h) * .62); width: auto; }
-  .tlabel { flex: 1; }
-
-  /* Indicateur de service */
-  .serve {
-    width: calc(1.4vh * var(--scale)); height: calc(1.4vh * var(--scale));
-    border-radius: 50%; background: var(--serve);
-    opacity: 0; transform: scale(.4);
-    transition: opacity var(--anim), transform var(--anim);
-  }
-  .row.serving .serve { opacity: 1; transform: scale(1); }
-
-  /* Temps morts restants (barres) */
-  .pips {
-    display: flex; flex-direction: column; gap: calc(.6vh * var(--scale));
-    margin-left: calc(.6vh * var(--scale));
-  }
-  .pip  {
-    width: calc(1.8vh * var(--scale)); height: calc(.5vh * var(--scale));
-    border-radius: 1vh; background: var(--pip-on);
-    transition: background var(--anim);
-  }
-  .pip.used { background: var(--pip-off); }
-
-  .sets, .pts {
-    display: flex; align-items: center; justify-content: center;
-    font-size: var(--num-size); font-weight: 800;
-    font-variant-numeric: tabular-nums; line-height: 1;
-  }
-  .sets { background: var(--c); color: var(--ct); }
-  .pts  { background: var(--points-bg); color: var(--points-text); }
-
-  .num { display: inline-block; }
-  .num.bump { animation: bump var(--anim) ease-out; }
-  @keyframes bump {
-    0%   { transform: scale(1); }
-    45%  { transform: scale(1.22); }
-    100% { transform: scale(1); }
+  .tab .w { color: var(--red); }
+  .tab .l { color: var(--loser); }
+  .tab .dash { color: var(--loser); margin: 0 .25em; }
+  .tab.now  { background: var(--ink); color: var(--white); }
+  .tab.win  { background: var(--red); color: var(--white); }
+  .tab.enter { animation: tabIn .45s cubic-bezier(.2, .9, .3, 1.2); }
+  @keyframes tabIn {
+    from { opacity: 0; transform: skewX(var(--skew)) translateX(3vh); }
+    to   { opacity: 1; transform: skewX(var(--skew)) translateX(0); }
   }
 
-  .row.winner .tlabel { color: var(--serve); }
-
-  /* ---------- Pied : set en cours + historique ---------- */
-  .foot {
-    display: flex; align-items: center; gap: calc(1.2vh * var(--scale));
-    padding: calc(.6vh * var(--scale)) calc(1.2vh * var(--scale));
-    background: var(--panel-foot);
-    font-size: var(--small-size); font-weight: 700; letter-spacing: .06em;
-    text-transform: uppercase; color: var(--muted);
+  /* ---------- Plaque rouge : noms, sets, scores ---------- */
+  .slab {
+    display: flex; align-items: center;
+    background: var(--red);
+    padding: calc(.8vh * var(--scale)) calc(2.6vh * var(--scale));
+    box-shadow: 0 .6vh 1.6vh rgba(0, 0, 0, .35);
   }
-  .foot .setlabel { color: var(--text); }
-  .foot .hist { display: flex; gap: calc(.9vh * var(--scale)); font-variant-numeric: tabular-nums; }
-  .foot .hist span.won-top { color: var(--text); }
-  .foot:empty { display: none; }
+  .slab > .unskew { gap: calc(1.6vh * var(--scale)); }
 
-  /* Debug (?debug=1) */
+  .side { display: flex; flex-direction: column; align-items: center; gap: calc(.7vh * var(--scale)); }
+  .tn {
+    display: flex; align-items: center; gap: calc(.6vh * var(--scale));
+    font: 800 var(--name-size)/1 var(--num); color: var(--white);
+    letter-spacing: .04em; white-space: nowrap;
+  }
+  .tlabel { border-bottom: calc(.4vh * var(--scale)) solid var(--mark, transparent); padding-bottom: .1vh; }
+
+  .ball {
+    width: var(--ball-size); height: var(--ball-size);
+    opacity: 0; transform: scale(.3) rotate(-90deg);
+    transition: opacity var(--anim), transform .35s cubic-bezier(.2, .9, .3, 1.3);
+  }
+  .side.serving .ball { opacity: 1; transform: scale(1) rotate(0); }
+
+  /* Sets : losanges vides qui se remplissent */
+  .dia { display: flex; gap: calc(.9vh * var(--scale)); }
+  .dia i {
+    width: var(--dia-size); height: var(--dia-size);
+    border: calc(.3vh * var(--scale)) solid var(--white); box-sizing: border-box;
+    transform: rotate(45deg);
+    background: transparent;
+    transition: background .4s ease;
+  }
+  .dia i.on { background: var(--white); }
+
+  .n {
+    font: 900 var(--score-size)/1 var(--num); color: var(--white);
+    font-variant-numeric: tabular-nums; width: 1.15em; text-align: center;
+  }
+  .n.bump { animation: bump var(--anim) ease-out; }
+  @keyframes bump { 45% { transform: scale(1.18); } }
+
+  .sep { width: calc(.6vh * var(--scale)); height: calc(7vh * var(--scale)); background: var(--white); opacity: .9; }
+
   .debug {
-    position: fixed; right: 1vh; bottom: 1vh;
+    position: fixed; left: 1vh; top: 1vh;
     font: 600 2vh system-ui, sans-serif; color: #fff;
     background: rgba(0, 0, 0, .6); padding: .5vh 1vh; border-radius: .6vh;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
   }
 </style>
 </head>
 <body>
 
+<!-- Ballon (indicateur de service) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ball" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10.5" fill="#fff" stroke="#8E0A13" stroke-width="1.6"/>
+    <path d="M12 1.5c-2 4-2 9 1 13M3 8c4 0 9 1 12 5M5 19c3-3 8-5 13-4" fill="none" stroke="#D3121F" stroke-width="1.8" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
 <div class="bug hidden" id="bug">
-  <div class="row" data-pos="0">
-    <div class="stripe"></div>
-    <div class="name"><span class="logo"></span><span class="tlabel"></span><span class="serve"></span><span class="pips"></span></div>
-    <div class="sets"><span class="num"></span></div>
-    <div class="pts"><span class="num"></span></div>
+  <div class="tabs" id="tabs"></div>
+
+  <div class="slab skew">
+    <div class="unskew">
+      <div class="side" data-pos="0">
+        <div class="tn"><svg class="ball"><use href="#ball"/></svg><span class="tlabel"></span></div>
+        <div class="dia"></div>
+      </div>
+      <span class="n" data-pos="0"></span>
+      <span class="sep"></span>
+      <span class="n" data-pos="1"></span>
+      <div class="side" data-pos="1">
+        <div class="tn"><span class="tlabel"></span><svg class="ball"><use href="#ball"/></svg></div>
+        <div class="dia"></div>
+      </div>
+    </div>
   </div>
-  <div class="row" data-pos="1">
-    <div class="stripe"></div>
-    <div class="name"><span class="logo"></span><span class="tlabel"></span><span class="serve"></span><span class="pips"></span></div>
-    <div class="sets"><span class="num"></span></div>
-    <div class="pts"><span class="num"></span></div>
-  </div>
-  <div class="foot" id="foot"></div>
 </div>
 
 <div class="debug" id="debug" hidden></div>
@@ -173,21 +181,27 @@
 // ===========================================================
 //  Paramètres d'URL
 //    m=volley-silex    identifiant du match (obligatoire hors démo)
-//    pos=tl|tr|bl|br   coin d'ancrage (défaut : tl, haut gauche)
+//    pos=br|bl|tr|tl   coin d'ancrage (défaut : br, bas droite)
 //    scale=1.2         taille globale
 //    demo=1            faux match animé, sans Firebase (pour le design)
-//    debug=1           affiche l'état de connexion (ne pas utiliser en live)
+//    debug=1           affiche l'état de connexion (pas en live)
 // ===========================================================
 const qs    = new URLSearchParams(location.search);
 const M     = qs.get("m");
 const DEMO  = qs.get("demo") === "1";
 const DEBUG = qs.get("debug") === "1";
 
-const root = document.documentElement.style;
-const pos = qs.get("pos");
-if (pos === "tr" || pos === "br") { root.setProperty("--left", "auto"); root.setProperty("--right", "3.5vw"); }
-if (pos === "bl" || pos === "br") { root.setProperty("--top", "auto");  root.setProperty("--bottom", "6vh"); }
-if (qs.get("scale")) root.setProperty("--scale", qs.get("scale"));
+const rootStyle = document.documentElement.style;
+const pos = qs.get("pos") || "br";
+if (pos[0] === "t") {
+  rootStyle.setProperty("--top", "4.5vh"); rootStyle.setProperty("--bottom", "auto");
+  document.getElementById("bug").classList.add("top");
+}
+if (pos[1] === "l") {
+  rootStyle.setProperty("--left", "4vw"); rootStyle.setProperty("--right", "auto");
+  rootStyle.setProperty("--align", "flex-start");
+}
+if (qs.get("scale")) rootStyle.setProperty("--scale", qs.get("scale"));
 
 const $ = (id) => document.getElementById(id);
 const dbg = (msg) => { if (DEBUG) { $("debug").hidden = false; $("debug").textContent = msg; } };
@@ -208,98 +222,80 @@ function norm(s) {
   return s;
 }
 
-function textOn(hex) {
-  const n = parseInt(String(hex).replace("#", ""), 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#111111" : "#FFFFFF";
-}
-
-// Met à jour un nombre et déclenche l'animation seulement s'il change
 function setNum(el, value) {
   const v = String(value);
   if (el.textContent === v) return;
   const first = el.textContent === "";
   el.textContent = v;
-  if (!first) {
-    el.classList.remove("bump");
-    void el.offsetWidth;            // relance l'animation
-    el.classList.add("bump");
-  }
+  if (!first) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
 }
 
-let last = null;
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+let shownSets = -1;   // nombre de sets déjà affichés (pour animer le nouveau)
 
 function render(s) {
   if (!s || !s.meta) { $("bug").classList.add("hidden"); return; }
-  last = s;
   const teams = s.meta.teams;
   const R = s.meta.rules;
   const order = s.swapped ? ["B", "A"] : ["A", "B"];
 
-  document.querySelectorAll(".row").forEach((row) => {
-    const t = order[Number(row.dataset.pos)];
-    const team = teams[t];
-    row.style.setProperty("--c", team.color);
-    row.style.setProperty("--ct", team.textColor || textOn(team.color));
-    row.classList.toggle("serving", s.phase === "playing" && s.serving === t);
-    row.classList.toggle("winner", s.phase === "matchEnd" && s.winner === t);
+  // --- Plaque : noms, ballon de service, losanges de sets, scores
+  document.querySelectorAll(".side").forEach((side) => {
+    const t = order[Number(side.dataset.pos)];
+    side.querySelector(".tlabel").textContent = teams[t].short;
+    // Repère de couleur sous le nom de l'adversaire (l'équipe A est déjà en rouge)
+    side.style.setProperty("--mark", t === "B" ? teams.B.color : "transparent");
+    side.classList.toggle("serving", s.phase === "playing" && s.serving === t);
 
-    row.querySelector(".tlabel").textContent = team.short;
-
-    const logo = row.querySelector(".logo");
-    if (team.logo) {
-      if (logo.dataset.src !== team.logo) {
-        logo.dataset.src = team.logo;
-        logo.innerHTML = "";
-        const img = new Image();
-        img.src = team.logo; img.alt = "";
-        logo.appendChild(img);
-      }
-    } else if (logo.dataset.src) { logo.innerHTML = ""; delete logo.dataset.src; }
-
-    // Barres de temps morts : pleines = restants
-    const pips = row.querySelector(".pips");
-    const total = R.timeoutsPerSet || 0;
-    if (pips.children.length !== total) {
-      pips.replaceChildren(...Array.from({ length: total }, () => {
-        const p = document.createElement("span"); p.className = "pip"; return p;
-      }));
+    const dia = side.querySelector(".dia");
+    if (dia.children.length !== R.setsToWin) {
+      dia.replaceChildren(...Array.from({ length: R.setsToWin }, () => el("i")));
     }
-    [...pips.children].forEach((p, i) => p.classList.toggle("used", i >= total - s.timeouts[t]));
-
-    setNum(row.querySelector(".sets .num"), s.sets[t]);
-    setNum(row.querySelector(".pts .num"),  s.score[t]);
+    // Losanges remplis depuis le score : côté gauche vers l'extérieur, côté droit aussi
+    const kids = [...dia.children];
+    if (side.dataset.pos === "0") kids.reverse();
+    kids.forEach((d, i) => d.classList.toggle("on", i < s.sets[t]));
   });
+  document.querySelectorAll(".n").forEach((n) => setNum(n, s.score[order[Number(n.dataset.pos)]]));
 
-  // Pied : libellé + historique des sets (dans l'ordre d'affichage)
+  // --- Losanges d'info : score de chaque set terminé + set en cours
+  const tabs = $("tabs");
+  tabs.replaceChildren();
+  s.history.forEach((h, i) => {
+    const tab = el("div", "tab skew");
+    const inner = el("span", "unskew");
+    const [a, b] = order;
+    inner.append(
+      el("span", h.winner === a ? "w" : "l", h[a]),
+      el("span", "dash", "-"),
+      el("span", h.winner === b ? "w" : "l", h[b])
+    );
+    tab.appendChild(inner);
+    if (shownSets >= 0 && i >= shownSets) tab.classList.add("enter");
+    tabs.appendChild(tab);
+  });
+  shownSets = s.history.length;
+
   const tieBreak = s.setIndex === 2 * R.setsToWin - 1;
-  let label;
-  if (s.phase === "matchEnd")    label = `Victoire ${teams[s.winner].short}`;
+  let label, cls = "now";
+  if (s.phase === "matchEnd")    { label = `Victoire ${teams[s.winner].short}`; cls = "win"; }
   else if (s.phase === "setEnd") label = `Fin du set ${s.setIndex}`;
   else                           label = tieBreak ? "Tie-break" : `Set ${s.setIndex}`;
-
-  const foot = $("foot");
-  foot.replaceChildren();
-  const lab = document.createElement("span");
-  lab.className = "setlabel"; lab.textContent = label;
-  foot.appendChild(lab);
-  if (s.history.length) {
-    const hist = document.createElement("span");
-    hist.className = "hist";
-    s.history.forEach((h) => {
-      const sp = document.createElement("span");
-      sp.textContent = `${h[order[0]]}-${h[order[1]]}`;
-      hist.appendChild(sp);
-    });
-    foot.appendChild(hist);
-  }
+  const now = el("div", `tab skew ${cls}`);
+  now.appendChild(el("span", "unskew", label));
+  tabs.appendChild(now);
 
   $("bug").classList.toggle("hidden", !s.visible);
 }
 
 // ===========================================================
 //  Canal d'événements — branché, pas encore exploité.
-//  Écoute dans une autre page/script :
 //    window.addEventListener("volley:event", (e) => console.log(e.detail))
 // ===========================================================
 function onVolleyEvent(ev) {
@@ -315,30 +311,38 @@ function saveCache(s) { try { localStorage.setItem(CACHE_KEY, JSON.stringify(s))
 function loadCache()  { try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch { return null; } }
 
 // ===========================================================
-//  Mode démo (aucune connexion Firebase)
+//  Mode démo : un match complet en accéléré (sans Firebase)
 // ===========================================================
 if (DEMO) {
   const CFG = window.SCORE_CONFIG || {};
+  const rules = CFG.rules || { setsToWin: 3, pointsPerSet: 25, pointsTieBreak: 15, minLead: 2, timeoutsPerSet: 2 };
   const s = norm({
     meta: {
-      rules: CFG.rules || { setsToWin: 3, pointsPerSet: 25, pointsTieBreak: 15, minLead: 2, timeoutsPerSet: 2 },
+      rules,
       teams: {
-        A: CFG.home || { short: "MCL", color: "#E8A33D" },
-        B: CFG.awayDefault || { short: "ADV", color: "#3D7BE8" }
+        A: CFG.home || { short: "RAM", color: "#D3121F" },
+        B: CFG.awayDefault || { short: "ADV", color: "#1E5AA8" }
       }
     },
     phase: "playing", setIndex: 3, serving: "A",
     score: { A: 18, B: 16 }, sets: { A: 1, B: 1 },
     history: [{ A: 25, B: 21, winner: "A" }, { A: 23, B: 25, winner: "B" }],
-    timeouts: { A: 1, B: 0 }, visible: true, swapped: false
+    visible: true, swapped: false
   });
   render(s);
   setInterval(() => {
-    const t = Math.random() < .5 ? "A" : "B";
+    if (s.phase === "matchEnd") return;
+    const t = Math.random() < .55 ? "A" : "B";
     s.score[t]++; s.serving = t;
-    if (s.score[t] >= 25 && s.score[t] - s.score[other(t)] >= 2) s.score = { A: 0, B: 0 };
+    const target = s.setIndex === 2 * rules.setsToWin - 1 ? rules.pointsTieBreak : rules.pointsPerSet;
+    if (s.score[t] >= target && s.score[t] - s.score[other(t)] >= rules.minLead) {
+      s.history.push({ A: s.score.A, B: s.score.B, winner: t });
+      s.sets[t]++;
+      if (s.sets[t] >= rules.setsToWin) { s.phase = "matchEnd"; s.winner = t; }
+      else { s.setIndex++; s.score = { A: 0, B: 0 }; }
+    }
     render(s);
-  }, 2500);
+  }, 1200);
 } else {
   startLive();
 }
@@ -350,11 +354,9 @@ async function startLive() {
   const CFG = window.SCORE_CONFIG;
   if (!M || !CFG?.firebase) { dbg("Paramètre m ou config.js manquant"); return; }
 
-  // 1. Affichage immédiat du dernier état connu
   const cached = loadCache();
   if (cached) render(norm(cached));
 
-  // 2. Connexion temps réel (pas de polling : Firebase pousse les changements)
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const { getDatabase, ref, onValue, onChildAdded, query, limitToLast } =
     await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
@@ -371,7 +373,6 @@ async function startLive() {
     render(s);
   }, (err) => dbg("Lecture refusée : " + err.code));
 
-  // Événements : on ignore ceux déjà présents au chargement
   const evQuery = query(ref(db, `matches/${M}/events`), limitToLast(1));
   let ready = false;
   onChildAdded(evQuery, (snap) => { if (ready) onVolleyEvent(snap.val()); });
