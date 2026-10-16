@@ -71,6 +71,7 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 2. Mets la vidéo du match sur YouTube (« non répertoriée » si tu veux qu'elle reste discrète).
 3. Dans l'appli, ouvre **Résultats & replays**, colle le lien YouTube sous le match, puis **OK**. Le replay apparaît tout de suite sur la page des résultats.
 - **+ Ajouter un match passé** : pour les matchs joués avant l'appli. Les scores des sets s'écrivent RMV en premier, par exemple `25-20 22-25 25-18 25-21`.
+- **Joueurs présents** : les joueurs cochés dans « Joueurs présents » sont enregistrés avec le résultat et affichés dans la fiche du match. Le bouton **Joueurs · N** de chaque match permet de corriger la liste. Pour un match passé, coche-les dans le formulaire.
 - Chaque match peut changer de type ou être supprimé (deux appuis pour confirmer).
 
 La page des résultats est publique mais **n'est pas référencée par Google** : seuls ceux qui ont le lien la trouvent. Elle affiche le bilan de la saison (victoires, défaites, sets, aces, forme sur les 5 derniers matchs), les matchs par mois et le replay de chacun.
