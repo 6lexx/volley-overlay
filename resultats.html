@@ -108,6 +108,15 @@
   .no-video { margin: 0; color: var(--muted); font-size: 15px; }
   .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 700 15px/1.2 var(--cond); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
   .facts b { color: var(--text); font-weight: 700; }
+  .players { display: flex; flex-direction: column; gap: 8px; }
+  .players h3 { margin: 0; font: 700 13px/1 var(--cond); letter-spacing: .2em; color: var(--muted); text-transform: uppercase; }
+  .pp-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pp { background: var(--raise); padding: 6px 12px 5px; transform: skewX(var(--skew)); }
+  .pp { max-width: 100%; }
+  .pp > span { display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap; transform: skewX(calc(var(--skew) * -1)); }
+  .pp b { font: 900 18px/1 var(--num); color: var(--red-hi); font-variant-numeric: tabular-nums; }
+  .pp em { font: 700 15px/1 var(--cond); font-style: normal; letter-spacing: .06em; text-transform: uppercase; }
+  .pp small { font: 600 12px/1 var(--cond); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
   .yt-link { color: var(--text); font: 700 15px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
 
   .empty { background: var(--surface); border: 1px dashed var(--line); padding: 28px 20px; text-align: center; color: var(--muted); }
@@ -169,6 +178,8 @@ const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "jui
 const ytId = (u) => { const m = String(u || "").match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/live\/|\/shorts\/)([\w-]{11})/); return m ? m[1] : null; };
 const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
 const parts = (iso) => { const [y, m, d] = String(iso).split("-").map(Number); return { y, m, d }; };
+const POS_ORDER = ["pass", "point", "récep", "recep", "centr", "lib"];
+const posRank = (p) => { const s = String(p.position || "").toLowerCase(); const i = POS_ORDER.findIndex((k) => s.startsWith(k)); return i < 0 ? 9 : i; };
 const seasonOf = (iso) => { const { y, m } = parts(iso); const start = m >= 8 ? y : y - 1; return `${start}-${start + 1}`; };
 
 if (CFG.home?.name) $("club").textContent = `${CFG.home.name} Volley`.replace(/volley volley/i, "Volley");
@@ -296,6 +307,20 @@ function fillMore(more, r) {
   const pts = toArr(r.history).reduce((a, h) => [a[0] + h.A, a[1] + h.B], [0, 0]);
   fact("Points", `${pts[0]} – ${pts[1]}`);
   more.append(facts);
+  // Joueurs présents ce jour-là, triés par poste
+  const players = toArr(r.players).sort((a, b) => posRank(a) - posRank(b) || (a.number || 0) - (b.number || 0));
+  if (players.length) {
+    const sec = mk("section", "players");
+    sec.append(mk("h3", null, "Joueurs présents"));
+    const lst = mk("div", "pp-list");
+    players.forEach((p) => {
+      const c = mk("span", "pp"); const u = mk("span");
+      u.append(mk("b", null, p.number), mk("em", null, p.name || ""));
+      if (p.position) u.append(mk("small", null, p.position));
+      c.append(u); lst.append(c);
+    });
+    sec.append(lst); more.append(sec);
+  }
   if (id) { const a = mk("a", "yt-link", "Ouvrir sur YouTube ↗"); a.href = `https://www.youtube.com/watch?v=${id}`; a.target = "_blank"; a.rel = "noopener"; more.append(a); }
 }
 
