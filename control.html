@@ -205,6 +205,8 @@
   .ev-btns button { min-height: 52px; border-radius: 10px; font-size: 20px; }
   .ev-btns .go   { background: var(--red); color: #fff; }
   .ev-btns .team-btn { background: var(--c); color: var(--ct); }
+  .ev-reset { min-height: 46px; border-radius: 10px; background: transparent; border: 2px dashed var(--line); color: var(--muted); font-size: 17px; }
+  .ev-reset.armed { border-style: solid; border-color: var(--red); color: #fff; background: rgba(211, 18, 31, .25); }
   .side-note { color: var(--muted); font-size: 16px; margin: 12px 0 0; }
 
   /* ---------- Joueurs présents ---------- */
@@ -481,6 +483,8 @@ function norm(s) {
   s.visible  = s.visible !== false;
   s.tbSwitched = !!s.tbSwitched;
   s.warmup = !!s.warmup;
+  s.interSet = !!s.interSet;
+  s.timeout ??= null;
   s.pendingWinner ??= null;
   s.winner ??= null;
   return s;
@@ -509,6 +513,8 @@ function newMatchState(away, firstServer) {
     visible: true,
     tbSwitched: false,
     warmup: false,
+    interSet: false,
+    timeout: null,
     pendingWinner: null,
     winner: null,
     updatedAt: Date.now()
@@ -518,7 +524,9 @@ function newMatchState(away, firstServer) {
 const ACTIONS = {
   point(s, t) {
     if (s.phase !== "playing") return;
-    s.warmup = false;                        // le match commence : on retire le bandeau d'échauffement
+    s.warmup = false;                        // le jeu reprend : on retire les bandeaux qui restent
+    s.interSet = false;
+    s.timeout = null;
     s.score[t]++;
     s.serving = t;
     const lead = s.score[t] - s.score[other(t)];
@@ -554,12 +562,15 @@ const ACTIONS = {
   },
   ace(s, t)        { s.aces[t]++; return s; },          // compteur d'aces du match (annulable)
   warmup(s)        { s.warmup = !s.warmup; return s; },   // bandeau d'échauffement (reste affiché)
+  interSet(s)      { s.interSet = !s.interSet; if (s.interSet) s.timeout = null; return s; },
+  timeout(s, t)    { s.timeout = s.timeout === t ? null : t; s.timeoutAt = Date.now(); if (s.timeout) s.interSet = false; return s; },
+  resetAces(s)     { s.aces = { A: 0, B: 0 }; return s; },          // annulable
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
   tbDismiss(s)     { s.tbSwitched = true; return s; }
 };
-const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup"]);
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup", "interSet", "timeout"]);
 
 // ===========================================================
 //  Écritures
@@ -605,6 +616,9 @@ async function undo() {
           swapped: cur.state.swapped,
           tbSwitched: cur.state.tbSwitched,
           warmup: cur.state.warmup || false,
+          interSet: cur.state.interSet || false,
+          timeout: cur.state.timeout || null,
+          timeoutAt: cur.state.timeoutAt || null,
           updatedAt: Date.now()
         },
         undo: rest
@@ -744,7 +758,9 @@ function renderEvents() {
           b.className = "team-btn";
           b.style.setProperty("--c", teamColor(t));
           b.style.setProperty("--ct", teamText(t));
-          b.textContent = state.meta.teams[t].short + (item.type === "ace" ? ` · ${state.aces[t]}` : "");
+          const onTo = item.type === "timeout" && state.timeout === t;
+          b.textContent = state.meta.teams[t].short + (item.type === "ace" ? ` · ${state.aces[t]}` : "") + (onTo ? " · Retirer" : "");
+          if (onTo) b.style.outline = "3px solid #fff";
           b.onclick = () => sendEvent(item, t);
           btns.appendChild(b);
         });
@@ -752,19 +768,48 @@ function renderEvents() {
         btns.classList.add("single");
         const b = document.createElement("button");
         b.className = "go";
-        const off = item.type === "warmup" && state?.warmup;
+        const off = (item.type === "warmup" && state?.warmup) || (item.type === "interSet" && state?.interSet);
         b.textContent = off ? "Retirer" : "Afficher";
         if (off) b.style.background = "#3A3336";
         b.onclick = () => sendEvent(item, null);
         btns.appendChild(b);
       }
       box.append(name, btns);
+      if (item.type === "ace" && state) {          // remise à zéro, en deux appuis
+        const r = document.createElement("button");
+        r.className = "ev-reset";
+        r.textContent = `Remettre les aces à 0 (${state.meta.teams.A.short} ${state.aces.A} · ${state.meta.teams.B.short} ${state.aces.B})`;
+        r.onclick = () => {
+          if (!r.classList.contains("armed")) {
+            r.classList.add("armed"); r.textContent = "Appuie encore pour confirmer";
+            setTimeout(() => { if (r.isConnected && r.classList.contains("armed")) renderEvents(); }, 3000);
+            return;
+          }
+          guarded("resetAces", async () => { await act("resetAces"); toast("Aces remis à 0 (Annuler pour revenir)"); });
+        };
+        box.append(r);
+      }
       list.appendChild(box);
     });
   });
 }
 
 function sendEvent(item, team) {
+  if (item.type === "interSet") {
+    guarded("evinterset", async () => {
+      await act("interSet");
+      toast(state?.interSet ? "Inter-set affiché" : "Inter-set retiré");
+    });
+    return;
+  }
+  if (item.type === "timeout") {
+    guarded("evtimeout", async () => {
+      await act("timeout", team);
+      const n = state?.meta.teams[team]?.short || "";
+      toast(state?.timeout === team ? `Temps mort ${n} affiché` : "Temps mort retiré");
+    });
+    return;
+  }
   if (item.type === "warmup") {              // bandeau qui reste : on l'allume / l'éteint
     guarded("evwarmup", async () => {
       await act("warmup");
