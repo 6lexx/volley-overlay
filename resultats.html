@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0d0b0c">
+<title>RMV · Résultats & replays</title>
+<link rel="icon" href="assets/ramonville.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow+Condensed:wght@600;700&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Page d'équipe : une colonne pensée pour le téléphone, mêmes codes que l'overlay
+     (rouge du club, losanges inclinés, chiffres Big Shoulders). Un seul thème, sombre. */
+  :root {
+    --bg:      #0d0b0c;
+    --surface: #1a1516;
+    --raise:   #241d1f;
+    --line:    #3a2f31;
+    --text:    #f7f3f3;
+    --muted:   #a89c9e;
+    --red:     #D3121F;
+    --red-hi:  #ff4a55;
+    --white:   #ffffff;
+    --ink:     #1A1416;
+    --skew:    -12deg;
+    --num:   "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --cond:  "Barlow Condensed", "Arial Narrow", sans-serif;
+    --body:  "Barlow", "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font-family: var(--body); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, a:focus-visible { outline: 3px solid var(--white); outline-offset: 3px; }
+  .wrap {
+    max-width: 880px; margin: 0 auto;
+    padding-top: max(24px, env(safe-area-inset-top));
+    padding-bottom: max(40px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .sk { transform: skewX(var(--skew)); }
+  .sk > .u { display: block; transform: skewX(calc(var(--skew) * -1)); }
+
+  /* ---------- En-tête ---------- */
+  header { display: flex; align-items: center; gap: 16px; }
+  .crest { width: 72px; height: 72px; flex: none; border-radius: 50%; background: var(--white); border: 4px solid var(--red); display: grid; place-items: center; overflow: hidden; }
+  .crest img { width: 92%; height: 92%; object-fit: contain; }
+  .kicker { margin: 0; font: 700 14px/1 var(--cond); letter-spacing: .22em; color: var(--red-hi); text-transform: uppercase; }
+  h1 { margin: 6px 0 0; font: 900 clamp(34px, 9vw, 54px)/.9 var(--num); letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+
+  /* ---------- Saisons et filtres ---------- */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 0; background: var(--raise); color: var(--muted); padding: 10px 16px; min-height: 44px; font: 700 16px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; transform: skewX(var(--skew)); }
+  .chip > span { display: inline-block; transform: skewX(calc(var(--skew) * -1)); }
+  .chip[aria-pressed="true"] { background: var(--white); color: var(--ink); }
+
+  /* ---------- Bilan de la saison ---------- */
+  .bilan { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+  .rec { background: var(--red); color: var(--white); padding: 12px 26px 10px; }
+  .rec .u { display: flex; align-items: baseline; gap: 14px; font: 900 48px/1 var(--num); font-variant-numeric: tabular-nums; }
+  .rec small { font: 700 15px/1 var(--cond); letter-spacing: .14em; margin-left: 2px; opacity: .9; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; }
+  .tile { background: var(--surface); border: 1px solid var(--line); padding: 10px 18px; display: flex; }
+  .tile .u { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .tile b { font: 900 28px/1 var(--num); font-variant-numeric: tabular-nums; }
+  .tile span { font: 700 12px/1 var(--cond); letter-spacing: .16em; color: var(--muted); text-transform: uppercase; }
+  .form { display: flex; gap: 5px; align-items: center; }
+  .form i { width: 12px; height: 12px; transform: rotate(45deg); background: var(--line); }
+  .form i.w { background: var(--red); }
+
+  /* ---------- Liste des matchs ---------- */
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .month { margin: 14px 0 0; font: 700 14px/1 var(--cond); letter-spacing: .22em; color: var(--muted); text-transform: uppercase; }
+  .m { background: var(--surface); border: 1px solid var(--line); border-left: 0; position: relative; }
+  .m::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: var(--line); }
+  .m.win::before { background: var(--red); }
+  .m-btn { width: 100%; border: 0; background: none; text-align: left; padding: 14px 16px 14px 20px; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+  .m-date { display: flex; flex-direction: column; align-items: center; line-height: 1; }
+  .m-date b { font: 900 34px/1 var(--num); font-variant-numeric: tabular-nums; }
+  .m-date span { font: 700 13px/1 var(--cond); letter-spacing: .14em; color: var(--muted); text-transform: uppercase; margin-top: 3px; }
+  .m-mid { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .m-type { font: 700 12px/1 var(--cond); letter-spacing: .18em; color: var(--muted); text-transform: uppercase; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  .m-type .yt { white-space: nowrap; }
+  .m-type .yt { color: var(--red-hi); }
+  .m-opp { font: 800 21px/1.1 var(--num); letter-spacing: .03em; text-transform: uppercase; overflow-wrap: anywhere; text-wrap: balance; }
+  .m-opp small { font: 700 13px/1 var(--cond); color: var(--muted); letter-spacing: .12em; margin-right: 6px; }
+  .m-sets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .set { background: var(--raise); padding: 4px 9px; font: 700 15px/1 var(--cond); font-variant-numeric: tabular-nums; transform: skewX(var(--skew)); }
+  .set > span { display: inline-block; transform: skewX(calc(var(--skew) * -1)); }
+  .set .w { color: var(--white); } .set .l { color: var(--muted); }
+  .set.won { box-shadow: inset 0 -2px 0 var(--red); }
+  .m-res { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .badge { background: var(--raise); color: var(--muted); padding: 4px 12px; font: 900 16px/1 var(--num); letter-spacing: .1em; }
+  .m.win .badge { background: var(--red); color: var(--white); }
+  .score { font: 900 38px/1 var(--num); font-variant-numeric: tabular-nums; }
+  .score .d { color: var(--muted); margin: 0 3px; }
+
+  .m-more { padding: 0 16px 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  .m-more[hidden] { display: none; }
+  .video { position: relative; width: 100%; max-width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  .video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .no-video { margin: 0; color: var(--muted); font-size: 15px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; font: 700 15px/1.2 var(--cond); letter-spacing: .06em; color: var(--muted); text-transform: uppercase; }
+  .facts b { color: var(--text); font-weight: 700; }
+  .yt-link { color: var(--text); font: 700 15px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+
+  .empty { background: var(--surface); border: 1px dashed var(--line); padding: 28px 20px; text-align: center; color: var(--muted); }
+  .empty b { display: block; color: var(--text); font: 900 24px/1.1 var(--num); text-transform: uppercase; margin-bottom: 8px; }
+  footer { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer a { color: var(--text); }
+
+  @media (max-width: 480px) {
+    .m-btn { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; padding-left: 16px; }
+    .m-date b { font-size: 28px; }
+    .score { font-size: 32px; }
+    .m-opp { font-size: 18px; }
+    .rec .u { font-size: 40px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .m { animation: rise .45s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="crest"><img src="assets/ramonville.png" alt="Logo Ramonville Volley"></div>
+    <div>
+      <p class="kicker">Résultats & replays</p>
+      <h1 id="club">Ramonville Volley</h1>
+    </div>
+  </header>
+
+  <nav class="chips" id="seasons" aria-label="Saison"></nav>
+  <section class="bilan" id="bilan" aria-label="Bilan de la saison"></section>
+  <nav class="chips" id="filters" aria-label="Type de match"></nav>
+  <main class="list" id="list" aria-live="polite">
+    <div class="empty"><b>Chargement…</b>Les résultats arrivent.</div>
+  </main>
+
+  <footer>
+    <span>Matchs en direct sur <a href="https://www.twitch.tv/silex62" target="_blank" rel="noopener">twitch.tv/silex62</a></span>
+    <span id="updated"></span>
+  </footer>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+// ===========================================================
+//  resultats.html — lecture seule des matchs enregistrés depuis l'appli
+//    ?m=volley-silex   identifiant (défaut : volley-silex)
+// ===========================================================
+const qs  = new URLSearchParams(location.search);
+const M   = qs.get("m") || "volley-silex";
+const CFG = window.SCORE_CONFIG || {};
+const $ = (id) => document.getElementById(id);
+const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const skw = (cls, ...kids) => { const d = mk("div", cls + " sk"); const u = mk("span", "u"); u.append(...kids); d.append(u); return d; };
+const TYPES = { championnat: "Championnat", amical: "Amical", coupe: "Coupe" };
+const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+const ytId = (u) => { const m = String(u || "").match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/live\/|\/shorts\/)([\w-]{11})/); return m ? m[1] : null; };
+const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
+const parts = (iso) => { const [y, m, d] = String(iso).split("-").map(Number); return { y, m, d }; };
+const seasonOf = (iso) => { const { y, m } = parts(iso); const start = m >= 8 ? y : y - 1; return `${start}-${start + 1}`; };
+
+if (CFG.home?.name) $("club").textContent = `${CFG.home.name} Volley`.replace(/volley volley/i, "Volley");
+
+let ALL = [], season = null, filter = "tous", openKey = null;
+
+function render() {
+  const seasons = [...new Set(ALL.map((r) => seasonOf(r.date)))].sort().reverse();
+  if (!season || !seasons.includes(season)) season = seasons[0] || null;
+
+  // Saisons
+  $("seasons").replaceChildren(...seasons.map((s) => {
+    const b = mk("button", "chip"); b.append(mk("span", null, `Saison ${s}`));
+    b.setAttribute("aria-pressed", String(s === season));
+    b.onclick = () => { season = s; filter = "tous"; openKey = null; render(); };
+    return b;
+  }));
+  $("seasons").hidden = seasons.length === 0;
+
+  const inSeason = ALL.filter((r) => seasonOf(r.date) === season);
+  const types = [...new Set(inSeason.map((r) => r.type).filter((t) => TYPES[t]))];
+  if (filter !== "tous" && !types.includes(filter)) filter = "tous";
+  const shown = inSeason.filter((r) => filter === "tous" || r.type === filter);
+
+  // Bilan (sur la sélection)
+  const W = shown.filter((r) => r.winner === "A").length, L = shown.length - W;
+  const setsW = shown.reduce((n, r) => n + (r.sets?.A || 0), 0), setsL = shown.reduce((n, r) => n + (r.sets?.B || 0), 0);
+  const aces = shown.reduce((n, r) => n + (r.aces?.A || 0), 0);
+  const last5 = shown.slice(0, 5).reverse();
+  if (shown.length) {
+    const rec = skw("rec", mk("span", null, W), mk("small", null, W > 1 ? "VICTOIRES" : "VICTOIRE"), mk("span", null, L), mk("small", null, L > 1 ? "DÉFAITES" : "DÉFAITE"));
+    const tiles = mk("div", "tiles");
+    const tile = (big, label) => { const t = skw("tile", mk("b", null, big), mk("span", null, label)); return t; };
+    tiles.append(tile(`${setsW}–${setsL}`, "Sets"), tile(aces, "Aces RMV"));
+    const form = mk("div", "form"); last5.forEach((r) => { const i = mk("i", r.winner === "A" ? "w" : ""); i.title = r.winner === "A" ? "Victoire" : "Défaite"; form.append(i); });
+    const ft = skw("tile", form, mk("span", null, "Forme"));
+    tiles.append(ft);
+    $("bilan").replaceChildren(rec, tiles);
+  } else $("bilan").replaceChildren();
+
+  // Filtres
+  const fl = ["tous", ...types];
+  $("filters").replaceChildren(...fl.map((t) => {
+    const b = mk("button", "chip"); b.append(mk("span", null, t === "tous" ? "Tous" : TYPES[t]));
+    b.setAttribute("aria-pressed", String(t === filter));
+    b.onclick = () => { filter = t; openKey = null; render(); };
+    return b;
+  }));
+  $("filters").hidden = types.length < 2;
+
+  // Liste, groupée par mois
+  const list = $("list");
+  if (!shown.length) {
+    const e = mk("div", "empty"); e.append(mk("b", null, "Aucun match pour l'instant"), "Les résultats apparaissent ici dès qu'un match est enregistré depuis l'appli de contrôle.");
+    list.replaceChildren(e); return;
+  }
+  const out = []; let lastMonth = "";
+  shown.forEach((r, i) => {
+    const { y, m } = parts(r.date);
+    const key = `${y}-${m}`;
+    if (key !== lastMonth) { lastMonth = key; out.push(mk("h2", "month", `${MONTHS_LONG[m - 1]} ${y}`)); }
+    out.push(card(r, i));
+  });
+  list.replaceChildren(...out);
+}
+
+function card(r, i) {
+  const win = r.winner === "A";
+  const { d, m } = parts(r.date);
+  const art = mk("article", "m" + (win ? " win" : ""));
+  art.style.setProperty("--i", i);
+  const btn = mk("button", "m-btn");
+  btn.setAttribute("aria-expanded", String(openKey === r.key));
+
+  const date = mk("div", "m-date"); date.append(mk("b", null, String(d).padStart(2, "0")), mk("span", null, MONTHS[m - 1]));
+
+  const mid = mk("div", "m-mid");
+  const type = mk("div", "m-type", TYPES[r.type] || "Match");
+  if (ytId(r.youtube)) type.append(mk("span", "yt", "▶ Replay"));
+  const opp = mk("div", "m-opp"); opp.append(mk("small", null, "VS"), r.away?.name || r.away?.short || "");
+  const sets = mk("div", "m-sets");
+  toArr(r.history).forEach((h) => {
+    const s = mk("span", "set" + (h.winner === "A" ? " won" : ""));
+    const u = mk("span"); u.append(mk("span", h.winner === "A" ? "w" : "l", h.A), "-", mk("span", h.winner === "B" ? "w" : "l", h.B));
+    s.append(u); sets.append(s);
+  });
+  mid.append(type, opp, sets);
+
+  const res = mk("div", "m-res");
+  const sc = mk("div", "score"); sc.append(String(r.sets?.A ?? 0), mk("span", "d", "–"), String(r.sets?.B ?? 0));
+  res.append(mk("span", "badge", win ? "VICTOIRE" : "DÉFAITE"), sc);
+  btn.append(date, mid, res);
+
+  const more = mk("div", "m-more");
+  more.hidden = openKey !== r.key;
+  if (openKey === r.key) fillMore(more, r);
+  btn.onclick = () => {
+    const open = more.hidden;
+    openKey = open ? r.key : null;
+    // un seul match ouvert à la fois
+    document.querySelectorAll(".m-more:not([hidden])").forEach((x) => { if (x !== more) { x.hidden = true; x.replaceChildren(); x.previousElementSibling.setAttribute("aria-expanded", "false"); } });
+    more.hidden = !open; btn.setAttribute("aria-expanded", String(open));
+    if (open) { fillMore(more, r); more.scrollIntoView({ block: "nearest", behavior: "smooth" }); } else more.replaceChildren();
+  };
+  art.append(btn, more);
+  return art;
+}
+
+function fillMore(more, r) {
+  const id = ytId(r.youtube);
+  if (id) {
+    const v = mk("div", "video");
+    const f = document.createElement("iframe");
+    f.src = `https://www.youtube-nocookie.com/embed/${id}?rel=0`;
+    f.title = `Replay RMV – ${r.away?.name || ""}`;
+    f.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+    f.allowFullscreen = true; f.loading = "lazy";
+    v.append(f); more.append(v);
+  } else more.append(mk("p", "no-video", "Le replay de ce match n'est pas encore en ligne."));
+  const facts = mk("div", "facts");
+  const fact = (k, v) => { const s = mk("span"); s.append(k + " ", mk("b", null, v)); facts.append(s); };
+  const { y, m, d } = parts(r.date);
+  fact("Le", `${d} ${MONTHS_LONG[m - 1]} ${y}`);
+  if (r.aces && (r.aces.A || r.aces.B)) fact("Aces", `${r.aces.A} – ${r.aces.B}`);
+  const pts = toArr(r.history).reduce((a, h) => [a[0] + h.A, a[1] + h.B], [0, 0]);
+  fact("Points", `${pts[0]} – ${pts[1]}`);
+  more.append(facts);
+  if (id) { const a = mk("a", "yt-link", "Ouvrir sur YouTube ↗"); a.href = `https://www.youtube.com/watch?v=${id}`; a.target = "_blank"; a.rel = "noopener"; more.append(a); }
+}
+
+// ===========================================================
+//  Firebase (lecture seule)
+// ===========================================================
+try {
+  if (!CFG.firebase) throw new Error("config.js introuvable");
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const { getDatabase, ref, onValue } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+  const db = getDatabase(initializeApp(CFG.firebase));
+  onValue(ref(db, `matches/${M}/archive`), (snap) => {
+    const v = snap.val() || {};
+    ALL = Object.entries(v).map(([key, r]) => ({ key, ...r })).filter((r) => r.date && r.sets)
+      .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+    render();
+    $("updated").textContent = `${ALL.length} match${ALL.length > 1 ? "s" : ""} enregistré${ALL.length > 1 ? "s" : ""}`;
+  }, (err) => {
+    $("list").replaceChildren(Object.assign(mk("div", "empty"), { textContent: "Impossible de lire les résultats (" + (err.code || err.message) + ")." }));
+  });
+} catch (e) {
+  $("list").replaceChildren(Object.assign(mk("div", "empty"), { textContent: "Impossible de charger les résultats : " + e.message }));
+}
+</script>
+</body>
+</html>
