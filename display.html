@@ -191,6 +191,37 @@
   .sfx .w-dia i.on { background: var(--f); }
   .sfx .w-ring { position: absolute; inset: -.6cqh; border: .5cqh solid var(--f); }
 
+  /* =========================================================
+     ACE — le chant et la frappe (RMV), la pastille (adversaire)
+     ========================================================= */
+  .afx { position: absolute; inset: 0; z-index: 10; pointer-events: none; overflow: hidden; font-family: var(--num); color: var(--f); }
+  .afx .u { display: inline-block; transform: skewX(12deg); white-space: nowrap; }
+
+  /* Le chant */
+  .afx .ac-word { position: absolute; top: 70cqh; }
+  .afx .ac-blk { transform: skewX(-12deg); background: var(--c); color: var(--f); font-weight: 900; font-size: 13cqh; line-height: 1; padding: 1cqh 3cqh .6cqh; letter-spacing: .4cqh; box-shadow: 0 1cqh 2.6cqh rgba(0,0,0,.35); }
+  .afx .ac-word.alt .ac-blk { background: #fff; color: #1A1416; }
+  .afx .ac-burst { position: absolute; left: 50%; top: 70cqh; width: 0; height: 0; }
+  .afx .ac-ring { position: absolute; left: -5cqh; top: -5cqh; width: 10cqh; height: 10cqh; box-sizing: border-box; border: .8cqh solid #fff; }
+  .afx .ac-spark { position: absolute; left: -.4cqh; top: -2cqh; width: .8cqh; height: 4cqh; background: #fff; border-radius: .4cqh; }
+  .afx .ac-count { position: absolute; left: 50%; top: 86cqh; transform: translateX(-50%); font-family: var(--small); font-weight: 700; font-size: 4cqh; letter-spacing: .5cqh; color: #fff; background: #1A1416; padding: 1cqh 2.4cqh; white-space: nowrap; }
+  .afx .ac-clap { position: absolute; left: 50%; top: 52cqh; font-family: var(--small); font-weight: 700; font-size: 4.4cqh; letter-spacing: 1cqh; color: #fff; text-shadow: 0 .4cqh 1.2cqh rgba(0,0,0,.5); }
+
+  /* La pastille */
+  .afx .ab { position: absolute; display: flex; flex-direction: column; align-items: flex-end; gap: .6cqh; }
+  .afx .ab-top { transform: skewX(-12deg); background: var(--c); color: var(--f); font-weight: 900; font-size: 9cqh; line-height: 1; padding: .8cqh 3cqh .5cqh; letter-spacing: .5cqh; box-shadow: 0 .6cqh 1.6cqh rgba(0,0,0,.35); }
+  .afx .ab-sub { transform: skewX(-12deg); background: #1A1416; color: #fff; font-family: var(--small); font-weight: 700; font-size: 3.2cqh; line-height: 1; padding: 1cqh 2cqh; letter-spacing: .3cqh; }
+
+  /* La frappe */
+  .afx .af-ball { position: absolute; left: 0; top: 0; width: 10cqh; height: 10cqh; }
+  .afx .af-ball svg { width: 100%; height: 100%; display: block; }
+  .afx .af-ghost { opacity: .35; }
+  .afx .af-burst { position: absolute; width: 0; height: 0; }
+  .afx .af-letters { position: absolute; display: flex; gap: 1.2cqh; }
+  .afx .af-l { transform: skewX(-12deg); background: var(--c); color: var(--f); font-weight: 900; font-size: 16cqh; line-height: 1; padding: .8cqh 2.4cqh .4cqh; box-shadow: 0 1cqh 2.6cqh rgba(0,0,0,.35); }
+  .afx .af-l:nth-child(2) { background: #fff; color: #1A1416; }
+  .afx .af-team { position: absolute; font-family: var(--small); font-weight: 700; font-size: 4cqh; letter-spacing: .8cqh; color: #fff; text-shadow: 0 .4cqh 1.2cqh rgba(0,0,0,.5); }
+
   .debug {
     position: fixed; left: 1vh; top: 1vh;
     font: 600 2vh system-ui, sans-serif; color: #fff;
@@ -272,7 +303,8 @@ function norm(s) {
   s.score    = s.score    ?? { A: 0, B: 0 };
   s.sets     = s.sets     ?? { A: 0, B: 0 };
   s.timeouts = s.timeouts ?? { A: 0, B: 0 };
-  for (const k of ["score", "sets", "timeouts"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.aces     = s.aces     ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets", "timeouts", "aces"]) { s[k].A ??= 0; s[k].B ??= 0; }
   s.history = toArr(s.history);
   s.visible = s.visible !== false;
   return s;
@@ -302,6 +334,7 @@ function render(s) {
   // point, nouveau match) ou si l'overlay est masqué depuis l'appli.
   if (VolleyFX.running() && (!s.visible || (s.phase !== "matchEnd" && stateKey(s) !== fxKey))) VolleyFX.stop(true);
   if (SetFX.running() && (!s.visible || !setStillOver(s, setN))) SetFX.stop(true);
+  if (AceFX.running() && aceRun && (!s.visible || s.aces[aceRun.team] < aceRun.n)) AceFX.stop(true);
   // Set gagné (25 points) : l'appli passe en "fin de set" → on lance l'animation
   if (prevPhase !== null && prevPhase !== "setEnd" && s.phase === "setEnd") onSetFinished(null, true, false);
   prevPhase = s.phase;
@@ -404,6 +437,7 @@ const VolleyFX = (() => {
       color, fg: lum(color) > 150 ? "#1A1416" : "#FFFFFF",
       total: `${o.sets[w]} – ${o.sets[l]}`,
       hist: (o.history || []).map((x) => `${x[w]}-${x[l]}`),
+      aces: o.aces && (o.aces.A || o.aces.B) ? `ACES ${o.aces[w]} – ${o.aces[l]}` : null,
       logo: home ? o.logo : null
     };
   }
@@ -459,7 +493,7 @@ const VolleyFX = (() => {
         { duration: SCROLL_MS, easing: "linear", iterations: Infinity });
     };
     ribbon("r1", ["VICTOIRE", m.short], 1, 0);
-    ribbon("r2", ["SETS " + m.total, ...m.hist], -1, 120);
+    ribbon("r2", ["SETS " + m.total, ...m.hist, ...(m.aces ? [m.aces] : [])], -1, 120);
 
     const p = h("div", "plq"), u = h("div", "u");
     const tot = h("div", "ptot"); tot.append(h("span", "u", m.total));
@@ -507,11 +541,11 @@ function startVictory(team, f) {
   f = f || finishedSet(s);
   const sets = f ? f.sets : s.sets, history = f ? f.history : s.history;
   const winner = team || (f && f.winner) || s.winner || (sets.A >= sets.B ? "A" : "B");
-  SetFX.stop();
+  SetFX.stop(); AceFX.stop(true);
   fxKey = stateKey(s);
   $("bug").classList.add("fx-hide");
   VolleyFX.play($("fx"), {
-    winner, hold: FX_HOLD, teams: s.meta.teams, sets, history,
+    winner, hold: FX_HOLD, teams: s.meta.teams, sets, history, aces: s.aces,
     logo: window.SCORE_CONFIG?.home?.logo || s.meta.teams.A.logo
   }).then(() => {
     fxKey = null;
@@ -639,12 +673,206 @@ let setN = 0;
 function startSetFx(team, f) {
   const s = LAST;
   if (!s || !s.meta || !s.visible || !f || SetFX.running() || VolleyFX.running()) return;
+  AceFX.stop(true);
   setN = f.n;
   SetFX.play($("fx"), {
     winner: team || f.winner, teams: s.meta.teams, setIndex: f.n,
     points: f.points, sets: f.sets, setsToWin: s.meta.rules?.setsToWin || 3
   });
 }
+
+// ===========================================================
+//  ACE
+//  RMV : le chant ou la frappe, au hasard (jamais 3 fois de suite le même).
+//  Adversaire : la pastille. Le compteur d'aces est dans l'état du match.
+//    ?tempo=400   durée d'un temps du chant, en ms
+// ===========================================================
+const ACE_TEMPO = Math.max(250, Number(qs.get("tempo")) || 400);
+const AceFX = (() => {
+  const EASE = { out: "cubic-bezier(.16,1,.3,1)", back: "cubic-bezier(.34,1.56,.64,1)", in: "cubic-bezier(.7,0,.84,0)", slam: "cubic-bezier(.2,.9,.3,1)" };
+  let cur = null;
+  const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const rgb = (hex) => { const n = parseInt(String(hex).slice(1), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const lum = (hex) => { const [r, g, b] = rgb(hex); return .299 * r + .587 * g + .114 * b; };
+  const rel = (el, L) => { const a = el.getBoundingClientRect(), b = L.getBoundingClientRect(); return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height }; };
+  const sk = (cls, text) => { const d = h("div", cls); d.append(h("span", "u", text)); return d; };
+  const ord = (n) => (n === 1 ? "1er" : n + "e");
+
+  function finish(c) {
+    c.anims.forEach((a) => { try { a.cancel(); } catch (e) {} });
+    c.timers.forEach(clearTimeout);
+    c.layer.remove();
+    if (cur === c) cur = null;
+    c.done && c.done();
+  }
+  function stop(fast) {
+    const c = cur; if (!c) return; cur = null;
+    c.timers.forEach(clearTimeout);
+    if (!fast) return finish(c);
+    const a = c.layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" });
+    a.onfinish = () => finish(c);
+  }
+  function play(root, o) {
+    stop();
+    const t = o.team, T = o.teams[t];
+    const color = T.color || (t === "A" ? "#D3121F" : "#555555");
+    const m = { team: t, short: T.short || "", color, fg: lum(color) > 150 ? "#1A1416" : "#FFFFFF", count: o.count || 0 };
+    const style = t === "A" ? (o.style || "chant") : "badge";   // l'adversaire : toujours la pastille
+    const L = h("div", "afx");
+    L.style.setProperty("--c", m.color); L.style.setProperty("--f", m.fg);
+    root.append(L);
+    const c = { layer: L, anims: [], timers: [] };
+    cur = c;
+    const A = (el, kf, x) => { const a = el.animate(kf, { fill: "both", easing: EASE.out, ...x }); c.anims.push(a); return a; };
+    const rm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const total = BUILD[style](L, m, A, o, c, rm);
+    return new Promise((res) => { c.done = res; c.timers.push(setTimeout(() => { if (cur === c) { cur = null; finish(c); } }, total)); });
+  }
+
+  const BUILD = {
+    /* Le chant : ACE ! ACE ! clap clap ×3, sur le tempo de la salle */
+    chant(L, m, A, o, c, rm) {
+      const T = Math.max(250, o.tempo || 400), start = 150;
+      for (let k = 0; k < 3; k++) {
+        const base = start + k * 4 * T, last = k === 2, big = last ? 1.18 : 1;
+        // ACE ! (gauche) puis ACE ! (droite) : restent visibles pendant les claps du même tour
+        [0, 1].forEach((i) => {
+          const w = h("div", "ac-word" + (i ? " alt" : ""));
+          w.style.left = i ? "70%" : "30%";
+          w.append(sk("ac-blk", "ACE !"));
+          L.append(w);
+          const rot = i ? 4 : -5, life = (4 - i) * T;
+          const tf = (s) => `translate(-50%,-50%) rotate(${rot}deg) scale(${s})`;
+          A(w, [
+            { transform: tf(1.9 * big), opacity: 0 },
+            { offset: Math.min(.3, (T * .45) / life), transform: tf(big), opacity: 1 },
+            { offset: .9, transform: tf(big), opacity: 1 },
+            { transform: tf(big * .92), opacity: 0 }
+          ], { duration: life + (last ? 500 : 0), delay: base + i * T, easing: "linear" });
+        });
+        // clap clap : onde en losange + étincelles, le score « tape » aussi
+        [2, 3].forEach((j) => {
+          const at = base + j * T;
+          const b = h("div", "ac-burst"); L.append(b);
+          [0, 1].forEach((r) => {
+            const ring = h("div", "ac-ring"); b.append(ring);
+            A(ring, [{ transform: "rotate(45deg) scale(.3)", opacity: 1 }, { transform: `rotate(45deg) scale(${r ? 3.4 : 2.2})`, opacity: 0 }], { duration: T * 1.2, delay: at + r * 60 });
+          });
+          if (!rm) for (let s = 0; s < 8; s++) {
+            const sp = h("div", "ac-spark"); b.append(sp);
+            const ang = s * 45 + (j === 3 ? 22.5 : 0);
+            A(sp, [{ transform: `rotate(${ang}deg) translateY(-3cqh) scaleY(.4)`, opacity: 1 }, { transform: `rotate(${ang}deg) translateY(-13cqh) scaleY(1)`, opacity: 0 }], { duration: T * .9, delay: at });
+          }
+          const cl = h("div", "ac-clap", "CLAP"); L.append(cl);
+          A(cl, [{ transform: "translate(-50%,0) scale(.6)", opacity: 0 }, { offset: .25, transform: "translate(-50%,0) scale(1.1)", opacity: 1 }, { transform: "translate(-50%,-2cqh) scale(1)", opacity: 0 }], { duration: T * .95, delay: at });
+          if (o.bump && !rm) A(o.bump, [{ transform: "scale(1)" }, { transform: "scale(1.05)" }, { transform: "scale(1)" }], { duration: Math.min(260, T * .7), delay: at, fill: "none" });
+        });
+      }
+      if (m.count) {                                            // dernier tour : le compte du match
+        const ct = h("div", "ac-count", `${m.short} · ${ord(m.count)} ACE DU MATCH`); L.append(ct);
+        A(ct, [{ transform: "translateX(-50%) translateY(3cqh)", opacity: 0 }, { transform: "translateX(-50%) translateY(0)", opacity: 1 }], { duration: 360, delay: start + 8 * T });
+        A(ct, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: start + 12 * T + 300, fill: "forwards" });
+      }
+      return start + 12 * T + 700;
+    },
+
+    /* La pastille : ACE au-dessus du score, avec le compte du match */
+    badge(L, m, A, o) {
+      const H = L.clientHeight, p = h("div", "ab");
+      if (o.bug) {
+        const b = rel(o.bug, L);
+        p.style.right = (L.clientWidth - (b.x + b.w)) + "px";
+        p.style.bottom = (H - b.y + H * .018) + "px";
+      } else { p.style.right = "4cqw"; p.style.bottom = "30cqh"; }
+      const top = sk("ab-top", "ACE");
+      const sub = sk("ab-sub", m.count ? `${m.short} · ${ord(m.count)} ACE DU MATCH` : m.short);
+      p.append(top, sub); L.append(p);
+      A(top, [{ transform: "skewX(-12deg) translateX(10cqw) scale(.7)", opacity: 0 }, { transform: "skewX(-12deg) translateX(0) scale(1)", opacity: 1 }], { duration: 480, delay: 60, easing: EASE.back });
+      A(sub, [{ transform: "skewX(-12deg) translateY(3cqh)", opacity: 0 }, { transform: "skewX(-12deg) translateY(0)", opacity: 1 }], { duration: 380, delay: 300 });
+      A(p, [{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(6cqw)", opacity: 0 }], { duration: 300, delay: 2700, easing: EASE.in, fill: "forwards" });
+      return 3100;
+    },
+
+    /* La frappe : le ballon s'écrase, A-C-E jaillit de l'impact */
+    strike(L, m, A, o, c, rm) {
+      const W = L.clientWidth, H = L.clientHeight, bs = H * .1;
+      const ix = W * .5, iy = H * .7;                         // point d'impact
+      const fly = 380, hit = 220 + fly;
+      const ballSVG = '<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#fff" stroke="#1A1416" stroke-width="5"/><g fill="none" stroke="#1A1416" stroke-width="5"><path d="M50 4 C64 30 61 62 30 91"/><path d="M4 41 C36 37 63 52 82 87"/><path d="M91 27 C66 35 44 57 41 96"/></g></svg>';
+      const path = (dx) => [
+        { transform: `translate(${W * 1.05 + dx}px,${-bs * 1.2}px) rotate(0deg)` },
+        { transform: `translate(${ix - bs / 2}px,${iy - bs / 2}px) rotate(540deg)` }
+      ];
+      [3, 2, 1, 0].forEach((g) => {                          // 3 traînées + le ballon
+        const b = h("div", "af-ball" + (g ? " af-ghost" : ""));
+        b.innerHTML = ballSVG; L.append(b);
+        const lag = g * 40;                                  // les traînées suivent le ballon
+        A(b, path(0), { duration: fly, delay: 220 + lag, easing: EASE.in });
+        if (g) A(b, [{ opacity: .4 - g * .1 }, { opacity: 0 }], { duration: 90, delay: hit + lag - 60, fill: "forwards" });
+        if (!g) A(b, [
+          { transform: `translate(${ix - bs / 2}px,${iy - bs / 2}px) rotate(540deg) scale(1)`, opacity: 1 },
+          { transform: `translate(${ix - bs * 3}px,${iy - H * .45}px) rotate(720deg) scale(.6)`, opacity: 0 }
+        ], { duration: 650, delay: hit, easing: EASE.out, fill: "forwards" });
+      });
+      // onde de choc au sol
+      const burst = h("div", "af-burst"); burst.style.left = ix + "px"; burst.style.top = iy + "px"; L.append(burst);
+      [0, 1].forEach((r) => {
+        const ring = h("div", "ac-ring"); burst.append(ring);
+        A(ring, [{ transform: "scaleY(.35) rotate(45deg) scale(.4)", opacity: 1 }, { transform: `scaleY(.35) rotate(45deg) scale(${r ? 5 : 3})`, opacity: 0 }], { duration: 700, delay: hit + r * 80 });
+      });
+      if (!rm) for (let s = 0; s < 10; s++) {
+        const sp = h("div", "ac-spark"); burst.append(sp);
+        const ang = -90 + (s - 4.5) * 17;
+        A(sp, [{ transform: `rotate(${ang + 90}deg) translateY(-2cqh) scaleY(.4)`, opacity: 1 }, { transform: `rotate(${ang + 90}deg) translateY(-15cqh) scaleY(1)`, opacity: 0 }], { duration: 520, delay: hit });
+      }
+      if (!rm) A(L, [{ transform: "translate(0,0)" }, { transform: "translate(.6cqh,1cqh)" }, { transform: "translate(-.5cqh,-.6cqh)" }, { transform: "translate(0,0)" }], { duration: 260, delay: hit, easing: "linear", fill: "none" });
+      // A-C-E jaillissent de l'impact
+      const row = h("div", "af-letters"); L.append(row);
+      const letters = ["A", "C", "E"].map((ch) => { const d = sk("af-l", ch); row.append(d); return d; });
+      row.style.left = ix + "px"; row.style.top = (iy - H * .33) + "px";
+      row.style.transform = "translateX(-50%)";
+      letters.forEach((d, i) => {
+        const dx = (i - 1) * 14;
+        A(d, [
+          { transform: `skewX(-12deg) translate(${-dx}cqh, 26cqh) scale(.2) rotate(${(i - 1) * 25}deg)`, opacity: 0 },
+          { transform: "skewX(-12deg) translate(0,0) scale(1) rotate(0deg)", opacity: 1 }
+        ], { duration: 520, delay: hit + 40 + i * 60, easing: EASE.back });
+        A(d, [{ transform: "skewX(-12deg) translate(0,0)", opacity: 1 }, { transform: `skewX(-12deg) translate(0,-8cqh)`, opacity: 0 }], { duration: 300, delay: 2250 + i * 50, easing: EASE.in, fill: "forwards" });
+      });
+      const tm = h("div", "af-team", m.count ? `${m.short} · ${ord(m.count)} ACE DU MATCH` : m.short); L.append(tm);
+      tm.style.left = ix + "px"; tm.style.top = (iy - H * .07) + "px";
+      A(tm, [{ transform: "translateX(-50%) translateY(2cqh)", opacity: 0 }, { transform: "translateX(-50%) translateY(0)", opacity: 1 }], { duration: 360, delay: hit + 300 });
+      A(tm, [{ opacity: 1 }, { opacity: 0 }], { duration: 300, delay: 2300, fill: "forwards" });
+      return 2750;
+    }
+  };
+
+  return { play, stop, running: () => !!cur };
+})();
+
+let aceRun = null, aceStyles = [];
+function pickAceStyle() {
+  let s = Math.random() < .5 ? "chant" : "strike";
+  const n = aceStyles.length;
+  if (n >= 2 && aceStyles[n - 1] === s && aceStyles[n - 2] === s) s = s === "chant" ? "strike" : "chant";
+  aceStyles = [...aceStyles, s].slice(-4);
+  return s;
+}
+function startAce(team, count) {
+  const s = LAST;
+  if (!s || !s.meta || !s.visible || (team !== "A" && team !== "B")) return;
+  if (VolleyFX.running() || SetFX.running()) return;     // fin de set / de match prioritaire
+  const n = count || s.aces[team] || 0;
+  aceRun = { team, n };
+  AceFX.play($("fx"), {
+    style: team === "A" ? pickAceStyle() : "badge", team, teams: s.meta.teams,
+    tempo: ACE_TEMPO, count: n, bug: $("bug"), bump: document.querySelector(".plate")
+  }).then(() => { aceRun = null; });
+}
+window.addEventListener("volley:event", (e) => {
+  const ev = e.detail || {};
+  if (ev.type === "ace") setTimeout(() => startAce(ev.team, ev.count), 150);
+});
 
 // ===========================================================
 //  Canal d'événements — branché, pas encore exploité.
@@ -689,7 +917,9 @@ if (DEMO) {
       return;
     }
     const t = Math.random() < .55 ? "A" : "B";
-    s.score[t]++; s.serving = t;
+    s.score[t]++;
+    if (s.serving === t && Math.random() < .12) { s.aces[t]++; onVolleyEvent({ type: "ace", team: t, count: s.aces[t] }); }
+    s.serving = t;
     const target = s.setIndex === 2 * rules.setsToWin - 1 ? rules.pointsTieBreak : rules.pointsPerSet;
     if (s.score[t] >= target && s.score[t] - s.score[other(t)] >= rules.minLead) {
       s.history.push({ A: s.score.A, B: s.score.B, winner: t });
