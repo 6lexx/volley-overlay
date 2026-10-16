@@ -241,7 +241,7 @@
      ÉCHAUFFEMENT — cartes joueurs fixes, renouvelées en fondu
      Tout est en "em" : 1em = 1vh × échelle (réglé sur .wu)
      ========================================================= */
-  .bug.wu-hide, .bug.ti-hide { opacity: 0; transform: translateY(2vh); }
+  .bug.wu-hide, .bug.ti-hide, .bug.is-hide { opacity: 0; transform: translateY(2vh); }
   .clock.ti-hide { opacity: 0; }
   .wu {
     position: fixed; z-index: 3; left: 4vw; right: 4vw; bottom: 4vh;
@@ -291,6 +291,7 @@
      ========================================================= */
   .bl { position: fixed; z-index: 3; left: 4vw; bottom: 6vh; font-size: calc(1vh * var(--scale)); display: flex; flex-direction: column; align-items: flex-start; gap: 1.2em; pointer-events: none; }
   .bl.right { left: auto; right: 4vw; align-items: flex-end; }
+  .bl > [hidden] { display: none !important; }
   .sk { transform: skewX(var(--skew)); }
   .sk > .u { display: block; transform: skewX(calc(var(--skew) * -1)); white-space: nowrap; }
   .dot { width: .55em; height: .55em; flex: none; background: var(--red); transform: rotate(45deg); animation: wuPulse 1.6s ease-in-out infinite; }
@@ -1228,6 +1229,7 @@ function updateBanners(s) {
   } else { clearInterval(toTick); toSig = ""; }
 
   showPanel($("is"), isOn);
+  $("bug").classList.toggle("is-hide", isOn);         // le bandeau d'inter-set remplace le score
   showPanel($("to"), !!t);
   requestAnimationFrame(placeClock);
   setTimeout(placeClock, 650);
