@@ -57,7 +57,7 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 - Dès que le set est gagné (25 points, 15 au tie-break, 2 points d'écart), **le volet se lance tout seul**. Il montre le score du set, les noms complets et les losanges de sets, et le losange du set gagné se remplit.
 - Appuie ensuite sur **Valider le set** pour passer au set suivant.
 - **Victoire du set** (dans Événements) rejoue le volet du dernier set.
-- **Inter-set** (dans Événements) : un bandeau reste en bas à gauche pendant la pause, avec le score en sets, le détail de chaque set, le total d'aces et le prochain set.
+- **Inter-set** (dans Événements) : un bandeau reste en bas à gauche pendant la pause, avec le score en sets, le détail de chaque set, le total d'aces et le prochain set. Le score de droite est masqué pendant ce temps.
   Le bouton devient **Retirer**. Le bandeau se retire aussi tout seul au **premier point du set suivant**.
 
 ### Fin du match
