@@ -172,6 +172,25 @@
   .vfx .pname { font-weight: 900; font-size: 7cqh; line-height: 1; }
   .vfx .ptot { transform: skewX(var(--skew)); background: var(--c); color: var(--f); padding: .6cqh 2.2cqh; font-weight: 900; font-size: 8cqh; line-height: 1; }
 
+  /* =========================================================
+     FIN DE SET — le volet
+     ========================================================= */
+  .sfx { position: absolute; inset: 0; overflow: hidden; font-family: var(--num); color: var(--f); }
+  /* Le volet — fin de set */
+  .sfx .wp { position: absolute; top: -10cqh; left: -30cqw; width: 160cqw; height: 120cqh; }
+  .sfx .wbox { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqh; }
+  .sfx .w-k { font-family: var(--small); font-weight: 700; font-size: 4.6cqh; letter-spacing: .8cqh; line-height: 1; }
+  .sfx .w-line { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; column-gap: 5cqh; width: min(160cqh, 92cqw); }
+  .sfx .w-side { display: flex; flex-direction: column; align-items: center; gap: 2.2cqh; min-width: 0; text-align: center; }
+  .sfx .w-pt { font-weight: 900; font-size: 26cqh; line-height: .9; font-variant-numeric: tabular-nums; }
+  .sfx .w-team { font-weight: 900; font-size: var(--tn, 6.4cqh); line-height: 1; letter-spacing: .2cqh; text-transform: uppercase; text-wrap: balance; overflow-wrap: anywhere; max-width: 100%; }
+  .sfx .lose { opacity: .5; }
+  .sfx .w-d { font-weight: 900; font-size: 14cqh; line-height: 1; opacity: .8; margin-top: 5cqh; }
+  .sfx .w-dia { display: flex; gap: 2.8cqh; margin-top: .6cqh; }
+  .sfx .w-dia i { position: relative; width: 4.2cqh; height: 4.2cqh; border: .7cqh solid var(--f); box-sizing: border-box; transform: rotate(45deg); transition: background .2s; }
+  .sfx .w-dia i.on { background: var(--f); }
+  .sfx .w-ring { position: absolute; inset: -.6cqh; border: .5cqh solid var(--f); }
+
   .debug {
     position: fixed; left: 1vh; top: 1vh;
     font: 600 2vh system-ui, sans-serif; color: #fff;
@@ -277,11 +296,12 @@ function el(tag, cls, text) {
 let shownSets = -1;   // nombre de sets déjà affichés (pour animer le nouveau)
 
 function render(s) {
-  if (!s || !s.meta) { LAST = null; VolleyFX.stop(true); $("bug").classList.add("hidden"); return; }
+  if (!s || !s.meta) { LAST = null; VolleyFX.stop(true); SetFX.stop(true); $("bug").classList.add("hidden"); return; }
   LAST = s;
   // Bandeaux de victoire en cours : on les retire si le match repart (annulation,
   // point, nouveau match) ou si l'overlay est masqué depuis l'appli.
   if (VolleyFX.running() && (!s.visible || (s.phase !== "matchEnd" && stateKey(s) !== fxKey))) VolleyFX.stop(true);
+  if (SetFX.running() && (!s.visible || stateKey(s) !== setKey)) SetFX.stop(true);
   const teams = s.meta.teams;
   const R = s.meta.rules;
   const order = s.swapped ? ["B", "A"] : ["A", "B"];
@@ -479,6 +499,123 @@ window.addEventListener("volley:event", (e) => {
 });
 
 // ===========================================================
+//  FIN DE SET — le volet
+//  Déclenché par "setEnd" (set confirmé) ou le bouton "Victoire du set".
+//  Le score se met à jour sous le volet ; le losange du set gagné se
+//  remplit dans le volet avant qu'il se referme.
+// ===========================================================
+let setKey = null;
+
+const SetFX = (() => {
+  const EASE = { out: "cubic-bezier(.16,1,.3,1)", in: "cubic-bezier(.7,0,.84,0)", io: "cubic-bezier(.65,0,.35,1)" };
+  let cur = null;
+  const h = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const rgb = (hex) => { const n = parseInt(String(hex).slice(1), 16) || 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const lum = (hex) => { const [r, g, b] = rgb(hex); return .299 * r + .587 * g + .114 * b; };
+  const shade = (hex, k) => "#" + rgb(hex).map((c) => Math.max(0, Math.min(255, Math.round(c * (1 + k)))).toString(16).padStart(2, "0")).join("");
+
+  function model(o) {
+    const w = o.winner, l = other(w), T = o.teams;
+    const color = T[w]?.color || (w === "A" ? "#D3121F" : "#555555");
+    return { w, l, T, color, deep: shade(color, -.45), fg: lum(color) > 150 ? "#1A1416" : "#FFFFFF", n: o.setIndex, pts: o.points, sets: o.sets };
+  }
+  function finish(c) {
+    c.anims.forEach((a) => { try { a.cancel(); } catch (e) {} });
+    c.timers.forEach(clearTimeout);
+    c.layer.remove();
+    if (cur === c) cur = null;
+    c.done && c.done();
+  }
+  function stop(fast) {
+    const c = cur;
+    if (!c) return;
+    cur = null;
+    c.timers.forEach(clearTimeout);
+    if (!fast) return finish(c);
+    const a = c.layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 250, fill: "forwards" });
+    a.onfinish = () => finish(c);
+  }
+  function play(root, o) {
+    stop();
+    const m = model(o);
+    const L = h("div", "sfx");
+    L.style.setProperty("--c", m.color); L.style.setProperty("--d", m.deep); L.style.setProperty("--f", m.fg);
+    root.append(L);
+    const c = { layer: L, anims: [], timers: [], land: () => {} };
+    cur = c;
+    const A = (el, kf, x) => { const a = el.animate(kf, { fill: "both", easing: EASE.out, ...x }); c.anims.push(a); return a; };
+    const total = BUILD.wipe(L, m, A, o, c);
+    return new Promise((res) => { c.done = res; c.timers.push(setTimeout(() => { if (cur === c) { cur = null; finish(c); } }, total)); });
+  }
+  const BUILD = {
+    /* Le volet : balayage plein écran, score du set, noms complets et losanges des sets.
+       Le losange du set gagné se remplit avant que le volet se referme. */
+    wipe(L, m, A, o, c) {
+      [["var(--d)", 0], ["var(--c)", 90]].forEach(([bg, dl]) => {
+        const p = h("div", "wp"); p.style.background = bg; L.append(p);
+        A(p, [{ transform: "translateX(170cqw) skewX(-12deg)" }, { transform: "translateX(0) skewX(-12deg)" }], { duration: 480, delay: dl, easing: EASE.io });
+        A(p, [{ transform: "translateX(0) skewX(-12deg)" }, { transform: "translateX(-180cqw) skewX(-12deg)" }], { duration: 520, delay: 4000 + (90 - dl), easing: EASE.io, fill: "forwards" });
+      });
+      const N = o.setsToWin || 3;
+      const names = { A: m.T.A.name || m.T.A.short || "", B: m.T.B.name || m.T.B.short || "" };
+      const longest = Math.max(names.A.length, names.B.length);
+      const tn = longest > 24 ? "4.2cqh" : longest > 16 ? "5.2cqh" : "6.4cqh";   // noms longs : un peu plus petit
+      let fresh = null;
+      const side = (t) => {
+        const lose = t === m.w ? "" : " lose";
+        const s = h("div", "w-side");
+        const name = h("span", "w-team" + lose, names[t]);
+        name.style.setProperty("--tn", tn);
+        const dia = h("div", "w-dia");
+        const kids = Array.from({ length: N }, () => h("i"));
+        dia.append(...kids);
+        const order = t === "A" ? [...kids].reverse() : kids;   // comme le score : on remplit depuis le centre
+        const before = m.sets[t] - (t === m.w ? 1 : 0);
+        order.forEach((k, i) => k.classList.toggle("on", i < before));
+        if (t === m.w) fresh = order[m.sets[t] - 1] || null;
+        s.append(h("span", "w-pt" + lose, String(m.pts[t])), dia, name);   // losanges alignés sous les points, le nom peut passer sur 2 lignes
+        return s;
+      };
+      const box = h("div", "wbox"), line = h("div", "w-line");
+      line.append(side("A"), h("span", "w-d", "–"), side("B"));
+      box.append(h("div", "w-k", `FIN DU SET ${m.n}`), line);
+      L.append(box);
+      A(box, [{ opacity: 0, transform: "translateX(6cqw)" }, { opacity: 1, transform: "translateX(0)" }], { duration: 420, delay: 420 });
+      A(box, [{ opacity: 1, transform: "translateX(0)" }, { opacity: 0, transform: "translateX(-8cqw)" }], { duration: 320, delay: 3900, easing: EASE.in, fill: "forwards" });
+      if (fresh) c.timers.push(setTimeout(() => {
+        fresh.classList.add("on");
+        A(fresh, [{ transform: "rotate(45deg) scale(1)" }, { transform: "rotate(45deg) scale(1.8)" }, { transform: "rotate(45deg) scale(1)" }], { duration: 520, fill: "none" });
+        const r = h("span", "w-ring"); fresh.append(r);
+        A(r, [{ transform: "scale(1)", opacity: 1 }, { transform: "scale(3.2)", opacity: 0 }], { duration: 750, fill: "forwards" });
+      }, 1900));
+      c.timers.push(setTimeout(c.land, 500));
+      return 4700;
+    }
+  };
+  return { play, stop, running: () => !!cur };
+})();
+
+function startSetFx(team) {
+  setTimeout(() => {
+    const s = LAST;
+    if (!s || !s.meta || !s.visible || s.phase !== "setEnd") return;   // seulement une fois le set confirmé
+    if (SetFX.running() || VolleyFX.running()) return;
+    const last = s.history[s.history.length - 1];
+    if (!last) return;
+    setKey = stateKey(s);
+    SetFX.play($("fx"), {
+      winner: team || last.winner, teams: s.meta.teams, setIndex: s.setIndex,
+      points: { A: last.A, B: last.B }, sets: s.sets, setsToWin: s.meta.rules?.setsToWin || 3
+    }).then(() => { setKey = null; });
+  }, 500);
+}
+
+window.addEventListener("volley:event", (e) => {
+  const ev = e.detail || {};
+  if (ev.type === "setEnd" || ev.type === "setWin") startSetFx(ev.team);
+});
+
+// ===========================================================
 //  Canal d'événements — branché, pas encore exploité.
 //    window.addEventListener("volley:event", (e) => console.log(e.detail))
 // ===========================================================
@@ -516,6 +653,10 @@ if (DEMO) {
   render(s);
   setInterval(() => {
     if (s.phase === "matchEnd") return;
+    if (s.phase === "setEnd") {                       // pause entre les sets (~6 s)
+      if (++s.pause > 5) { s.pause = 0; s.phase = "playing"; s.setIndex++; s.score = { A: 0, B: 0 }; render(s); }
+      return;
+    }
     const t = Math.random() < .55 ? "A" : "B";
     s.score[t]++; s.serving = t;
     const target = s.setIndex === 2 * rules.setsToWin - 1 ? rules.pointsTieBreak : rules.pointsPerSet;
@@ -523,7 +664,7 @@ if (DEMO) {
       s.history.push({ A: s.score.A, B: s.score.B, winner: t });
       s.sets[t]++;
       if (s.sets[t] >= rules.setsToWin) { s.phase = "matchEnd"; s.winner = t; onVolleyEvent({ type: "matchEnd", team: t }); }
-      else { s.setIndex++; s.score = { A: 0, B: 0 }; }
+      else { s.phase = "setEnd"; s.pause = 0; onVolleyEvent({ type: "setEnd", team: t }); }
     }
     render(s);
   }, 1200);
