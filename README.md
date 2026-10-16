@@ -16,6 +16,9 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 | Appli de contrôle | `https://6lexx.github.io/volley-overlay/control.html?m=volley-silex&k=CLÉ` |
 | Démo (sans Firebase) | https://6lexx.github.io/volley-overlay/display.html?demo=1 |
 | Démo de l'échauffement | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=warmup |
+| Démo de l'inter-set | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=interset |
+| Démo du temps mort | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=timeout |
+| Démo de la présentation | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=intro |
 
 > ⚠️ **Ne jamais écrire la clé de contrôle (`k=…`) dans ce dépôt.** Il est public : n'importe qui pourrait piloter le score.
 > Garde le lien complet de l'appli dans tes notes privées et envoie-le directement à la personne qui tient le score.
@@ -37,19 +40,25 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 2. **Joueurs présents** : coche les joueurs du jour. La liste est gardée d'un match à l'autre.
 3. **Événements à l'écran → Échauffement → Afficher** : le bloc d'affiche et les cartes joueurs apparaissent et défilent en fondu.
    Le bouton devient **Retirer**. L'échauffement se retire aussi tout seul au **premier point**.
+4. **Événements → Présentation des équipes → Afficher** : toute la compo du jour s'affiche en plein écran, joueur par joueur, triée par poste, pendant 20 secondes.
 
 ### Pendant le match
 - **+1** sous l'équipe qui marque.
 - **Ace** (dans Événements) : choisis l'équipe. L'ace est compté dans le match et lance une animation :
   - pour RMV, au hasard, le **chant** (« ACE ! ACE ! clap clap » ×3) ou la **frappe** ;
   - pour l'adversaire, une **pastille** sobre.
-- **Annuler** corrige la dernière action (point, ace, set) et coupe l'animation en cours.
+- **Temps mort** (dans Événements) : choisis l'équipe. Un bandeau à sa couleur reste en bas à gauche, avec un compte à rebours de 30 s.
+  Le bouton de l'équipe devient **Retirer**. Le bandeau se retire aussi tout seul au **point suivant**.
+- **Remettre les aces à 0** (sous le bouton Ace) : deux appuis pour confirmer. « Annuler » revient en arrière en cas d'erreur.
+- **Annuler** corrige la dernière action (point, ace, set, remise à zéro des aces) et coupe l'animation en cours.
 - **Overlay visible / masqué** cache tout l'overlay. Ça sert aussi à couper une animation.
 
 ### Fin de set
 - Dès que le set est gagné (25 points, 15 au tie-break, 2 points d'écart), **le volet se lance tout seul**. Il montre le score du set, les noms complets et les losanges de sets, et le losange du set gagné se remplit.
 - Appuie ensuite sur **Valider le set** pour passer au set suivant.
 - **Victoire du set** (dans Événements) rejoue le volet du dernier set.
+- **Inter-set** (dans Événements) : un bandeau reste en bas à gauche pendant la pause, avec le score en sets, le détail de chaque set, le total d'aces et le prochain set.
+  Le bouton devient **Retirer**. Le bandeau se retire aussi tout seul au **premier point du set suivant**.
 
 ### Fin du match
 - Au dernier set gagné, **les bandeaux de victoire** partent tout seuls à la place du volet et restent 2 min 30. Le score revient ensuite avec le résultat final en sets.
@@ -70,8 +79,9 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 | `victoire` | `150` (défaut) | Durée des bandeaux de victoire, en secondes. |
 | `tempo` | `400` (défaut) | Durée d'un temps du chant de l'ace, en millisecondes. Plus petit = plus rapide. |
 | `rotation` | `7` (défaut) | Échauffement : secondes avant de passer aux joueurs suivants. |
+| `compo` | `20` (défaut) | Présentation des équipes : durée d'affichage, en secondes. |
 | `demo` | `1` | Faux match animé, sans Firebase, pour tester le rendu. |
-| `scene` | `warmup` | Avec `demo=1` : affiche l'échauffement. |
+| `scene` | `warmup`, `interset`, `timeout`, `intro` | Avec `demo=1` : aperçu de l'échauffement, de l'inter-set, du temps mort ou de la présentation. |
 | `debug` | `1` | Affiche l'état de la connexion. Jamais en live. |
 | `v` | `8`, `9`… | Force le rechargement après une mise à jour (cache). |
 
