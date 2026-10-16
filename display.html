@@ -241,7 +241,8 @@
      ÉCHAUFFEMENT — cartes joueurs fixes, renouvelées en fondu
      Tout est en "em" : 1em = 1vh × échelle (réglé sur .wu)
      ========================================================= */
-  .bug.wu-hide { opacity: 0; transform: translateY(2vh); }
+  .bug.wu-hide, .bug.ti-hide { opacity: 0; transform: translateY(2vh); }
+  .clock.ti-hide { opacity: 0; }
   .wu {
     position: fixed; z-index: 3; left: 4vw; right: 4vw; bottom: 4vh;
     font-size: calc(1vh * var(--scale));
@@ -284,6 +285,55 @@
   .pc-pos span { display: block; line-height: 1.15 !important; transform: skewX(calc(var(--skew) * -1)); font: 700 2.1em/1 var(--small); letter-spacing: .12em; text-transform: uppercase; }
   .pc-line { transform: skewX(var(--skew)); background: rgba(26, 20, 22, .92); color: var(--white); padding: .55em 1.1em; max-width: 27em; }
   .pc-line span { display: block; transform: skewX(calc(var(--skew) * -1)); font: 600 2.2em/1.15 var(--small); }
+
+  /* =========================================================
+     BANDEAUX DU COIN (inter-set, temps mort) — en "em" : 1em = 1vh × échelle
+     ========================================================= */
+  .bl { position: fixed; z-index: 3; left: 4vw; bottom: 6vh; font-size: calc(1vh * var(--scale)); display: flex; flex-direction: column; align-items: flex-start; gap: 1.2em; pointer-events: none; }
+  .bl.right { left: auto; right: 4vw; align-items: flex-end; }
+  .sk { transform: skewX(var(--skew)); }
+  .sk > .u { display: block; transform: skewX(calc(var(--skew) * -1)); white-space: nowrap; }
+  .dot { width: .55em; height: .55em; flex: none; background: var(--red); transform: rotate(45deg); animation: wuPulse 1.6s ease-in-out infinite; }
+
+  /* Inter-set */
+  .is { display: flex; flex-direction: column; align-items: flex-start; gap: .7em; filter: drop-shadow(0 .6em 1.2em rgba(0, 0, 0, .35)); }
+  .is-k { background: var(--ink); color: var(--white); padding: .6em 1.4em; }
+  .is-k .u { display: flex; align-items: center; gap: .5em; font: 700 2.1em/1 var(--small); letter-spacing: .16em; }
+  .is-main { background: var(--red); color: var(--white); padding: .55em 2.2em .45em; }
+  .is-main .u { display: flex; align-items: center; gap: .45em; font: 900 6.4em/1 var(--num); font-variant-numeric: tabular-nums; }
+  .is-main .t { font-size: .5em; letter-spacing: .06em; }
+  .is-main .d { opacity: .7; }
+  .is-tabs { display: flex; flex-wrap: wrap; gap: .8em; padding-left: .6em; max-width: 60vw; }
+  .is-tab { background: var(--white); color: var(--ink); padding: .5em 1.1em; }
+  .is-tab .u { font: 700 2.5em/1 var(--small); font-variant-numeric: tabular-nums; }
+  .is-tab .w { color: var(--red); } .is-tab .l { color: var(--loser); }
+  .is-tab.dark { background: var(--ink); color: var(--white); }
+
+  /* Temps mort */
+  .to { filter: drop-shadow(0 .6em 1.2em rgba(0, 0, 0, .35)); }
+  .to-main { background: var(--c, var(--red)); color: var(--f, #fff); padding: .9em 2.4em 1.1em; min-width: 30em; }
+  .to-main .u { display: flex; flex-direction: column; gap: .45em; white-space: nowrap; }
+  .to-row { display: flex; align-items: center; justify-content: space-between; gap: 2em; }
+  .to-k { font: 700 2.2em/1 var(--small); letter-spacing: .2em; }
+  .to-sec { font: 900 3.4em/1 var(--num); font-variant-numeric: tabular-nums; }
+  .to-name { font: 900 var(--to-fs, 4.6em)/1 var(--num); letter-spacing: .04em; text-transform: uppercase; }
+  .to-bar { height: .7em; background: rgba(0, 0, 0, .28); margin-top: .5em; overflow: hidden; }
+  .to-bar i { display: block; height: 100%; background: currentColor; transform-origin: 0 50%; }
+
+  /* =========================================================
+     PRÉSENTATION DES ÉQUIPES — plein écran, façon compo
+     ========================================================= */
+  .ti { position: fixed; inset: 0; z-index: 4; font-size: calc(.74vh * var(--scale)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4em; background: rgba(16, 12, 13, .86); pointer-events: none; }
+  .ti[hidden] { display: none; }
+  .ti-head { display: flex; align-items: center; gap: 3em; }
+  .ti-crest { width: 17em; height: 17em; border-radius: 50%; background: var(--white); border: .9em solid var(--red); box-sizing: border-box; display: grid; place-items: center; overflow: hidden; flex: none; }
+  .ti-crest img { width: 92%; height: 92%; object-fit: contain; }
+  .ti-ttl { display: flex; flex-direction: column; gap: .9em; }
+  .ti-k { font: 700 3em/1 var(--small); letter-spacing: .3em; color: var(--red); }
+  .ti-name { font: 900 10em/.9 var(--num); letter-spacing: .03em; color: var(--white); text-transform: uppercase; }
+  .ti-vs { font: 700 3.4em/1 var(--small); letter-spacing: .14em; color: rgba(255, 255, 255, .75); text-transform: uppercase; }
+  .ti-grid { display: flex; flex-direction: column; align-items: center; gap: 2.6em; }
+  .ti-row { display: flex; justify-content: center; gap: 2.6em; }
 
   .debug {
     position: fixed; left: 1vh; top: 1vh;
@@ -331,6 +381,16 @@
   <div class="wu-cards" id="wuCards"></div>
 </div>
 
+<div class="bl" id="bl">
+  <div class="is" id="is" hidden></div>
+  <div class="to" id="to" hidden></div>
+</div>
+
+<div class="ti" id="ti" hidden aria-hidden="true">
+  <div class="ti-head" id="tiHead"></div>
+  <div class="ti-grid" id="tiGrid"></div>
+</div>
+
 <div class="fx-root" id="fx"></div>
 
 <div class="debug" id="debug" hidden></div>
@@ -348,6 +408,8 @@
 //    clock=0           masque l'horloge
 //    scene=warmup      (avec demo=1) affiche l'échauffement
 //    rotation=7        échauffement : secondes avant de passer aux joueurs suivants
+//    compo=20          présentation des équipes : durée d'affichage, en secondes
+//    scene=interset|timeout|intro   (avec demo=1) aperçu des autres affichages
 // ===========================================================
 const qs    = new URLSearchParams(location.search);
 const M     = qs.get("m");
@@ -404,13 +466,14 @@ function el(tag, cls, text) {
 let shownSets = -1;   // nombre de sets déjà affichés (pour animer le nouveau)
 
 function render(s) {
-  updateClock(s); updateWarmup(s);
+  updateClock(s); updateWarmup(s); updateBanners(s);
   if (!s || !s.meta) { LAST = null; VolleyFX.stop(true); SetFX.stop(true); $("bug").classList.add("hidden"); return; }
   LAST = s;
   // Bandeaux de victoire en cours : on les retire si le match repart (annulation,
   // point, nouveau match) ou si l'overlay est masqué depuis l'appli.
   if (VolleyFX.running() && (!s.visible || (s.phase !== "matchEnd" && stateKey(s) !== fxKey))) VolleyFX.stop(true);
   if (SetFX.running() && (!s.visible || !setStillOver(s, setN))) SetFX.stop(true);
+  if (!s.visible && !$("ti").hidden) stopIntro();
   if (AceFX.running() && aceRun && (!s.visible || s.aces[aceRun.team] < aceRun.n)) AceFX.stop(true);
   // Set gagné (25 points) : l'appli passe en "fin de set" → on lance l'animation
   if (prevPhase !== null && prevPhase !== "setEnd" && s.phase === "setEnd") onSetFinished(null, true, false);
@@ -750,7 +813,7 @@ let setN = 0;
 function startSetFx(team, f) {
   const s = LAST;
   if (!s || !s.meta || !s.visible || !f || SetFX.running() || VolleyFX.running()) return;
-  AceFX.stop(true);
+  AceFX.stop(true); stopIntro();
   setN = f.n;
   SetFX.play($("fx"), {
     winner: team || f.winner, teams: s.meta.teams, setIndex: f.n,
@@ -1007,6 +1070,23 @@ function playerCard(p) {
   return c;
 }
 
+// Noms longs : le nom commence après le numéro et rapetisse jusqu'à tenir dans le losange
+function fitCards(box) {
+  const em = parseFloat(getComputedStyle(box).fontSize) || innerHeight / 100;
+  box.querySelectorAll(".pc-band").forEach((b) => {
+    const sp = b.firstChild, num = b.parentNode.querySelector(".pc-num");
+    if (num && num.textContent) b.style.paddingLeft = Math.round(num.offsetLeft + num.offsetWidth + em * 1.4) + "px";
+    for (const fs of ["3.3em", "2.9em", "2.5em", "2.2em"]) {
+      b.style.setProperty("--nf", fs);
+      if (sp.scrollWidth <= sp.clientWidth + 1) break;
+    }
+  });
+  // même taille de nom pour toutes les cartes affichées ensemble (la plus petite)
+  const bands = [...box.querySelectorAll(".pc-band")];
+  const min = Math.min(...bands.map((b) => parseFloat(b.style.getPropertyValue("--nf")) || 3.3));
+  bands.forEach((b) => b.style.setProperty("--nf", min + "em"));
+}
+
 function perPage() {
   const em = parseFloat(getComputedStyle($("wu")).fontSize) || innerHeight / 100;
   const area = $("wuCards").clientWidth, card = 31 * em, gap = 2.6 * em;
@@ -1016,8 +1096,10 @@ function perPage() {
 // L'horloge se pose juste au-dessus du bloc ÉCHAUFFEMENT
 function placeClock() {
   const c = $("clock");
-  if (!wuOn) { c.style.bottom = ""; return; }
-  const r = $("wuHead").getBoundingClientRect();
+  const corner = [...$("bl").children].some((x) => !x.hidden);
+  const anchor = wuOn ? $("wuHead") : corner && !$("bl").classList.contains("right") ? $("bl") : null;
+  if (!anchor) { c.style.bottom = ""; return; }
+  const r = anchor.getBoundingClientRect();
   c.style.bottom = Math.round(innerHeight - r.top + innerHeight * .016) + "px";
 }
 
@@ -1028,16 +1110,7 @@ function showPage() {
   const n = perPage(), pages = Math.ceil(list.length / n);
   if (wuPage >= pages) wuPage = 0;
   box.replaceChildren(...list.slice(wuPage * n, wuPage * n + n).map(playerCard));
-  // Noms longs : on réduit la police jusqu'à ce que le nom tienne dans le losange
-  const em = parseFloat(getComputedStyle($("wu")).fontSize) || innerHeight / 100;
-  box.querySelectorAll(".pc-band").forEach((b) => {
-    const sp = b.firstChild, num = b.parentNode.querySelector(".pc-num");
-    if (num && num.textContent) b.style.paddingLeft = Math.round(num.offsetLeft + num.offsetWidth + em * 1.4) + "px";   // le nom commence après le numéro
-    for (const fs of ["3.3em", "2.9em", "2.5em", "2.2em"]) {
-      b.style.setProperty("--nf", fs);
-      if (sp.scrollWidth <= sp.clientWidth + 1) break;
-    }
-  });
+  fitCards(box);
   [...box.children].forEach((c, i) => c.animate(
     [{ opacity: 0, transform: "translateY(1.6em)" }, { opacity: 1, transform: "translateY(0)" }],
     { duration: 600, delay: i * 120, easing: "cubic-bezier(.16,1,.3,1)", fill: "backwards" }));
@@ -1076,6 +1149,147 @@ function setPresent(val) {                             // { n7: true, ... } ou n
 addEventListener("resize", () => { if (wuOn) { showPage(); placeClock(); } });
 
 // ===========================================================
+//  INTER-SET et TEMPS MORT — bandeaux du coin, allumés / éteints
+//  depuis l'appli, retirés automatiquement au point suivant.
+// ===========================================================
+if (pos[0] === "b" && pos[1] === "l") $("bl").classList.add("right");   // score en bas à gauche → bandeaux à droite
+const TO_SECONDS = 30;
+let isSig = "", toSig = "", toTick = null;
+
+function sk(cls, ...kids) { const d = el("div", cls + " sk"); const u = el("span", "u"); u.append(...kids); d.append(u); return d; }
+function showPanel(node, on) {
+  if (on === !node.hidden) return;
+  if (on) {
+    node.hidden = false;
+    node.animate([{ opacity: 0, transform: "translateX(-6em)" }, { opacity: 1, transform: "none" }], { duration: 550, easing: "cubic-bezier(.16,1,.3,1)" });
+  } else {
+    const a = node.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(2em)" }], { duration: 300, fill: "forwards" });
+    a.onfinish = () => { node.hidden = true; a.cancel(); placeClock(); };
+  }
+}
+
+function updateBanners(s) {
+  const ok = !!(s && s.meta && s.visible !== false);
+  // ---- Inter-set
+  const isOn = ok && !!s.interSet;
+  if (isOn) {
+    const f = s.phase === "setEnd" ? finishedSet(s) : null;
+    const sets = f ? f.sets : s.sets, hist = f ? f.history : s.history;
+    const next = f ? f.n + 1 : s.setIndex;
+    const T = s.meta.teams, R = s.meta.rules || {};
+    const tie = next === 2 * (R.setsToWin || 3) - 1;
+    const sig = JSON.stringify([sets, hist, next, s.aces, T.A.short, T.B.short]);
+    if (sig !== isSig) {
+      isSig = sig;
+      const main = el("span", null); main.style.display = "contents";
+      const tabs = el("div", "is-tabs");
+      hist.forEach((h) => {
+        const u = [el("span", h.winner === "A" ? "w" : "l", h.A), el("span", "l", " - "), el("span", h.winner === "B" ? "w" : "l", h.B)];
+        tabs.append(sk("is-tab", ...u));
+      });
+      if (s.aces && (s.aces.A || s.aces.B)) tabs.append(sk("is-tab dark", `ACES ${s.aces.A} – ${s.aces.B}`));
+      $("is").replaceChildren(
+        sk("is-k", el("i", "dot"), `PAUSE · PROCHAIN : ${tie ? "TIE-BREAK" : "SET " + next}`),
+        sk("is-main", el("span", "t", T.A.short || ""), el("span", null, sets.A), el("span", "d", "–"), el("span", null, sets.B), el("span", "t", T.B.short || "")),
+        tabs
+      );
+    }
+  }
+  // ---- Temps mort
+  const t = ok && (s.timeout === "A" || s.timeout === "B") ? s.timeout : null;
+  if (t) {
+    const team = s.meta.teams[t];
+    const sig = `${t}|${s.timeoutAt || 0}|${team.name}`;
+    if (sig !== toSig) {
+      toSig = sig;
+      const color = team.color || (t === "A" ? "#D3121F" : "#555555");
+      const n = parseInt(String(color).slice(1), 16) || 0;
+      const fg = (.299 * (n >> 16 & 255) + .587 * (n >> 8 & 255) + .114 * (n & 255)) > 150 ? "#1A1416" : "#FFFFFF";
+      const name = team.name || team.short || "";
+      const secEl = el("span", "to-sec"), bar = el("div", "to-bar"), fill = el("i");
+      bar.append(fill);
+      const row = el("div", "to-row"); row.append(el("span", "to-k", "TEMPS MORT"), secEl);
+      const nm = el("span", "to-name", name);
+      nm.style.setProperty("--to-fs", name.length > 22 ? "3.2em" : name.length > 15 ? "3.8em" : "4.6em");
+      const main = sk("to-main", row, nm, bar);
+      main.style.setProperty("--c", color); main.style.setProperty("--f", fg);
+      $("to").replaceChildren(main);
+      // compte à rebours de 30 s (calé sur l'heure de l'appui dans l'appli)
+      const start = Math.min(Date.now(), s.timeoutAt || Date.now());
+      clearInterval(toTick);
+      const tick = () => {
+        const left = Math.max(0, TO_SECONDS - (Date.now() - start) / 1000);
+        secEl.textContent = left > 0 ? Math.ceil(left) + " s" : "";
+        fill.style.transform = `scaleX(${left / TO_SECONDS})`;
+        if (left <= 0) clearInterval(toTick);
+      };
+      tick(); toTick = setInterval(tick, 250);
+    }
+  } else { clearInterval(toTick); toSig = ""; }
+
+  showPanel($("is"), isOn);
+  showPanel($("to"), !!t);
+  requestAnimationFrame(placeClock);
+  setTimeout(placeClock, 650);
+}
+
+// ===========================================================
+//  PRÉSENTATION DES ÉQUIPES — toute la compo à l'écran, joueur par joueur
+// ===========================================================
+const TI_MS = Math.max(5, Number(qs.get("compo")) || 20) * 1000;
+const POS_ORDER = ["pass", "point", "récep", "recep", "centr", "lib"];
+let tiTimer = null, tiAnim = null;
+const posRank = (p) => { const s = String(p.position || "").toLowerCase(); const i = POS_ORDER.findIndex((k) => s.startsWith(k)); return i < 0 ? 9 : i; };
+
+function stopIntro() {
+  clearTimeout(tiTimer); tiTimer = null;
+  if ($("ti").hidden) return;
+  tiAnim = $("ti").animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, fill: "forwards" });
+  tiAnim.onfinish = () => {
+    $("ti").hidden = true; tiAnim.cancel(); tiAnim = null;
+    $("bug").classList.remove("ti-hide"); $("clock").classList.remove("ti-hide");
+  };
+}
+function startIntro() {
+  const s = LAST;
+  if (!s || !s.meta || s.visible === false) return;
+  if (VolleyFX.running() || SetFX.running()) return;
+  clearTimeout(tiTimer); tiAnim && tiAnim.cancel();
+  const T = s.meta.teams;
+  const players = presentRoster().slice().sort((a, b) => posRank(a) - posRank(b) || (a.number || 0) - (b.number || 0));
+
+  // En-tête : écusson, nom du club, adversaire
+  const crest = el("div", "ti-crest");
+  const logo = window.SCORE_CONFIG?.home?.logo || T.A.logo;
+  if (logo) { const i = new Image(); i.src = logo; i.alt = ""; i.onerror = () => i.remove(); crest.append(i); }
+  const ttl = el("div", "ti-ttl");
+  ttl.append(el("div", "ti-k", "LA COMPO DU JOUR"), el("div", "ti-name", T.A.name || T.A.short || ""), el("div", "ti-vs", `vs ${T.B.name || T.B.short || ""}`));
+  $("tiHead").replaceChildren(crest, ttl);
+
+  // Joueurs sur une ou deux lignes
+  const grid = $("tiGrid");
+  const perRow = players.length > 6 ? Math.ceil(players.length / 2) : players.length;
+  const rows = [];
+  for (let i = 0; i < players.length; i += perRow) rows.push(players.slice(i, i + perRow));
+  grid.replaceChildren(...rows.map((r) => { const row = el("div", "ti-row"); row.append(...r.map(playerCard)); return row; }));
+
+  $("ti").hidden = false;
+  $("bug").classList.add("ti-hide"); $("clock").classList.add("ti-hide");
+  fitCards(grid);
+  const E = "cubic-bezier(.16,1,.3,1)";
+  $("ti").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
+  $("tiHead").animate([{ opacity: 0, transform: "translateY(-3em)" }, { opacity: 1, transform: "none" }], { duration: 700, delay: 200, easing: E, fill: "backwards" });
+  grid.querySelectorAll(".pc").forEach((c, i) => c.animate(
+    [{ opacity: 0, transform: "translateY(2.5em) scale(.94)" }, { opacity: 1, transform: "none" }],
+    { duration: 650, delay: 800 + i * 320, easing: E, fill: "backwards" }));
+  tiTimer = setTimeout(stopIntro, TI_MS);
+}
+
+window.addEventListener("volley:event", (e) => {
+  if ((e.detail || {}).type === "teamIntro") startIntro();
+});
+
+// ===========================================================
 //  Canal d'événements — branché, pas encore exploité.
 //    window.addEventListener("volley:event", (e) => console.log(e.detail))
 // ===========================================================
@@ -1110,12 +1324,20 @@ if (DEMO) {
     history: [{ A: 25, B: 21, winner: "A" }, { A: 23, B: 25, winner: "B" }],
     visible: true, swapped: false
   });
-  if (qs.get("scene") === "warmup") {                // aperçu du bandeau d'échauffement
+  const SCENE = qs.get("scene");
+  if (SCENE === "warmup") {                          // aperçus
     Object.assign(s, { warmup: true, setIndex: 1, score: { A: 0, B: 0 }, sets: { A: 0, B: 0 }, history: [] });
+  } else if (SCENE === "interset") {
+    Object.assign(s, { interSet: true, score: { A: 0, B: 0 }, aces: { A: 3, B: 1 } });
+  } else if (SCENE === "timeout") {
+    Object.assign(s, { timeout: "B", timeoutAt: Date.now() });
+  } else if (SCENE === "intro") {
+    s.paused = true;
+    setTimeout(() => onVolleyEvent({ type: "teamIntro" }), 700);
   }
   render(s);
   setInterval(() => {
-    if (s.warmup) return;
+    if (s.warmup || s.interSet || s.timeout || s.paused) return;
     if (s.phase === "matchEnd") return;
     if (s.phase === "setEnd") {                       // pause entre les sets (~6 s)
       if (++s.pause > 5) { s.pause = 0; s.phase = "playing"; s.setIndex++; s.score = { A: 0, B: 0 }; render(s); }
