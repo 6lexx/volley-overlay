@@ -63,7 +63,7 @@ window.SCORE_CONFIG = {
     { number: 2,  name: "Matthys Verbregue", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: null },
     { number: 75,  name: "Romain Boyer", position: "Central",                      punchline: "Capitaine du navire", photo: null },
     { number: 10, name: "Quentin Audemard", position: "Central",                   punchline: "Je fais aussi du basket", photo: null },
-    { number: 17,  name: "Louanne GOHE", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: null },
+    { number: 17,  name: "Louanne Gohe", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: null },
     { number: 100,  name: "Sovann Hong", position: "Entraîneur",                   punchline: "J'entraîne tout ces fous", photo: null },
 
   ],
