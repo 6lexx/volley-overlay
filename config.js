@@ -46,6 +46,26 @@ window.SCORE_CONFIG = {
     logo:      null
   },
 
+  // --- Effectif RMV (échauffement) — les présents se cochent dans l'appli
+  //  number    : numéro de maillot (unique : il sert à retrouver le joueur)
+  //  name      : prénom et nom, ou surnom
+  //  position  : poste (Passeur, Pointu, Réceptionneur-attaquant, Central, Libéro)
+  //  punchline : une phrase courte, 50 caractères max conseillé
+  //  photo     : null = silhouette grise ; plus tard un PNG détouré, par ex. "assets/joueurs/7.png"
+  roster: [
+    { number: 1,  name: "Prénom Nom", position: "Passeur",                 punchline: "Ta phrase ici", photo: null },
+    { number: 2,  name: "Prénom Nom", position: "Passeur",                 punchline: "Ta phrase ici", photo: null },
+    { number: 3,  name: "Prénom Nom", position: "Pointu",                  punchline: "Ta phrase ici", photo: null },
+    { number: 4,  name: "Prénom Nom", position: "Pointu",                  punchline: "Ta phrase ici", photo: null },
+    { number: 5,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
+    { number: 6,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
+    { number: 7,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
+    { number: 8,  name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
+    { number: 9,  name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
+    { number: 10, name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
+    { number: 11, name: "Prénom Nom", position: "Libéro",                  punchline: "Ta phrase ici", photo: null }
+  ],
+
   // --- Contrôle
   control: {
     undoDepth: 30            // nombre d'actions annulables
