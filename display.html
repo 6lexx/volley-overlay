@@ -301,7 +301,11 @@ function render(s) {
   // Bandeaux de victoire en cours : on les retire si le match repart (annulation,
   // point, nouveau match) ou si l'overlay est masqué depuis l'appli.
   if (VolleyFX.running() && (!s.visible || (s.phase !== "matchEnd" && stateKey(s) !== fxKey))) VolleyFX.stop(true);
-  if (SetFX.running() && (!s.visible || stateKey(s) !== setKey)) SetFX.stop(true);
+  if (SetFX.running() && (!s.visible || !setStillOver(s, setN))) SetFX.stop(true);
+  // Set gagné (25 points) : l'appli passe en "fin de set" → on lance l'animation
+  if (prevPhase !== null && prevPhase !== "setEnd" && s.phase === "setEnd") onSetFinished(null, true, false);
+  prevPhase = s.phase;
+  if (playedN && !setStillOver(s, playedN)) { playedKey = null; playedN = 0; }   // set annulé : on pourra le rejouer
   const teams = s.meta.teams;
   const R = s.meta.rules;
   const order = s.swapped ? ["B", "A"] : ["A", "B"];
@@ -375,7 +379,7 @@ function render(s) {
 //  le score s'efface ; il revient ensuite avec le résultat final.
 // ===========================================================
 const FX_HOLD = Math.max(5, Number(qs.get("victoire")) || 150) * 1000;
-let LAST = null, fxKey = null;
+let LAST = null, fxKey = null, prevPhase = null;
 const stateKey = (s) => `${s.phase}|${s.setIndex}|${s.score.A}-${s.score.B}|${s.history.length}`;
 
 const VolleyFX = (() => {
@@ -474,28 +478,65 @@ const VolleyFX = (() => {
   return { play, stop, running: () => !!cur };
 })();
 
-function startVictory(team) {
-  // Petit délai : laisse arriver l'état final (dernier set) avant de lancer
-  setTimeout(() => {
-    const s = LAST;
-    if (!s || !s.meta || !s.visible || VolleyFX.running()) return;
-    const winner = team || s.winner || (s.sets.A >= s.sets.B ? "A" : "B");
-    fxKey = stateKey(s);
-    $("bug").classList.add("fx-hide");
-    VolleyFX.play($("fx"), {
-      winner, hold: FX_HOLD,
-      teams: s.meta.teams, sets: s.sets, history: s.history,
-      logo: window.SCORE_CONFIG?.home?.logo || s.meta.teams.A.logo
-    }).then(() => {
-      fxKey = null;
-      $("bug").classList.remove("fx-hide");   // le score revient avec le résultat final
-    });
-  }, 500);
+// Le set qui vient de se terminer, d'après l'état de l'appli :
+//  - à 25 points, le set est "en attente" (phase setEnd, pas encore compté) ;
+//  - après "Valider le set", il est dans l'historique et le set suivant a commencé.
+function finishedSet(s) {
+  if (!s || !s.meta) return null;
+  const R = s.meta.rules || {};
+  const toWin = R.setsToWin || 3;
+  if (s.phase === "setEnd" && s.pendingWinner) {
+    const w = s.pendingWinner;
+    const sets = { ...s.sets, [w]: s.sets[w] + 1 };
+    const row = { A: s.score.A, B: s.score.B, winner: w };
+    return { n: s.setIndex, winner: w, points: { A: row.A, B: row.B }, sets, history: [...s.history, row], isMatch: sets[w] >= toWin };
+  }
+  const last = s.history[s.history.length - 1];
+  if (!last) return null;
+  return { n: s.history.length, winner: last.winner, points: { A: last.A, B: last.B }, sets: { ...s.sets }, history: s.history, isMatch: s.phase === "matchEnd" || s.sets[last.winner] >= toWin };
+}
+// Le set n est-il toujours terminé ? (sinon : annulation → on coupe l'animation)
+const setStillOver = (s, n) => (s.phase === "setEnd" && s.setIndex === n) || s.history.length >= n;
+
+let playedKey = null, playedN = 0;   // évite de rejouer la même fin de set (25 points puis validation)
+const keyOf = (f) => `${f.n}|${f.points.A}-${f.points.B}`;
+
+function startVictory(team, f) {
+  const s = LAST;
+  if (!s || !s.meta || !s.visible || VolleyFX.running()) return;
+  f = f || finishedSet(s);
+  const sets = f ? f.sets : s.sets, history = f ? f.history : s.history;
+  const winner = team || (f && f.winner) || s.winner || (sets.A >= sets.B ? "A" : "B");
+  SetFX.stop();
+  fxKey = stateKey(s);
+  $("bug").classList.add("fx-hide");
+  VolleyFX.play($("fx"), {
+    winner, hold: FX_HOLD, teams: s.meta.teams, sets, history,
+    logo: window.SCORE_CONFIG?.home?.logo || s.meta.teams.A.logo
+  }).then(() => {
+    fxKey = null;
+    $("bug").classList.remove("fx-hide");   // le score revient avec le résultat final
+  });
+}
+
+// auto = déclenché par le jeu (25 points, validation) ; sinon bouton de l'appli
+function onSetFinished(team, auto, forceMatch) {
+  setTimeout(() => {                         // laisse arriver l'état à jour
+    const f = finishedSet(LAST);
+    if (!f) { if (forceMatch) startVictory(team); return; }
+    if (auto && playedKey === keyOf(f)) return;
+    playedKey = keyOf(f); playedN = f.n;
+    if (f.isMatch || forceMatch) startVictory(team, f);
+    else startSetFx(team, f);
+  }, 400);
 }
 
 window.addEventListener("volley:event", (e) => {
   const ev = e.detail || {};
-  if (ev.type === "matchWin" || ev.type === "matchEnd") startVictory(ev.team);
+  if (ev.type === "matchEnd") onSetFinished(ev.team, true, true);
+  if (ev.type === "matchWin") onSetFinished(ev.team, false, true);
+  if (ev.type === "setEnd")   onSetFinished(ev.team, true, false);
+  if (ev.type === "setWin")   onSetFinished(ev.team, false, false);
 });
 
 // ===========================================================
@@ -504,7 +545,6 @@ window.addEventListener("volley:event", (e) => {
 //  Le score se met à jour sous le volet ; le losange du set gagné se
 //  remplit dans le volet avant qu'il se referme.
 // ===========================================================
-let setKey = null;
 
 const SetFX = (() => {
   const EASE = { out: "cubic-bezier(.16,1,.3,1)", in: "cubic-bezier(.7,0,.84,0)", io: "cubic-bezier(.65,0,.35,1)" };
@@ -595,25 +635,16 @@ const SetFX = (() => {
   return { play, stop, running: () => !!cur };
 })();
 
-function startSetFx(team) {
-  setTimeout(() => {
-    const s = LAST;
-    if (!s || !s.meta || !s.visible || s.phase !== "setEnd") return;   // seulement une fois le set confirmé
-    if (SetFX.running() || VolleyFX.running()) return;
-    const last = s.history[s.history.length - 1];
-    if (!last) return;
-    setKey = stateKey(s);
-    SetFX.play($("fx"), {
-      winner: team || last.winner, teams: s.meta.teams, setIndex: s.setIndex,
-      points: { A: last.A, B: last.B }, sets: s.sets, setsToWin: s.meta.rules?.setsToWin || 3
-    }).then(() => { setKey = null; });
-  }, 500);
+let setN = 0;
+function startSetFx(team, f) {
+  const s = LAST;
+  if (!s || !s.meta || !s.visible || !f || SetFX.running() || VolleyFX.running()) return;
+  setN = f.n;
+  SetFX.play($("fx"), {
+    winner: team || f.winner, teams: s.meta.teams, setIndex: f.n,
+    points: f.points, sets: f.sets, setsToWin: s.meta.rules?.setsToWin || 3
+  });
 }
-
-window.addEventListener("volley:event", (e) => {
-  const ev = e.detail || {};
-  if (ev.type === "setEnd" || ev.type === "setWin") startSetFx(ev.team);
-});
 
 // ===========================================================
 //  Canal d'événements — branché, pas encore exploité.
