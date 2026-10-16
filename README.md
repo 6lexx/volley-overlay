@@ -14,6 +14,7 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 |---|---|
 | Overlay (Streamlabs) | https://6lexx.github.io/volley-overlay/display.html?m=volley-silex |
 | Appli de contrôle | `https://6lexx.github.io/volley-overlay/control.html?m=volley-silex&k=CLÉ` |
+| **Résultats & replays (équipe)** | https://6lexx.github.io/volley-overlay/resultats.html |
 | Démo (sans Firebase) | https://6lexx.github.io/volley-overlay/display.html?demo=1 |
 | Démo de l'échauffement | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=warmup |
 | Démo de l'inter-set | https://6lexx.github.io/volley-overlay/display.html?demo=1&scene=interset |
@@ -63,6 +64,17 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 ### Fin du match
 - Au dernier set gagné, **les bandeaux de victoire** partent tout seuls à la place du volet et restent 2 min 30. Le score revient ensuite avec le résultat final en sets.
 - **Victoire du match** (dans Événements) les relance.
+
+### Après le match : résultats et replays
+1. Dans le bandeau de fin de match, appuie sur **Enregistrer le résultat** : choisis la date et le type (Championnat, Amical, Coupe), puis valide.
+   Le bouton passe à « Résultat enregistré ✓ » : pas de doublon possible.
+2. Mets la vidéo du match sur YouTube (« non répertoriée » si tu veux qu'elle reste discrète).
+3. Dans l'appli, ouvre **Résultats & replays**, colle le lien YouTube sous le match, puis **OK**. Le replay apparaît tout de suite sur la page des résultats.
+- **+ Ajouter un match passé** : pour les matchs joués avant l'appli. Les scores des sets s'écrivent RMV en premier, par exemple `25-20 22-25 25-18 25-21`.
+- Chaque match peut changer de type ou être supprimé (deux appuis pour confirmer).
+
+La page des résultats est publique mais **n'est pas référencée par Google** : seuls ceux qui ont le lien la trouvent. Elle affiche le bilan de la saison (victoires, défaites, sets, aces, forme sur les 5 derniers matchs), les matchs par mois et le replay de chacun.
+Les résultats sont gardés d'un match à l'autre : « Nouveau match » ne les efface pas.
 
 ---
 
@@ -128,5 +140,6 @@ Après une modification de `config.js`, recharge l'overlay et l'appli (avec `&v=
 |---|---|
 | `display.html` | L'overlay du stream |
 | `control.html` | L'appli de contrôle |
+| `resultats.html` | La page Résultats & replays de l'équipe |
 | `config.js` | Les réglages (règles, équipes, joueurs) |
 | `assets/ramonville.png` | Le logo du club |
