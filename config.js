@@ -53,17 +53,19 @@ window.SCORE_CONFIG = {
   //  punchline : une phrase courte, 50 caractères max conseillé
   //  photo     : null = silhouette grise ; plus tard un PNG détouré, par ex. "assets/joueurs/7.png"
   roster: [
-    { number: 1,  name: "Prénom Nom", position: "Passeur",                 punchline: "Ta phrase ici", photo: null },
-    { number: 2,  name: "Prénom Nom", position: "Passeur",                 punchline: "Ta phrase ici", photo: null },
-    { number: 3,  name: "Prénom Nom", position: "Pointu",                  punchline: "Ta phrase ici", photo: null },
-    { number: 4,  name: "Prénom Nom", position: "Pointu",                  punchline: "Ta phrase ici", photo: null },
-    { number: 5,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
-    { number: 6,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
-    { number: 7,  name: "Prénom Nom", position: "Réceptionneur-attaquant", punchline: "Ta phrase ici", photo: null },
-    { number: 8,  name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
-    { number: 9,  name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
-    { number: 10, name: "Prénom Nom", position: "Central",                 punchline: "Ta phrase ici", photo: null },
-    { number: 11, name: "Prénom Nom", position: "Libéro",                  punchline: "Ta phrase ici", photo: null }
+    { number: 1,  name: "Margot Sénéchal", position: "Passeur",                 punchline: "Je passe, tu frappes, et on rentre à la maison", photo: null },
+    { number: 2,  name: "Aurore Bouyssounouse", position: "Passeur",                 punchline: "J'suis nulle mais toujours meilleure que toi", photo: null },
+    { number: 3,  name: "Maëva Brunet", position: "Pointu",                  punchline: "RODRIGUEEEEZZZ", photo: null },
+    { number: 0,  name: "Nicolas Blanc", position: "Réceptionneur-attaquant", punchline: "Tu joue Top ou ADC ?", photo: null },
+    { number: 5,  name: "Samia Abaoude", position: "Réceptionneur-attaquant", punchline: "Admire ma trotinette", photo: null },
+    { number: 6,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: null },
+    { number: 7,  name: "Cyril Ardisson", position: "Réceptionneur-attaquant", punchline: "Veni, vidi, vici", photo: null },
+    { number: 8,  name: "Matthys Verbregue", position: "Central",                 punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: null },
+    { number: 9,  name: "Romain Boyer", position: "Central",                 punchline: "Capitaine du navire", photo: null },
+    { number: 10, name: "Quentin Audemard", position: "Central",                 punchline: "Je fais aussi du basket", photo: null },
+    { number: 0,  name: "Louanne GOHE", position: "Réceptionneur-attaquant", punchline: "Les voy a destrozar.", photo: null },
+    { number: 100,  name: "Sovann Hong", position: "Entraîneur", punchline: "J'entraîne tout ces fous", photo: null },
+
   ],
 
   // --- Contrôle
