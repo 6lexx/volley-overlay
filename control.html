@@ -436,7 +436,8 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 function norm(s) {
   s.score = s.score ?? { A: 0, B: 0 };
   s.sets  = s.sets  ?? { A: 0, B: 0 };
-  for (const k of ["score", "sets"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.aces  = s.aces  ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets", "aces"]) { s[k].A ??= 0; s[k].B ??= 0; }
   s.history  = toArr(s.history);
   s.swapped  = !!s.swapped;
   s.visible  = s.visible !== false;
@@ -461,6 +462,7 @@ function newMatchState(away, firstServer) {
     setIndex: 1,
     score: { A: 0, B: 0 },
     sets: { A: 0, B: 0 },
+    aces: { A: 0, B: 0 },
     history: [],
     serving: firstServer,
     firstServer,
@@ -509,6 +511,7 @@ const ACTIONS = {
     if (s.score.A + s.score.B === 0) s.firstServer = s.serving;
     return s;
   },
+  ace(s, t)        { s.aces[t]++; return s; },          // compteur d'aces du match (annulable)
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
@@ -588,6 +591,7 @@ function emit(type, team, s = state, extra = {}) {
 }
 function emitFor(name, arg, s) {
   if (name === "point") emit("point", arg, s).catch(() => {});
+  if (name === "ace")   emit("ace", arg, s, { manual: true, count: s.aces[arg] }).catch(() => {});
   if (name === "confirmSet") {
     const last = s.history[s.history.length - 1];
     emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s).catch(() => {});
@@ -697,7 +701,7 @@ function renderEvents() {
           b.className = "team-btn";
           b.style.setProperty("--c", teamColor(t));
           b.style.setProperty("--ct", teamText(t));
-          b.textContent = state.meta.teams[t].short;
+          b.textContent = state.meta.teams[t].short + (item.type === "ace" ? ` · ${state.aces[t]}` : "");
           b.onclick = () => sendEvent(item, t);
           btns.appendChild(b);
         });
@@ -716,6 +720,14 @@ function renderEvents() {
 }
 
 function sendEvent(item, team) {
+  if (item.type === "ace") {                 // l'ace est compté dans l'état du match
+    guarded("evace", async () => {
+      await act("ace", team);
+      const t = state?.meta.teams[team];
+      if (t) toast(`Ace ${t.short} · ${state.aces[team]} dans le match`);
+    });
+    return;
+  }
   guarded("ev" + item.type, async () => {
     try {
       await emit(item.type, team, state, { manual: true });
