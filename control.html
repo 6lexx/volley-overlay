@@ -144,7 +144,7 @@
 
   /* ---------- Modales ---------- */
   .modal {
-    position: fixed; inset: 0; z-index: 10;
+    position: fixed; inset: 0; z-index: 20;   /* au-dessus des panneaux latéraux */
     background: rgba(0, 0, 0, .8);
     display: none; align-items: center; justify-content: center; padding: 16px;
   }
@@ -225,6 +225,33 @@
   .pl-row.on .pl-num { color: var(--red); }
   .pl-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .pl-name { font: 800 22px/1.1 var(--num); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* ---------- Résultats & replays ---------- */
+  .tool.results { grid-column: 1 / -1; min-height: 58px; font-size: 20px; }
+  input[type=date], input[type=url], input[type=number] {
+    font: inherit; font-size: 20px; color: var(--text); color-scheme: dark;
+    background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 12px; width: 100%; box-sizing: border-box;
+  }
+  input[type=date]:focus, input[type=url]:focus, input[type=number]:focus { border-color: var(--red); outline: none; }
+  .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .seg3 button { min-height: 50px; border-radius: 12px; background: var(--surface-2); font-size: 18px; }
+  .seg3 button.sel { background: var(--red); color: #fff; }
+  .hint { font-size: 15px; color: var(--muted); font-weight: 600; margin: 0; }
+  .card.scroll { max-height: calc(100dvh - 32px); overflow-y: auto; }
+  .res-add { min-height: 52px; border-radius: 12px; background: var(--red); color: #fff; font-size: 19px; margin-bottom: 6px; }
+  .res { background: var(--bg); border: 2px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .res-top { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; color: var(--muted); font-weight: 700; }
+  .res-main { display: flex; align-items: center; gap: 10px; }
+  .res-badge { flex: none; width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; font: 900 20px/1 var(--num); background: var(--surface-2); color: var(--muted); }
+  .res-badge.win { background: var(--red); color: #fff; }
+  .res-score { font: 900 26px/1 var(--num); }
+  .res-opp { font: 800 18px/1.15 var(--num); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .res-sets { font-size: 15px; color: var(--muted); font-weight: 700; }
+  .res-yt { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+  .res-yt input { font-size: 16px; padding: 10px; }
+  .res-yt button, .res-tools button { min-height: 46px; border-radius: 10px; background: var(--surface-2); font-size: 16px; padding: 0 14px; }
+  .res-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  .res-tools .del.armed { background: rgba(211, 18, 31, .3); color: #fff; }
+  .res-ok { color: #6fd38a; font-size: 14px; font-weight: 700; }
   .pl-pos { font-size: 15px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .fatal { padding: 24px; font-size: 22px; line-height: 1.4; }
@@ -263,6 +290,7 @@
     </div>
     <div class="banner" id="endBanner">
       <span id="endText"></span>
+      <button id="endSave">Enregistrer le résultat</button>
       <button id="endNew">Nouveau match</button>
     </div>
     <section class="team" data-pos="0">
@@ -284,6 +312,7 @@
   <nav class="tools">
     <button class="tool events" id="eventsBtn">Événements à l'écran</button>
     <button class="tool roster" id="rosterBtn">Joueurs présents</button>
+    <button class="tool results" id="resultsBtn">Résultats & replays</button>
     <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
     <button class="tool" id="visBtn">Overlay visible</button>
@@ -316,6 +345,60 @@
   <div class="side-list" id="plList"></div>
   <p class="side-note">Seuls les joueurs cochés apparaissent pendant l'échauffement. La liste se modifie dans config.js.</p>
 </aside>
+
+<!-- Panneau latéral : résultats & replays -->
+<aside class="sidebar" id="resSide" aria-label="Résultats et replays">
+  <div class="side-head">
+    <h2>Résultats</h2>
+    <button class="close" id="closeRes" aria-label="Fermer">✕</button>
+  </div>
+  <button class="res-add" id="pastBtn">+ Ajouter un match passé</button>
+  <div class="side-list" id="resList"></div>
+  <p class="side-note">Colle le lien YouTube du replay une fois la vidéo en ligne : il apparaît tout de suite sur la page des résultats.</p>
+</aside>
+
+<!-- Enregistrer le match terminé -->
+<div class="modal" id="saveModal">
+  <div class="card scroll">
+    <h2>Enregistrer le résultat</h2>
+    <p id="saveSummary"></p>
+    <label>Date du match <input type="date" id="saveDate"></label>
+    <div class="seg3" id="saveType">
+      <button data-type="championnat" class="sel">Championnat</button>
+      <button data-type="amical">Amical</button>
+      <button data-type="coupe">Coupe</button>
+    </div>
+    <label>Lien YouTube du replay <input type="url" id="saveYt" placeholder="Facultatif, à ajouter plus tard" autocomplete="off"></label>
+    <button class="btn-big" id="saveGo">Enregistrer</button>
+    <button class="btn-sec" id="saveCancel">Annuler</button>
+  </div>
+</div>
+
+<!-- Ajouter un match passé -->
+<div class="modal" id="pastModal">
+  <div class="card scroll">
+    <h2>Match passé</h2>
+    <label>Date du match <input type="date" id="pastDate"></label>
+    <label>Adversaire (nom complet) <input type="text" id="pastName" maxlength="40" autocomplete="off"></label>
+    <div class="row">
+      <label>Abréviation <input type="text" id="pastShort" maxlength="4" autocomplete="off" style="text-transform:uppercase"></label>
+      <label>Couleur <input type="color" id="pastColor" value="#3D7BE8"></label>
+    </div>
+    <div class="seg3" id="pastType">
+      <button data-type="championnat" class="sel">Championnat</button>
+      <button data-type="amical">Amical</button>
+      <button data-type="coupe">Coupe</button>
+    </div>
+    <label>Score de chaque set (RMV en premier) <input type="text" id="pastSets" placeholder="25-20 22-25 25-18 25-21" autocomplete="off" inputmode="numeric"></label>
+    <div class="row">
+      <label>Aces RMV <input type="number" id="pastAcesA" min="0" value="0"></label>
+      <label>Aces adversaire <input type="number" id="pastAcesB" min="0" value="0"></label>
+    </div>
+    <label>Lien YouTube du replay <input type="url" id="pastYt" placeholder="Facultatif" autocomplete="off"></label>
+    <button class="btn-big" id="pastGo">Ajouter</button>
+    <button class="btn-sec" id="pastCancel">Annuler</button>
+  </div>
+</div>
 
 <!-- Fin de set -->
 <div class="modal" id="setModal">
@@ -430,6 +513,8 @@ const coreRef   = ref(db, `matches/${M}/core`);
 const eventsRef = ref(db, `matches/${M}/events`);
 const presentRef = ref(db, `matches/${M}/present`);   // joueurs présents (garde la liste d'un match à l'autre)
 let present = null;                                     // null = tout le monde
+const archiveRef = ref(db, `matches/${M}/archive`);   // résultats enregistrés (lus par resultats.html)
+let archive = {};
 
 let state = null;
 let started = false;
@@ -458,6 +543,7 @@ function startListeners() {
   // Tout le nœud "core" (état + pile d'annulation) : les transactions
   // partent ainsi avec les vraies données.
   onValue(presentRef, (snap) => { present = snap.val(); renderRoster(); });
+  onValue(archiveRef, (snap) => { archive = snap.val() || {}; renderResults(); }, () => {});
 
   onValue(coreRef, (snap) => {
     const core = snap.val();
@@ -565,12 +651,13 @@ const ACTIONS = {
   interSet(s)      { s.interSet = !s.interSet; if (s.interSet) s.timeout = null; return s; },
   timeout(s, t)    { s.timeout = s.timeout === t ? null : t; s.timeoutAt = Date.now(); if (s.timeout) s.interSet = false; return s; },
   resetAces(s)     { s.aces = { A: 0, B: 0 }; return s; },          // annulable
+  markArchived(s, key) { s.archived = key; return s; },
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
   tbDismiss(s)     { s.tbSwitched = true; return s; }
 };
-const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup", "interSet", "timeout"]);
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup", "interSet", "timeout", "markArchived"]);
 
 // ===========================================================
 //  Écritures
@@ -619,6 +706,7 @@ async function undo() {
           interSet: cur.state.interSet || false,
           timeout: cur.state.timeout || null,
           timeoutAt: cur.state.timeoutAt || null,
+          archived: cur.state.archived || null,
           updatedAt: Date.now()
         },
         undo: rest
@@ -713,6 +801,8 @@ function render() {
   $("tbBanner").classList.toggle("show", showTb);
 
   $("endBanner").classList.toggle("show", s.phase === "matchEnd");
+  $("endSave").textContent = s.archived ? "Résultat enregistré ✓" : "Enregistrer le résultat";
+  $("endSave").disabled = !!s.archived;
   if (s.phase === "matchEnd") {
     $("endText").textContent = `${teams[s.winner].short} gagne ${s.sets[s.winner]}-${s.sets[other(s.winner)]}`;
   }
@@ -840,7 +930,7 @@ function openSide()  { renderEvents(); $("sidebar").classList.add("show"); $("sc
 function closeSide() { $("sidebar").classList.remove("show"); $("scrim").classList.remove("show"); }
 $("eventsBtn").onclick = openSide;
 $("closeSide").onclick = closeSide;
-$("scrim").onclick = () => { closeSide(); closeRoster(); };
+$("scrim").onclick = () => { closeSide(); closeRoster(); closeRes(); };
 
 // ===========================================================
 //  Joueurs présents (échauffement)
@@ -889,6 +979,154 @@ $("closeRoster").onclick = closeRoster;
 $("plAll").onclick = () => setAll(true);
 $("plNone").onclick = () => setAll(false);
 renderRoster();
+// ===========================================================
+//  Résultats & replays (archive lue par resultats.html)
+// ===========================================================
+const TYPES = { championnat: "Championnat", amical: "Amical", coupe: "Coupe" };
+const pad2 = (n) => String(n).padStart(2, "0");
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`; };
+const fmtDate = (iso) => { const [y, m, d] = String(iso).split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }); };
+const ytId = (u) => { const m = String(u || "").match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/live\/|\/shorts\/)([\w-]{11})/); return m ? m[1] : null; };
+const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+function segValue(id) { return $(id).querySelector(".sel")?.dataset.type || "championnat"; }
+function segInit(id) {
+  $(id).querySelectorAll("button").forEach((b) => b.onclick = () => {
+    $(id).querySelectorAll("button").forEach((o) => o.classList.toggle("sel", o === b));
+  });
+}
+segInit("saveType"); segInit("pastType");
+function checkYt(url) {
+  url = String(url || "").trim();
+  if (url && !ytId(url)) { toast("Lien YouTube non reconnu"); return null; }
+  return url;
+}
+
+// ---- Fin de match : enregistrer le résultat
+$("endSave").onclick = () => {
+  if (!state || state.phase !== "matchEnd" || state.archived) return;
+  const T = state.meta.teams;
+  $("saveSummary").textContent = `${T.A.short} ${state.sets.A} – ${state.sets.B} ${T.B.short} · ${T.B.name || ""}`;
+  $("saveDate").value = todayIso(); $("saveYt").value = "";
+  $("saveModal").classList.add("show");
+};
+$("saveCancel").onclick = () => $("saveModal").classList.remove("show");
+$("saveGo").onclick = () => guarded("archive", async () => {
+  const s = state;
+  if (!s || s.phase !== "matchEnd") return;
+  const yt = checkYt($("saveYt").value); if (yt === null) return;
+  const T = s.meta.teams;
+  const rec = {
+    date: $("saveDate").value || todayIso(), type: segValue("saveType"),
+    home: { name: T.A.name || "", short: T.A.short || "" },
+    away: { name: T.B.name || "", short: T.B.short || "", color: T.B.color || "#555555" },
+    history: s.history.map((h) => ({ A: h.A, B: h.B, winner: h.winner })),
+    sets: { A: s.sets.A, B: s.sets.B }, aces: { A: s.aces?.A || 0, B: s.aces?.B || 0 },
+    winner: s.winner || (s.sets.A > s.sets.B ? "A" : "B"), youtube: yt, createdAt: Date.now()
+  };
+  try {
+    const r = push(archiveRef, rec);       // la clé est connue tout de suite
+    await r;
+    await act("markArchived", r.key);
+    $("saveModal").classList.remove("show");
+    toast("Résultat enregistré");
+  } catch (e) { toast("Erreur : " + (e.code || e.message)); }
+});
+
+// ---- Ajouter un match passé
+$("pastBtn").onclick = () => {
+  $("pastDate").value = todayIso();
+  ["pastName", "pastShort", "pastSets", "pastYt"].forEach((id) => { $(id).value = ""; });
+  $("pastAcesA").value = 0; $("pastAcesB").value = 0;
+  $("pastModal").classList.add("show");
+};
+$("pastCancel").onclick = () => $("pastModal").classList.remove("show");
+$("pastGo").onclick = () => guarded("past", async () => {
+  const name = $("pastName").value.trim();
+  const short = ($("pastShort").value.trim() || name.slice(0, 3)).toUpperCase();
+  if (!name) { toast("Indique le nom de l'adversaire"); return; }
+  const tokens = $("pastSets").value.trim().split(/[\s,;]+/).filter(Boolean);
+  const history = [];
+  for (const tk of tokens) {
+    const m = tk.match(/^(\d{1,2})\s*[-–:\/]\s*(\d{1,2})$/);
+    if (!m) { toast(`Set « ${tk} » non reconnu (format 25-20)`); return; }
+    const a = +m[1], b = +m[2];
+    if (a === b) { toast(`Set ${tk} : il faut un gagnant`); return; }
+    history.push({ A: a, B: b, winner: a > b ? "A" : "B" });
+  }
+  if (!history.length) { toast("Indique le score d'au moins un set"); return; }
+  const sets = { A: history.filter((h) => h.winner === "A").length, B: history.filter((h) => h.winner === "B").length };
+  if (sets.A === sets.B) { toast("Sets à égalité : il manque un set ?"); return; }
+  const yt = checkYt($("pastYt").value); if (yt === null) return;
+  const rec = {
+    date: $("pastDate").value || todayIso(), type: segValue("pastType"),
+    home: { name: CFG.home?.name || "Ramonville", short: CFG.home?.short || "RMV" },
+    away: { name, short, color: $("pastColor").value },
+    history, sets, aces: { A: Math.max(0, +$("pastAcesA").value || 0), B: Math.max(0, +$("pastAcesB").value || 0) },
+    winner: sets.A > sets.B ? "A" : "B", youtube: yt, createdAt: Date.now()
+  };
+  try {
+    await push(archiveRef, rec);
+    $("pastModal").classList.remove("show");
+    toast(`Match ajouté : ${rec.home.short} ${sets.A} – ${sets.B} ${short}`);
+  } catch (e) { toast("Erreur : " + (e.code || e.message)); }
+});
+
+// ---- Liste des résultats (modifier le replay, le type, supprimer)
+function renderResults() {
+  const rows = Object.entries(archive || {}).filter(([, r]) => r && r.date && r.sets)
+    .sort((a, b) => b[1].date.localeCompare(a[1].date) || (b[1].createdAt || 0) - (a[1].createdAt || 0));
+  $("resultsBtn").textContent = `Résultats & replays · ${rows.length}`;
+  const list = $("resList");
+  if (!rows.length) { list.replaceChildren(mk("p", "side-note", "Aucun match enregistré. En fin de match, appuie sur « Enregistrer le résultat », ou ajoute un match passé.")); return; }
+  // Ne pas reconstruire la liste pendant qu'on tape un lien
+  if (list.contains(document.activeElement) && document.activeElement.tagName === "INPUT") return;
+  list.replaceChildren(...rows.map(([key, r]) => resRow(key, r)));
+}
+function resRow(key, r) {
+  const box = mk("div", "res");
+  const top = mk("div", "res-top");
+  top.append(mk("span", null, fmtDate(r.date)), mk("span", null, TYPES[r.type] || "Match"));
+  const main = mk("div", "res-main");
+  const win = r.winner === "A";
+  main.append(mk("span", "res-badge" + (win ? " win" : ""), win ? "V" : "D"),
+    mk("span", "res-score", `${r.sets.A}–${r.sets.B}`),
+    mk("span", "res-opp", `vs ${r.away?.name || r.away?.short || ""}`));
+  const hist = (Array.isArray(r.history) ? r.history : Object.values(r.history || {})).filter(Boolean);
+  const sets = mk("div", "res-sets", hist.map((h) => `${h.A}-${h.B}`).join("  ·  ") + (r.aces && (r.aces.A || r.aces.B) ? `   ·   Aces ${r.aces.A}–${r.aces.B}` : ""));
+
+  const yt = mk("div", "res-yt");
+  const inp = mk("input"); inp.type = "url"; inp.value = r.youtube || ""; inp.placeholder = "Lien YouTube du replay"; inp.autocomplete = "off";
+  const ok = mk("button", null, "OK");
+  ok.onclick = async () => {
+    const v = checkYt(inp.value); if (v === null) return;
+    try { await update(ref(db, `matches/${M}/archive/${key}`), { youtube: v }); inp.blur(); toast(v ? "Replay ajouté" : "Replay retiré"); }
+    catch (e) { toast("Erreur : " + (e.code || e.message)); }
+  };
+  yt.append(inp, ok);
+
+  const tools = mk("div", "res-tools");
+  const next = { championnat: "amical", amical: "coupe", coupe: "championnat" };
+  const ty = mk("button", null, `Type : ${TYPES[r.type] || "Match"}`);
+  ty.onclick = () => update(ref(db, `matches/${M}/archive/${key}`), { type: next[r.type] || "championnat" }).catch((e) => toast("Erreur : " + (e.code || e.message)));
+  const del = mk("button", "del", "Supprimer");
+  del.onclick = () => {
+    if (!del.classList.contains("armed")) {
+      del.classList.add("armed"); del.textContent = "Confirmer la suppression";
+      setTimeout(() => { if (del.isConnected) { del.classList.remove("armed"); del.textContent = "Supprimer"; } }, 3000);
+      return;
+    }
+    set(ref(db, `matches/${M}/archive/${key}`), null).then(() => toast("Match supprimé")).catch((e) => toast("Erreur : " + (e.code || e.message)));
+  };
+  tools.append(ty, del);
+  if (r.youtube) tools.append(mk("span", "res-ok", "▶ replay en ligne"));
+  box.append(top, main, sets, yt, tools);
+  return box;
+}
+function openRes()  { renderResults(); $("resSide").classList.add("show"); $("scrim").classList.add("show"); }
+function closeRes() { $("resSide").classList.remove("show"); $("scrim").classList.remove("show"); }
+$("resultsBtn").onclick = openRes;
+$("closeRes").onclick = closeRes;
+renderResults();
 
 // ===========================================================
 //  Nouveau match
