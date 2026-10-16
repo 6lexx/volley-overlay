@@ -207,6 +207,24 @@
   .ev-btns .team-btn { background: var(--c); color: var(--ct); }
   .side-note { color: var(--muted); font-size: 16px; margin: 12px 0 0; }
 
+  /* ---------- Joueurs présents ---------- */
+  .tool.roster { grid-column: 1 / -1; min-height: 58px; font-size: 20px; }
+  .pl-count { font: 900 22px/1 var(--num); color: var(--muted); }
+  .pl-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .pl-quick button { min-height: 48px; border-radius: 10px; background: var(--surface-2); font-size: 18px; }
+  .pl-row {
+    display: grid; grid-template-columns: 34px 54px 1fr; align-items: center; gap: 12px;
+    min-height: 64px; padding: 8px 12px; border-radius: 14px;
+    background: var(--bg); border: 2px solid var(--line); cursor: pointer;
+  }
+  .pl-row input { width: 30px; height: 30px; accent-color: var(--red); margin: 0; }
+  .pl-row.on { border-color: var(--red); }
+  .pl-num { font: 900 34px/1 var(--num); text-align: center; color: var(--muted); }
+  .pl-row.on .pl-num { color: var(--red); }
+  .pl-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .pl-name { font: 800 22px/1.1 var(--num); color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pl-pos { font-size: 15px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   .fatal { padding: 24px; font-size: 22px; line-height: 1.4; }
   .fatal b { color: #ff6b73; }
 
@@ -263,6 +281,7 @@
 
   <nav class="tools">
     <button class="tool events" id="eventsBtn">Événements à l'écran</button>
+    <button class="tool roster" id="rosterBtn">Joueurs présents</button>
     <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
     <button class="tool" id="visBtn">Overlay visible</button>
@@ -278,7 +297,22 @@
     <button class="close" id="closeSide" aria-label="Fermer">✕</button>
   </div>
   <div class="side-list" id="sideList"></div>
-  <p class="side-note">Ces événements sont déjà envoyés à l'overlay. Leur affichage à l'écran arrive à la prochaine étape.</p>
+  <p class="side-note">Chaque bouton s'affiche tout de suite sur le stream.</p>
+</aside>
+
+<!-- Panneau latéral : joueurs présents -->
+<aside class="sidebar" id="rosterSide" aria-label="Joueurs présents">
+  <div class="side-head">
+    <h2>Joueurs présents</h2>
+    <span class="pl-count" id="plCount"></span>
+    <button class="close" id="closeRoster" aria-label="Fermer">✕</button>
+  </div>
+  <div class="pl-quick">
+    <button id="plAll">Tous</button>
+    <button id="plNone">Aucun</button>
+  </div>
+  <div class="side-list" id="plList"></div>
+  <p class="side-note">Seuls les joueurs cochés apparaissent pendant l'échauffement. La liste se modifie dans config.js.</p>
 </aside>
 
 <!-- Fin de set -->
@@ -392,6 +426,8 @@ const db   = getDatabase(app);
 const matchRef  = ref(db, `matches/${M}`);
 const coreRef   = ref(db, `matches/${M}/core`);
 const eventsRef = ref(db, `matches/${M}/events`);
+const presentRef = ref(db, `matches/${M}/present`);   // joueurs présents (garde la liste d'un match à l'autre)
+let present = null;                                     // null = tout le monde
 
 let state = null;
 let started = false;
@@ -419,6 +455,8 @@ function startListeners() {
 
   // Tout le nœud "core" (état + pile d'annulation) : les transactions
   // partent ainsi avec les vraies données.
+  onValue(presentRef, (snap) => { present = snap.val(); renderRoster(); });
+
   onValue(coreRef, (snap) => {
     const core = snap.val();
     state = core && core.state ? norm(core.state) : null;
@@ -442,6 +480,7 @@ function norm(s) {
   s.swapped  = !!s.swapped;
   s.visible  = s.visible !== false;
   s.tbSwitched = !!s.tbSwitched;
+  s.warmup = !!s.warmup;
   s.pendingWinner ??= null;
   s.winner ??= null;
   return s;
@@ -469,6 +508,7 @@ function newMatchState(away, firstServer) {
     swapped: false,
     visible: true,
     tbSwitched: false,
+    warmup: false,
     pendingWinner: null,
     winner: null,
     updatedAt: Date.now()
@@ -478,6 +518,7 @@ function newMatchState(away, firstServer) {
 const ACTIONS = {
   point(s, t) {
     if (s.phase !== "playing") return;
+    s.warmup = false;                        // le match commence : on retire le bandeau d'échauffement
     s.score[t]++;
     s.serving = t;
     const lead = s.score[t] - s.score[other(t)];
@@ -512,12 +553,13 @@ const ACTIONS = {
     return s;
   },
   ace(s, t)        { s.aces[t]++; return s; },          // compteur d'aces du match (annulable)
+  warmup(s)        { s.warmup = !s.warmup; return s; },   // bandeau d'échauffement (reste affiché)
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
   tbDismiss(s)     { s.tbSwitched = true; return s; }
 };
-const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss"]);
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup"]);
 
 // ===========================================================
 //  Écritures
@@ -562,6 +604,7 @@ async function undo() {
           visible: cur.state.visible,
           swapped: cur.state.swapped,
           tbSwitched: cur.state.tbSwitched,
+          warmup: cur.state.warmup || false,
           updatedAt: Date.now()
         },
         undo: rest
@@ -709,7 +752,9 @@ function renderEvents() {
         btns.classList.add("single");
         const b = document.createElement("button");
         b.className = "go";
-        b.textContent = "Afficher";
+        const off = item.type === "warmup" && state?.warmup;
+        b.textContent = off ? "Retirer" : "Afficher";
+        if (off) b.style.background = "#3A3336";
         b.onclick = () => sendEvent(item, null);
         btns.appendChild(b);
       }
@@ -720,6 +765,13 @@ function renderEvents() {
 }
 
 function sendEvent(item, team) {
+  if (item.type === "warmup") {              // bandeau qui reste : on l'allume / l'éteint
+    guarded("evwarmup", async () => {
+      await act("warmup");
+      toast(state?.warmup ? "Échauffement affiché" : "Échauffement retiré");
+    });
+    return;
+  }
   if (item.type === "ace") {                 // l'ace est compté dans l'état du match
     guarded("evace", async () => {
       await act("ace", team);
@@ -743,7 +795,55 @@ function openSide()  { renderEvents(); $("sidebar").classList.add("show"); $("sc
 function closeSide() { $("sidebar").classList.remove("show"); $("scrim").classList.remove("show"); }
 $("eventsBtn").onclick = openSide;
 $("closeSide").onclick = closeSide;
-$("scrim").onclick = closeSide;
+$("scrim").onclick = () => { closeSide(); closeRoster(); };
+
+// ===========================================================
+//  Joueurs présents (échauffement)
+// ===========================================================
+const ROSTER = (CFG.roster || []).filter(Boolean);
+const keyOf = (p) => "n" + p.number;
+const isIn = (p) => !present || !!present[keyOf(p)];
+
+function renderRoster() {
+  const n = ROSTER.filter(isIn).length;
+  $("plCount").textContent = `${n} / ${ROSTER.length}`;
+  $("rosterBtn").textContent = `Joueurs présents · ${n}/${ROSTER.length}`;
+  const list = $("plList");
+  list.replaceChildren(...ROSTER.map((p) => {
+    const row = document.createElement("label");
+    row.className = "pl-row" + (isIn(p) ? " on" : "");
+    const box = document.createElement("input");
+    box.type = "checkbox"; box.checked = isIn(p);
+    box.onchange = () => savePresent(p, box.checked);
+    const num = document.createElement("span"); num.className = "pl-num"; num.textContent = p.number;
+    const txt = document.createElement("span"); txt.className = "pl-txt";
+    const nm = document.createElement("span"); nm.className = "pl-name"; nm.textContent = p.name || "";
+    const ps = document.createElement("span"); ps.className = "pl-pos"; ps.textContent = p.position || "";
+    txt.append(nm, ps);
+    row.append(box, num, txt);
+    return row;
+  }));
+}
+function savePresent(p, on) {
+  const next = {};
+  ROSTER.forEach((q) => { if (q === p ? on : isIn(q)) next[keyOf(q)] = true; });
+  present = next; renderRoster();
+  set(presentRef, next).catch((e) => toast("Erreur : " + (e.code || e.message)));
+}
+function setAll(on) {
+  const next = {};
+  if (on) ROSTER.forEach((q) => { next[keyOf(q)] = true; });
+  present = next; renderRoster();
+  set(presentRef, next).then(() => toast(on ? "Tout le monde est coché" : "Plus personne n'est coché"))
+    .catch((e) => toast("Erreur : " + (e.code || e.message)));
+}
+function openRoster()  { renderRoster(); $("rosterSide").classList.add("show"); $("scrim").classList.add("show"); }
+function closeRoster() { $("rosterSide").classList.remove("show"); $("scrim").classList.remove("show"); }
+$("rosterBtn").onclick = openRoster;
+$("closeRoster").onclick = closeRoster;
+$("plAll").onclick = () => setAll(true);
+$("plNone").onclick = () => setAll(false);
+renderRoster();
 
 // ===========================================================
 //  Nouveau match
