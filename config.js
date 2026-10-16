@@ -53,13 +53,13 @@ window.SCORE_CONFIG = {
   //  punchline : une phrase courte, 50 caractères max conseillé
   //  photo     : null = silhouette grise ; plus tard un PNG détouré, par ex. "assets/joueurs/7.png"
   roster: [
-    { number: 1,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: assets/IMG_4498.png },
+    { number: 1,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: "assets/IMG_4498.png" },
     { number: 88,  name: "Aurore", position: "Passeur",              punchline: "J'suis nulle mais toujours meilleure que toi", photo: null },
     { number: 12,  name: "Maëva", position: "Pointu",                       punchline: "RODRIGUEEEEZZZ", photo: null },
     { number: 0,  name: "Nicolas", position: "Réceptionneur-attaquant",      punchline: "Tu joue Top ou ADC ?", photo: null },
     { number: 5,  name: "Samia", position: "Réceptionneur-attaquant",      punchline: "Admire ma trotinette", photo: null },
     { number: 8,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: null },
-    { number: 3,  name: "Cyril", position: "Réceptionneur-attaquant",     punchline: "Veni, vidi, vici", photo: assets/IMG_4497.png },
+    { number: 3,  name: "Cyril", position: "Réceptionneur-attaquant",     punchline: "Veni, vidi, vici", photo: "assets/IMG_4497.png" },
     { number: 2,  name: "Matthys", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: null },
     { number: 75,  name: "Romain", position: "Central",                      punchline: "Capitaine du navire", photo: null },
     { number: 10, name: "Quentin", position: "Central",                   punchline: "Je fais aussi du basket", photo: null },
