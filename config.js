@@ -53,13 +53,13 @@ window.SCORE_CONFIG = {
   //  punchline : une phrase courte, 50 caractères max conseillé
   //  photo     : null = silhouette grise ; plus tard un PNG détouré, par ex. "assets/joueurs/7.png"
   roster: [
-    { number: 1,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: "assets/joueurs.margot.png" },
+    { number: 1,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: "assets/joueurs/margot.png" },
     { number: 6,  name: "Romain", position: "Central",                      punchline: "Capitaine du navire", photo: null },
     { number: 3,  name: "Samia", position: "Réceptionneur-attaquant",      punchline: "Admire ma trotinette", photo: null },
     { number: 13,  name: "Cyril", position: "Réceptionneur-attaquant",     punchline: "Veni, vidi, vici", photo: "assets/joueurs/cyril.png" },
     { number: 18,  name: "Nicolas", position: "Réceptionneur-attaquant",      punchline: "Tu joue Top ou ADC ?", photo:"assets/joueurs/nicolas.png" },
     { number: 9,  name: "Aurore", position: "Passeur",              punchline: "J'suis nulle mais toujours meilleure que toi", photo: null },
-    { number: 2,  name: "Matthys", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: "assets/joueurs/matthys.png },
+    { number: 2,  name: "Matthys", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: "assets/joueurs/matthys.png" },
     { number: 17,  name: "Louanne", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: null },
     { number: 11,  name: "Maëva", position: "Pointu",                       punchline: "RODRIGUEEEEZZZ", photo: "assets/joueurs/maeva.png" },
     { number: 19,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: null },
