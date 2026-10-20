@@ -53,7 +53,7 @@ window.SCORE_CONFIG = {
   //  punchline : une phrase courte, 50 caractères max conseillé
   //  photo     : null = silhouette grise ; plus tard un PNG détouré, par ex. "assets/joueurs/7.png"
   roster: [
-    { number: 1,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: "assets/joueurs/margot.png" },
+    { number: 5,  name: "Margot", position: "Passeur",                     punchline: "Je passe, tu frappes, et on rentre à la maison", photo: "assets/joueurs/margot.png" },
     { number: 6,  name: "Romain", position: "Central",                      punchline: "Capitaine du navire", photo: null },
     { number: 3,  name: "Samia", position: "Réceptionneur-attaquant",      punchline: "Admire ma trotinette", photo: null },
     { number: 13,  name: "Cyril", position: "Réceptionneur-attaquant",     punchline: "Veni, vidi, vici", photo: "assets/joueurs/cyril.png" },
