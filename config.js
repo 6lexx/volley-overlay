@@ -64,7 +64,7 @@ window.SCORE_CONFIG = {
     { number: 11,  name: "Maëva", position: "Pointu",                       punchline: "RODRIGUEEEEZZZ", photo: "assets/joueurs/maeva.png" },
     { number: 19,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: null },
     { number: 7, name: "Quentin", position: "Central",                   punchline: "Je fais aussi du basket", photo: null },
-    { number: 100,  name: "Sovann", position: "Entraîneur",                   punchline: "J'entraîne tout ces fous", photo: null },
+    { coach: true,  name: "Sovann", position: "Entraîneur",                   punchline: "J'entraîne tout ces fous", photo: null },
   ],
 
   // --- Contrôle
