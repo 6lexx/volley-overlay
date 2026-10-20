@@ -429,14 +429,15 @@ function drawResult(cv, r, fmt) {
 
   // En-tête : RÉSULTAT · type · date
   g.fillStyle = C.red; g.textBaseline = "alphabetic";
-  const kick = "RÉSULTAT";
+  const team = (CFG.home?.team || "Excellence B Mixte").toUpperCase();   // notre équipe (réglable dans config.js : home.team)
+  const kick = `RÉSULTAT · ${team}`;
   const meta = `${(TYPES[r.type] || "Match").toUpperCase()} · ${d} ${MONTHS_LONG[m - 1].toUpperCase()} ${yy}`;
   if (story) {
-    font(g, 700, 40, FCOND, 12); center(g, kick, W / 2, L.kickY);
+    fit(g, kick, 940, 40, 700, FCOND, .3); center(g, kick, W / 2, L.kickY);
     g.fillStyle = C.muted; fit(g, meta, 900, 36, 700, FCOND, .12); center(g, meta, W / 2, L.metaY);
   } else {
     g.textAlign = "left"; const tx = cx + L.crestR + 34;
-    font(g, 700, 40, FCOND, 12); g.fillText(kick, tx, L.kickY);
+    fit(g, kick, W - tx - 50, 40, 700, FCOND, .3); g.fillText(kick, tx, L.kickY);
     g.fillStyle = C.muted; fit(g, meta, W - tx - 60, 34, 700, FCOND, .12); g.fillText(meta, tx, L.metaY);
   }
 
