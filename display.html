@@ -252,6 +252,9 @@
     pointer-events: none;
   }
   .wu.show { opacity: 1; transform: none; }
+  .wu.noplayers .wu-cards { display: none; }               /* échauffement sans les joueurs */
+  .wu.noplayers { align-items: flex-end; }
+  .wu.noplayers .wu-head { margin-top: 0; }
 
   /* Bloc affiche : ÉCHAUFFEMENT + les deux équipes */
   .wu-head { flex: none; max-width: 30vw; margin-top: 21em; transform: skewX(var(--skew)); background: var(--ink); padding: 1.3em 2.6em; box-shadow: 0 .6em 1.6em rgba(0, 0, 0, .35); }
@@ -1131,8 +1134,11 @@ function updateWarmup(s) {
     $("wuA").textContent = a; $("wuB").textContent = b;
     const len = Math.max(a.length, b.length + 3);
     $("wu").style.setProperty("--wu-fs", len > 22 ? "2.8em" : len > 15 ? "3.4em" : "4em");
-    const sig = JSON.stringify([window.SCORE_CONFIG?.roster || [], PRESENT ? [...PRESENT] : null]);
-    if (!wuOn || sig !== wuSig) { wuSig = sig; wuPage = 0; requestAnimationFrame(() => { if (wuOn) showPage(); }); }
+    const noPl = !!s.warmupNoPlayers;
+    $("wu").classList.toggle("noplayers", noPl);
+    if (noPl) clearTimeout(wuTimer);
+    const sig = JSON.stringify([window.SCORE_CONFIG?.roster || [], PRESENT ? [...PRESENT] : null, noPl]);
+    if (!wuOn || sig !== wuSig) { wuSig = sig; wuPage = 0; requestAnimationFrame(() => { if (wuOn && !noPl) showPage(); }); }
   }
   if (on !== wuOn) {
     wuOn = on;
@@ -1144,10 +1150,10 @@ function updateWarmup(s) {
   setTimeout(placeClock, 800);                         // après l'entrée du bandeau
 }
 function setPresent(val) {                             // { n7: true, ... } ou null (= tout le monde)
-  PRESENT = val ? new Set(Object.keys(val).filter((k) => val[k]).map((k) => k.replace(/^n/, ""))) : null;
+  PRESENT = val && typeof val === "object" ? new Set(Object.keys(val).filter((k) => val[k]).map((k) => k.replace(/^n/, ""))) : null;
   if (LAST) updateWarmup(LAST);
 }
-addEventListener("resize", () => { if (wuOn) { showPage(); placeClock(); } });
+addEventListener("resize", () => { if (wuOn) { if (!$("wu").classList.contains("noplayers")) showPage(); placeClock(); } });
 
 // ===========================================================
 //  INTER-SET et TEMPS MORT — bandeaux du coin, allumés / éteints
@@ -1288,7 +1294,9 @@ function startIntro() {
 }
 
 window.addEventListener("volley:event", (e) => {
-  if ((e.detail || {}).type === "teamIntro") startIntro();
+  const t = (e.detail || {}).type;
+  if (t === "teamIntro") startIntro();
+  if (t === "teamIntroStop") stopIntro();               // arrêt manuel depuis l'appli
 });
 
 // ===========================================================
