@@ -39,9 +39,9 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 ### Avant le match
 1. **Nouveau match** : saisis le **nom complet** de l'adversaire, son abréviation et sa couleur. Le nom complet s'affiche dans l'échauffement et à la fin des sets.
 2. **Joueurs présents** : coche les joueurs du jour. La liste est gardée d'un match à l'autre.
-3. **Événements à l'écran → Échauffement → Afficher** : le bloc d'affiche et les cartes joueurs apparaissent et défilent en fondu.
-   Le bouton devient **Retirer**. L'échauffement se retire aussi tout seul au **premier point**.
-4. **Événements → Présentation des équipes → Afficher** : toute la compo du jour s'affiche en plein écran, joueur par joueur, triée par poste, pendant 20 secondes.
+3. **Événements à l'écran → Échauffement** : **Avec joueurs** (le bloc d'affiche et les cartes joueurs qui défilent en fondu) ou **Sans joueurs** (le bloc d'affiche seul).
+   Pendant l'échauffement : **Retirer**, ou **Cacher / Montrer les joueurs** pour basculer sans tout retirer. L'échauffement se retire aussi tout seul au **premier point**.
+4. **Événements → Présentation des équipes → Afficher** : toute la compo du jour s'affiche en plein écran, joueur par joueur, triée par poste. Elle se retire seule au bout de 20 secondes, ou tout de suite avec **Arrêter**.
 
 ### Pendant le match
 - **+1** sous l'équipe qui marque.
@@ -57,13 +57,12 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 ### Fin de set
 - Dès que le set est gagné (25 points, 15 au tie-break, 2 points d'écart), **le volet se lance tout seul**. Il montre le score du set, les noms complets et les losanges de sets, et le losange du set gagné se remplit.
 - Appuie ensuite sur **Valider le set** pour passer au set suivant.
-- **Victoire du set** (dans Événements) rejoue le volet du dernier set.
 - **Inter-set** (dans Événements) : un bandeau reste en bas à gauche pendant la pause, avec le score en sets, le détail de chaque set, le total d'aces et le prochain set. Le score de droite est masqué pendant ce temps.
   Le bouton devient **Retirer**. Le bandeau se retire aussi tout seul au **premier point du set suivant**.
 
 ### Fin du match
 - Au dernier set gagné, **les bandeaux de victoire** partent tout seuls à la place du volet et restent 2 min 30. Le score revient ensuite avec le résultat final en sets.
-- **Victoire du match** (dans Événements) les relance.
+- **Rejouer la victoire** (dans Événements, « Fin du match ») les relance, par exemple pour la fin du stream.
 
 ### Après le match : résultats et replays
 1. Dans le bandeau de fin de match, appuie sur **Enregistrer le résultat** : choisis la date et le type (Championnat, Amical, Coupe), puis valide.
@@ -73,6 +72,7 @@ Hébergé sur GitHub Pages, synchronisé en direct par Firebase.
 - **+ Ajouter un match passé** : pour les matchs joués avant l'appli. Les scores des sets s'écrivent RMV en premier, par exemple `25-20 22-25 25-18 25-21`.
 - **Joueurs présents** : les joueurs cochés dans « Joueurs présents » sont enregistrés avec le résultat et affichés dans la fiche du match. Le bouton **Joueurs · N** de chaque match permet de corriger la liste. Pour un match passé, coche-les dans le formulaire.
 - Chaque match peut changer de type ou être supprimé (deux appuis pour confirmer).
+- **Visuel Instagram** : sur la page des résultats, ouvre un match puis **Créer le visuel Instagram**. Choisis Post (4:5) ou Story (9:16), puis **Partager** (téléphone) ou **Enregistrer l'image**. Tout est rempli automatiquement depuis le match enregistré.
 
 La page des résultats est publique mais **n'est pas référencée par Google** : seuls ceux qui ont le lien la trouvent. Elle affiche le bilan de la saison (victoires, défaites, sets, aces, forme sur les 5 derniers matchs), les matchs par mois et le replay de chacun.
 Les résultats sont gardés d'un match à l'autre : « Nouveau match » ne les efface pas.
