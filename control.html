@@ -983,7 +983,9 @@ $("scrim").onclick = () => { closeSide(); closeRoster(); closeRes(); };
 //  Joueurs présents (échauffement)
 // ===========================================================
 const ROSTER = (CFG.roster || []).filter(Boolean);
-const keyOf = (p) => "n" + p.number;
+const isCoach = (p) => !!p && (p.coach === true || /entra[iî]neu|coach/i.test(String(p.position || "")));
+const slug = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const keyOf = (p) => (isCoach(p) ? "c-" + slug(p.name) : "n" + p.number);   // identifiant d'un joueur / de l'entraîneur
 const isIn = (p) => !present || !!present[keyOf(p)];
 
 function renderRoster() {
@@ -997,7 +999,8 @@ function renderRoster() {
     const box = document.createElement("input");
     box.type = "checkbox"; box.checked = isIn(p);
     box.onchange = () => savePresent(p, box.checked);
-    const num = document.createElement("span"); num.className = "pl-num"; num.textContent = p.number;
+    const num = document.createElement("span"); num.className = "pl-num"; num.textContent = isCoach(p) ? "ENT" : p.number;
+    if (isCoach(p)) num.style.fontSize = "18px";
     const txt = document.createElement("span"); txt.className = "pl-txt";
     const nm = document.createElement("span"); nm.className = "pl-name"; nm.textContent = p.name || "";
     const ps = document.createElement("span"); ps.className = "pl-pos"; ps.textContent = p.position || "";
@@ -1049,16 +1052,18 @@ function checkYt(url) {
 }
 
 // ---- Joueurs présents d'un match : copie figée (numéro, nom, poste) au moment de l'enregistrement
-function snapPlayers(numbers) {
-  const want = new Set(numbers.map(String));
-  return ROSTER.filter((p) => want.has(String(p.number))).map((p) => ({ number: p.number, name: p.name || "", position: p.position || "" }));
+function snapPlayers(keys) {
+  const want = new Set(keys.map(String));
+  return ROSTER.filter((p) => want.has(keyOf(p))).map((p) => isCoach(p)
+    ? { coach: true, name: p.name || "", position: p.position || "Entraîneur" }
+    : { number: p.number, name: p.name || "", position: p.position || "" });
 }
 function renderChips(id, selected) {
   const sel = new Set(selected.map(String));
   $(id).replaceChildren(...ROSTER.map((p) => {
-    const b = mk("button", "pl-chip" + (sel.has(String(p.number)) ? " on" : ""));
-    b.type = "button"; b.dataset.n = p.number;
-    b.append(mk("b", null, p.number), mk("span", null, p.name || ""));
+    const b = mk("button", "pl-chip" + (sel.has(keyOf(p)) ? " on" : ""));
+    b.type = "button"; b.dataset.n = keyOf(p);
+    b.append(mk("b", null, isCoach(p) ? "ENT" : p.number), mk("span", null, p.name || ""));
     b.onclick = () => b.classList.toggle("on");
     return b;
   }));
@@ -1069,7 +1074,7 @@ let plEditKey = null;
 function openPlEdit(key, r) {
   plEditKey = key;
   $("plEditTitle").textContent = `${fmtDate(r.date)} · vs ${r.away?.name || r.away?.short || ""}`;
-  renderChips("plEditChips", (Array.isArray(r.players) ? r.players : Object.values(r.players || {})).filter(Boolean).map((p) => p.number));
+  renderChips("plEditChips", (Array.isArray(r.players) ? r.players : Object.values(r.players || {})).filter(Boolean).map(keyOf));
   $("plEditModal").classList.add("show");
 }
 $("plEditCancel").onclick = () => $("plEditModal").classList.remove("show");
@@ -1104,7 +1109,7 @@ $("saveGo").onclick = () => guarded("archive", async () => {
     history: s.history.map((h) => ({ A: h.A, B: h.B, winner: h.winner })),
     sets: { A: s.sets.A, B: s.sets.B }, aces: { A: s.aces?.A || 0, B: s.aces?.B || 0 },
     winner: s.winner || (s.sets.A > s.sets.B ? "A" : "B"), youtube: yt, createdAt: Date.now(),
-    players: snapPlayers(ROSTER.filter(isIn).map((p) => p.number))      // joueurs cochés dans « Joueurs présents »
+    players: snapPlayers(ROSTER.filter(isIn).map(keyOf))      // joueurs cochés dans « Joueurs présents »
   };
   try {
     const r = push(archiveRef, rec);       // la clé est connue tout de suite
@@ -1120,7 +1125,7 @@ $("pastBtn").onclick = () => {
   $("pastDate").value = todayIso();
   ["pastName", "pastShort", "pastSets", "pastYt"].forEach((id) => { $(id).value = ""; });
   $("pastAcesA").value = 0; $("pastAcesB").value = 0;
-  renderChips("pastPlayers", ROSTER.filter(isIn).map((p) => p.number));
+  renderChips("pastPlayers", ROSTER.filter(isIn).map(keyOf));
   $("pastModal").classList.add("show");
 };
 $("pastCancel").onclick = () => $("pastModal").classList.remove("show");
