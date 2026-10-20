@@ -211,7 +211,8 @@ const ytId = (u) => { const m = String(u || "").match(/(?:youtu\.be\/|[?&]v=|\/e
 const toArr = (x) => (Array.isArray(x) ? x.filter(Boolean) : x ? Object.values(x) : []);
 const parts = (iso) => { const [y, m, d] = String(iso).split("-").map(Number); return { y, m, d }; };
 const POS_ORDER = ["pass", "point", "récep", "recep", "centr", "lib"];
-const posRank = (p) => { const s = String(p.position || "").toLowerCase(); const i = POS_ORDER.findIndex((k) => s.startsWith(k)); return i < 0 ? 9 : i; };
+const isCoach = (p) => !!p && (p.coach === true || /entra[iî]neu|coach/i.test(String(p.position || "")));
+const posRank = (p) => { if (isCoach(p)) return 10; const s = String(p.position || "").toLowerCase(); const i = POS_ORDER.findIndex((k) => s.startsWith(k)); return i < 0 ? 9 : i; };
 const seasonOf = (iso) => { const { y, m } = parts(iso); const start = m >= 8 ? y : y - 1; return `${start}-${start + 1}`; };
 
 if (CFG.home?.name) $("club").textContent = `${CFG.home.name} Volley`.replace(/volley volley/i, "Volley");
@@ -347,7 +348,8 @@ function fillMore(more, r) {
     const lst = mk("div", "pp-list");
     players.forEach((p) => {
       const c = mk("span", "pp"); const u = mk("span");
-      u.append(mk("b", null, p.number), mk("em", null, p.name || ""));
+      if (!isCoach(p)) u.append(mk("b", null, p.number));
+      u.append(mk("em", null, p.name || ""));
       if (p.position) u.append(mk("small", null, p.position));
       c.append(u); lst.append(c);
     });
