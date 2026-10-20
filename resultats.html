@@ -124,6 +124,21 @@
   footer { color: var(--muted); font-size: 14px; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
   footer a { color: var(--text); }
 
+  /* ---------- Visuel Instagram ---------- */
+  .share-btn { align-self: flex-start; border: 0; background: var(--white); color: var(--ink); padding: 12px 22px; min-height: 48px; font: 700 16px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; transform: skewX(var(--skew)); }
+  .share-btn > span { display: inline-block; transform: skewX(calc(var(--skew) * -1)); }
+  .vis { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; align-items: center; gap: 14px; overflow-y: auto;
+         padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  .vis-bar { width: 100%; max-width: 560px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .vis-bar h2 { margin: 0; font: 900 26px/1 var(--num); text-transform: uppercase; letter-spacing: .03em; }
+  .vis-close { border: 0; background: var(--raise); width: 48px; height: 48px; font-size: 22px; }
+  .vis canvas { width: auto; height: auto; max-width: min(100%, 560px); max-height: 62vh; box-shadow: 0 10px 40px rgba(0, 0, 0, .6); background: #141414; }
+  .vis-actions { width: 100%; max-width: 560px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .vis-actions .go { border: 0; background: var(--red); color: var(--white); padding: 14px 22px; min-height: 52px; font: 700 18px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; transform: skewX(var(--skew)); }
+  .vis-actions .go > span { display: inline-block; transform: skewX(calc(var(--skew) * -1)); }
+  .vis-actions .go.alt { background: var(--white); color: var(--ink); }
+  .vis-note { margin: 0; color: var(--muted); font-size: 14px; text-align: center; max-width: 520px; }
+
   @media (max-width: 480px) {
     .m-btn { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; padding-left: 16px; }
     .m-date b { font-size: 28px; }
@@ -158,6 +173,23 @@
     <span>Matchs en direct sur <a href="https://www.twitch.tv/silex62" target="_blank" rel="noopener">twitch.tv/silex62</a></span>
     <span id="updated"></span>
   </footer>
+</div>
+
+<div class="vis" id="vis" hidden role="dialog" aria-modal="true" aria-labelledby="visTitle">
+  <div class="vis-bar">
+    <h2 id="visTitle">Visuel du résultat</h2>
+    <button class="vis-close" id="visClose" aria-label="Fermer">✕</button>
+  </div>
+  <nav class="chips" id="visFormats" aria-label="Format">
+    <button class="chip" data-f="post" aria-pressed="true"><span>Post 4:5</span></button>
+    <button class="chip" data-f="story" aria-pressed="false"><span>Story 9:16</span></button>
+  </nav>
+  <canvas id="visCanvas" width="1080" height="1350"></canvas>
+  <div class="vis-actions">
+    <button class="go" id="visShare" hidden><span>Partager</span></button>
+    <button class="go alt" id="visSave"><span>Enregistrer l'image</span></button>
+  </div>
+  <p class="vis-note" id="visNote">Sur téléphone, « Partager » envoie l'image directement vers Instagram, WhatsApp… ou la galerie.</p>
 </div>
 
 <script src="config.js"></script>
@@ -321,8 +353,190 @@ function fillMore(more, r) {
     });
     sec.append(lst); more.append(sec);
   }
+  const sb = mk("button", "share-btn"); sb.append(mk("span", null, "Créer le visuel Instagram"));
+  sb.onclick = () => openVisual(r);
+  more.append(sb);
   if (id) { const a = mk("a", "yt-link", "Ouvrir sur YouTube ↗"); a.href = `https://www.youtube.com/watch?v=${id}`; a.target = "_blank"; a.rel = "noopener"; more.append(a); }
 }
+
+
+// ===========================================================
+//  VISUEL DU RÉSULTAT — dessiné dans le navigateur (canvas), en PNG
+//    post 1080×1350 (4:5) · story 1080×1920 (9:16)
+// ===========================================================
+const C = { bg: "#141414", red: "#D3121F", deep: "#8E0A13", ink: "#1A1416", white: "#FFFFFF", muted: "#A89C9E", loser: "#8A8085", plate: "#2A2224" };
+const FNUM = '"Big Shoulders Display", "Arial Narrow", sans-serif';
+const FCOND = '"Barlow Condensed", "Arial Narrow", sans-serif';
+const SK = Math.tan(12 * Math.PI / 180);
+let visRec = null, visFmt = "post", logoImg = null;
+
+function loadLogo() {
+  if (logoImg) return Promise.resolve(logoImg);
+  return new Promise((res) => {
+    const i = new Image();
+    i.onload = () => { logoImg = i; res(i); };
+    i.onerror = () => res(null);
+    i.src = CFG.home?.logo || "assets/ramonville.png";
+  });
+}
+async function fontsReady() {
+  try {
+    await Promise.all([
+      document.fonts.load(`900 100px ${FNUM}`), document.fonts.load(`800 100px ${FNUM}`),
+      document.fonts.load(`700 40px ${FCOND}`)
+    ]);
+  } catch (e) {}
+}
+// losange incliné comme dans l'overlay (le haut part vers la droite)
+function para(g, x, y, w, h, fill) {
+  const o = h * SK;
+  g.beginPath(); g.moveTo(x + o, y); g.lineTo(x + w + o, y); g.lineTo(x + w, y + h); g.lineTo(x, y + h); g.closePath();
+  g.fillStyle = fill; g.fill();
+}
+function font(g, w, size, fam, ls) { g.font = `${w} ${size}px ${fam}`; try { g.letterSpacing = (ls || 0) + "px"; } catch (e) {} }
+function fit(g, text, maxW, size, w, fam, ls, min = 20) {
+  for (let s = size; s >= min; s -= 4) { font(g, w, s, fam, ls ? ls * s : 0); if (g.measureText(text).width <= maxW) return s; }
+  return min;
+}
+function center(g, text, cx, y) { g.textAlign = "center"; g.fillText(text, cx, y); }
+
+function drawResult(cv, r, fmt) {
+  const story = fmt === "story";
+  const W = 1080, H = story ? 1920 : 1350;
+  cv.width = W; cv.height = H;
+  const g = cv.getContext("2d");
+  const win = r.winner === "A";
+  const T = { A: r.home || {}, B: r.away || {} };
+  const { y: yy, m, d } = parts(r.date);
+  const L = story
+    ? { crestY: 330, crestR: 96, kickY: 480, metaY: 530, band: 830, bandH: 360, scoreY: 1300, nameY: 1400, tabsY: 1465, acesY: 1570, footY: 1680, word: 240 }
+    : { crestY: 150, crestR: 74, kickY: 136, metaY: 186, band: 540, bandH: 300, scoreY: 945, nameY: 1028, tabsY: 1082, acesY: 1172, footY: 1298, word: 205 };
+
+  // Fond + grand losange incliné, rouge pour une victoire, sombre pour une défaite
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  g.save(); g.translate(W / 2, L.band); g.rotate(-6 * Math.PI / 180);
+  g.fillStyle = win ? C.deep : "#0E0B0C"; g.fillRect(-900, -L.bandH / 2 - 24, 1800, L.bandH + 48);
+  g.fillStyle = win ? C.red : C.plate; g.fillRect(-900, -L.bandH / 2, 1800, L.bandH);
+  g.restore();
+
+  // Écusson
+  const cx = story ? W / 2 : 80 + L.crestR;
+  g.beginPath(); g.arc(cx, L.crestY, L.crestR, 0, Math.PI * 2); g.fillStyle = C.white; g.fill();
+  g.lineWidth = 10; g.strokeStyle = C.red; g.stroke();
+  if (logoImg) { const s = L.crestR * 1.7; g.drawImage(logoImg, cx - s / 2, L.crestY - s / 2, s, s); }
+
+  // En-tête : RÉSULTAT · type · date
+  g.fillStyle = C.red; g.textBaseline = "alphabetic";
+  const kick = "RÉSULTAT";
+  const meta = `${(TYPES[r.type] || "Match").toUpperCase()} · ${d} ${MONTHS_LONG[m - 1].toUpperCase()} ${yy}`;
+  if (story) {
+    font(g, 700, 40, FCOND, 12); center(g, kick, W / 2, L.kickY);
+    g.fillStyle = C.muted; fit(g, meta, 900, 36, 700, FCOND, .12); center(g, meta, W / 2, L.metaY);
+  } else {
+    g.textAlign = "left"; const tx = cx + L.crestR + 34;
+    font(g, 700, 40, FCOND, 12); g.fillText(kick, tx, L.kickY);
+    g.fillStyle = C.muted; fit(g, meta, W - tx - 60, 34, 700, FCOND, .12); g.fillText(meta, tx, L.metaY);
+  }
+
+  // VICTOIRE / DÉFAITE
+  const word = win ? "VICTOIRE" : "DÉFAITE";
+  g.fillStyle = C.white; g.textBaseline = "middle";
+  fit(g, word, 940, L.word, 900, FNUM, .03); center(g, word, W / 2, L.band + 8);
+
+  // Score en sets : RMV  3 – 1  ADV
+  g.textBaseline = "alphabetic";
+  const big = story ? 250 : 200, side = story ? 84 : 72;
+  font(g, 900, big, FNUM, 0);
+  const sA = String(r.sets?.A ?? 0), sB = String(r.sets?.B ?? 0), dash = "–";
+  const wA = g.measureText(sA).width, wB = g.measureText(sB).width;
+  font(g, 900, big * .6, FNUM, 0); const wD = g.measureText(dash).width;
+  const gap = 34, total = wA + gap + wD + gap + wB, x0 = W / 2 - total / 2;
+  font(g, 900, big, FNUM, 0); g.textAlign = "left";
+  g.fillStyle = win ? C.white : C.muted; g.fillText(sA, x0, L.scoreY);
+  g.fillStyle = win ? C.muted : C.white; g.fillText(sB, x0 + wA + gap + wD + gap, L.scoreY);
+  font(g, 900, big * .6, FNUM, 0); g.fillStyle = C.red; g.fillText(dash, x0 + wA + gap, L.scoreY - big * .22);
+  font(g, 800, side, FNUM, 2); g.fillStyle = C.white;
+  g.textAlign = "right"; g.fillText((T.A.short || "RMV").toUpperCase(), x0 - 40, L.scoreY - big * .18);
+  g.textAlign = "left"; g.fillText((T.B.short || "").toUpperCase(), x0 + total + 40, L.scoreY - big * .18);
+
+  // Nom complet de l'adversaire
+  const opp = `VS ${(T.B.name || T.B.short || "").toUpperCase()}`;
+  g.fillStyle = C.muted; fit(g, opp, 940, story ? 44 : 40, 700, FCOND, .1); center(g, opp, W / 2, L.nameY);
+
+  // Score de chaque set (RMV en premier), en losanges blancs
+  const hist = toArr(r.history);
+  if (hist.length) {
+    const tw = story ? 168 : 152, th = story ? 72 : 64, tg = 18;
+    const n = hist.length, rowW = n * tw + (n - 1) * tg;
+    let x = W / 2 - rowW / 2 - th * SK / 2;
+    hist.forEach((h) => {
+      para(g, x, L.tabsY, tw, th, C.white);
+      const a = String(h.A), b = String(h.B), mid = "-";
+      font(g, 700, story ? 40 : 36, FCOND, 0);
+      const wa = g.measureText(a).width, wm = g.measureText(" " + mid + " ").width, wb = g.measureText(b).width;
+      let tx = x + th * SK / 2 + tw / 2 - (wa + wm + wb) / 2, ty = L.tabsY + th / 2 + 1;
+      g.textBaseline = "middle"; g.textAlign = "left";
+      g.fillStyle = h.winner === "A" ? C.red : C.loser; g.fillText(a, tx, ty); tx += wa;
+      g.fillStyle = C.loser; g.fillText(" " + mid + " ", tx, ty); tx += wm;
+      g.fillStyle = h.winner === "B" ? C.ink : C.loser; g.fillText(b, tx, ty);
+      x += tw + tg;
+    });
+    g.textBaseline = "alphabetic";
+  }
+
+  // Aces
+  if (r.aces && (r.aces.A || r.aces.B)) {
+    const txt = `ACES ${r.aces.A} – ${r.aces.B}`;
+    font(g, 700, story ? 36 : 32, FCOND, 4);
+    const w = g.measureText(txt).width + 60, h = story ? 62 : 56;
+    para(g, W / 2 - w / 2 - h * SK / 2, L.acesY, w, h, C.plate);
+    g.fillStyle = C.white; g.textBaseline = "middle"; center(g, txt, W / 2, L.acesY + h / 2 + 1); g.textBaseline = "alphabetic";
+  }
+
+  // Pied : club + chaîne Twitch
+  const foot = `${(T.A.name || "Ramonville").toUpperCase()} VOLLEY · REPLAY SUR TWITCH.TV/SILEX62`.replace(/VOLLEY VOLLEY/, "VOLLEY");
+  g.fillStyle = C.muted; fit(g, foot, 960, 30, 700, FCOND, .14); center(g, foot, W / 2, L.footY);
+}
+
+function visFileName() {
+  const opp = String(visRec.away?.short || visRec.away?.name || "match").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `rmv-resultat-${visRec.date}-${opp}-${visFmt}.png`;
+}
+function renderVisual() {
+  drawResult($("visCanvas"), visRec, visFmt);
+  document.querySelectorAll("#visFormats .chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === visFmt)));
+}
+function canvasBlob() { return new Promise((res) => $("visCanvas").toBlob(res, "image/png")); }
+
+async function openVisual(r) {
+  visRec = r; visFmt = "post";
+  $("vis").hidden = false; document.body.style.overflow = "hidden";
+  await Promise.all([fontsReady(), loadLogo()]);
+  renderVisual();
+  // Partage natif (téléphone) si le navigateur sait partager une image
+  let canShare = false;
+  try { canShare = !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(["x"], { type: "image/png" })], "t.png", { type: "image/png" })] })); } catch (e) {}
+  $("visShare").hidden = !canShare;
+  $("visNote").hidden = !canShare;
+}
+function closeVisual() { $("vis").hidden = true; document.body.style.overflow = ""; }
+
+document.querySelectorAll("#visFormats .chip").forEach((b) => b.onclick = () => { visFmt = b.dataset.f; renderVisual(); });
+$("visClose").onclick = closeVisual;
+$("vis").addEventListener("click", (e) => { if (e.target === $("vis")) closeVisual(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("vis").hidden) closeVisual(); });
+$("visSave").onclick = async () => {
+  const blob = await canvasBlob(); if (!blob) return;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = visFileName();
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+};
+$("visShare").onclick = async () => {
+  const blob = await canvasBlob(); if (!blob) return;
+  const file = new File([blob], visFileName(), { type: "image/png" });
+  try { await navigator.share({ files: [file], title: "Résultat RMV" }); } catch (e) { /* partage annulé */ }
+};
 
 // ===========================================================
 //  Firebase (lecture seule)
