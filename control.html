@@ -488,9 +488,10 @@ const EVENT_LIST = [
     { type: "timeout", label: "Temps mort", team: true }
   ]},
   { group: "Entre les sets", items: [
-    { type: "interSet", label: "Inter-set" },
-    { type: "setWin",   label: "Victoire du set",   team: true },
-    { type: "matchWin", label: "Victoire du match", team: true }
+    { type: "interSet", label: "Inter-set" }
+  ]},
+  { group: "Fin du match", items: [
+    { type: "matchWin", label: "Rejouer la victoire", team: true }
   ]}
 ];
 
@@ -587,6 +588,7 @@ function norm(s) {
   s.visible  = s.visible !== false;
   s.tbSwitched = !!s.tbSwitched;
   s.warmup = !!s.warmup;
+  s.warmupNoPlayers = !!s.warmupNoPlayers;
   s.interSet = !!s.interSet;
   s.timeout ??= null;
   s.pendingWinner ??= null;
@@ -665,7 +667,12 @@ const ACTIONS = {
     return s;
   },
   ace(s, t)        { s.aces[t]++; return s; },          // compteur d'aces du match (annulable)
-  warmup(s)        { s.warmup = !s.warmup; return s; },   // bandeau d'échauffement (reste affiché)
+  warmup(s, withPlayers) {                                 // bandeau d'échauffement (reste affiché)
+    if (withPlayers === true || withPlayers === false) { s.warmup = true; s.warmupNoPlayers = !withPlayers; }
+    else s.warmup = false;
+    return s;
+  },
+  warmupPlayers(s) { s.warmupNoPlayers = !s.warmupNoPlayers; return s; },
   interSet(s)      { s.interSet = !s.interSet; if (s.interSet) s.timeout = null; return s; },
   timeout(s, t)    { s.timeout = s.timeout === t ? null : t; s.timeoutAt = Date.now(); if (s.timeout) s.interSet = false; return s; },
   resetAces(s)     { s.aces = { A: 0, B: 0 }; return s; },          // annulable
@@ -675,7 +682,7 @@ const ACTIONS = {
   tbSwitch(s)      { s.swapped = !s.swapped; s.tbSwitched = true; return s; },
   tbDismiss(s)     { s.tbSwitched = true; return s; }
 };
-const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup", "interSet", "timeout", "markArchived"]);
+const NO_UNDO = new Set(["swap", "toggleVisible", "tbSwitch", "tbDismiss", "warmup", "warmupPlayers", "interSet", "timeout", "markArchived"]);
 
 // ===========================================================
 //  Écritures
@@ -721,6 +728,7 @@ async function undo() {
           swapped: cur.state.swapped,
           tbSwitched: cur.state.tbSwitched,
           warmup: cur.state.warmup || false,
+          warmupNoPlayers: cur.state.warmupNoPlayers || false,
           interSet: cur.state.interSet || false,
           timeout: cur.state.timeout || null,
           timeoutAt: cur.state.timeoutAt || null,
@@ -873,10 +881,31 @@ function renderEvents() {
           btns.appendChild(b);
         });
       } else {
+        if (item.type === "warmup" || item.type === "teamIntro") {
+          const two = (label, fn, dark) => {
+            const b = document.createElement("button");
+            b.className = "go"; b.textContent = label;
+            if (dark) b.style.background = "#3A3336";
+            b.onclick = fn; btns.appendChild(b);
+          };
+          if (item.type === "teamIntro") {
+            two("Afficher", () => sendEvent(item, null));
+            two("Arrêter", () => sendEvent({ type: "teamIntroStop", label: "Présentation arrêtée" }, null), true);
+          } else if (!state?.warmup) {
+            two("Avec joueurs", () => sendEvent(item, true));
+            two("Sans joueurs", () => sendEvent(item, false));
+          } else {
+            two("Retirer", () => sendEvent(item, null), true);
+            two(state.warmupNoPlayers ? "Montrer les joueurs" : "Cacher les joueurs", () => guarded("wuplayers", () => act("warmupPlayers")));
+          }
+          box.append(name, btns);
+          list.appendChild(box);
+          return;
+        }
         btns.classList.add("single");
         const b = document.createElement("button");
         b.className = "go";
-        const off = (item.type === "warmup" && state?.warmup) || (item.type === "interSet" && state?.interSet);
+        const off = item.type === "interSet" && state?.interSet;
         b.textContent = off ? "Retirer" : "Afficher";
         if (off) b.style.background = "#3A3336";
         b.onclick = () => sendEvent(item, null);
@@ -918,10 +947,10 @@ function sendEvent(item, team) {
     });
     return;
   }
-  if (item.type === "warmup") {              // bandeau qui reste : on l'allume / l'éteint
+  if (item.type === "warmup") {              // bandeau qui reste : avec ou sans joueurs, ou retiré
     guarded("evwarmup", async () => {
-      await act("warmup");
-      toast(state?.warmup ? "Échauffement affiché" : "Échauffement retiré");
+      await act("warmup", team);              // team = true (avec joueurs), false (sans), null (retirer)
+      toast(!state?.warmup ? "Échauffement retiré" : state.warmupNoPlayers ? "Échauffement affiché, sans les joueurs" : "Échauffement affiché");
     });
     return;
   }
