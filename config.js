@@ -60,7 +60,7 @@ window.SCORE_CONFIG = {
     { number: 18,  name: "Nicolas", position: "Réceptionneur-attaquant",      punchline: "Tu joue Top ou ADC ?", photo:"assets/joueurs/nicolas.png" },
     { number: 9,  name: "Aurore", position: "Passeur",              punchline: "J'suis nulle mais toujours meilleure que toi", photo: null },
     { number: 2,  name: "Matthys", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: "assets/joueurs/matthys.png" },
-    { number: 17,  name: "Louanne", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: null },
+    { number: 17,  name: "Louane", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: null },
     { number: 11,  name: "Maëva", position: "Pointu",                       punchline: "RODRIGUEEEEZZZ", photo: "assets/joueurs/maeva.png" },
     { number: 19,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: null },
     { number: 7, name: "Quentin", position: "Central",                   punchline: "Je fais aussi du basket", photo: null },
