@@ -11,8 +11,8 @@ window.TOURNOI_CONFIG = {
 
   nom:   "Tournoi RMV Indoor",
   sousTitre: "4×4",
-  date:  "[DATE]",
-  lieu:  "Gymnase de Ramonville",
+  date:  "11/11/2026",
+  lieu:  "Gymnase Karben, Ramonville",
   twitch: "twitch.tv/silex62",
 
   // Adresse du site public (sert au QR code de la scène pause)
@@ -28,9 +28,9 @@ window.TOURNOI_CONFIG = {
   },
 
   format: {
-    terrains:          2,    // matchs joués en même temps (sert au planning, jamais affiché)
-    dureeRotationMin: 12,    // durée d'un match de poule, en minutes
-    dureeFinaleMin:   12,    // durée d'un match de phase finale
+    terrains:          3,    // matchs joués en même temps (sert au planning, jamais affiché)
+    dureeRotationMin: 20,    // durée d'un match de poule, en minutes
+    dureeFinaleMin:   20,    // durée d'un match de phase finale
     qualifiesParPoule: 2,
     points: { victoire: 3, nul: 1, defaite: 0 },
     // "nul"         : une égalité en poule reste un match nul
