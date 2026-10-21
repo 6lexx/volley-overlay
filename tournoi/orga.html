@@ -47,11 +47,11 @@
         <label for="nomEq" class="sous" style="width:100%">Nom de l'équipe</label>
         <input id="nomEq" class="champ" style="flex:1 1 180px" maxlength="40" autocomplete="off" required>
         <label for="pouleEq" class="sous" hidden>Poule</label>
-        <select id="pouleEq" class="champ" style="width:96px" aria-label="Poule"></select>
+        <select id="pouleEq" class="champ" style="width:132px;flex:none;padding-right:28px" aria-label="Poule"></select>
         <button class="btn rouge" type="submit">Ajouter</button>
       </form>
       <div id="listeEq" class="liste-eq"></div>
-      <button class="btn petit" id="remplirDemo" type="button" hidden>Remplir avec 16 équipes de démo</button>
+      <button class="btn petit" id="remplirDemo" type="button" hidden>Remplir avec des équipes de démo (2 poules de 6)</button>
     </div>
     <div class="bloc">
       <h2>Planning</h2>
@@ -194,8 +194,10 @@ $("#remplirDemo").addEventListener("click", () => {
     "Les Passeurs d'Âmes", "Réception Royale", "Les Contres Attaques", "Feinte et Furieux",
     "Les Bloqueurs Fous", "Team Tie-Break", "Les Rois du Bord", "Volley Gang"];
   const u = {};
-  noms.forEach((n, i) => (u[`equipes/${T.nouvelId()}${i}`] = { nom: n, poule: POULES[Math.floor(i / 4)], ordre: i % 4 }));
-  envoyer(u, "16 équipes ajoutées");
+  const parPoule = Number(param("parPoule")) || 6;
+  const total = Number(param("equipes")) || 12;
+  noms.slice(0, total).forEach((n, i) => (u[`equipes/${T.nouvelId()}${i}`] = { nom: n, poule: POULES[Math.floor(i / parPoule)], ordre: i % parPoule }));
+  envoyer(u, `${Math.min(total, noms.length)} équipes ajoutées`);
 });
 
 // ================= Pendant le tournoi =================
@@ -253,12 +255,14 @@ function rendreRotation(cur, suiv) {
           <div class="chrono-grand" id="chrono">--:--</div>
         </div>
       </div>
-      <div class="aide">À la fin du chrono, tape le score final de chaque match, puis valide.</div>
+      <div class="aide">${cur.mode === "points"
+        ? `Match en ${cur.cible} points${(CFG.format.ecartMin ?? 2) > 1 ? ` avec ${CFG.format.ecartMin ?? 2} points d'écart` : ""} : à la fin, tape le score final puis valide.`
+        : "À la fin du chrono, tape le score final de chaque match, puis valide."}</div>
       ${liste.map((m) => carteSaisie(m, "s")).join("")}
       <button class="btn plein large" id="valider" type="button">Valider la rotation ${cur.num}</button>
-      <button class="btn petit" id="relancer" type="button">Relancer le chrono à zéro</button>`;
+      ${cur.mode === "points" ? "" : `<button class="btn petit" id="relancer" type="button">Relancer le chrono à zéro</button>`}`;
     $("#valider").addEventListener("click", () => validerRotation(cur, liste));
-    doubleAppui($("#relancer"), "Appuie encore pour relancer", () => envoyer({ [`rotations/${cur.id}/debut`]: api.ts() }, "Chrono relancé"));
+    if ($("#relancer")) doubleAppui($("#relancer"), "Appuie encore pour relancer", () => envoyer({ [`rotations/${cur.id}/debut`]: api.ts() }, "Chrono relancé"));
     majChrono();
     return;
   }
@@ -267,11 +271,11 @@ function rendreRotation(cur, suiv) {
     const incomplet = liste.some((m) => !m.A || !m.B);
     el.innerHTML = `<div class="bloc">
         <h2>PROCHAINE : ROTATION ${suiv.num} SUR ${total}</h2>
-        <div class="sous">${suiv.phase === "finale" ? "Phase finale" : "Phase de poules"} · ${Math.round(suiv.duree / 60)} min</div>
+        <div class="sous">${suiv.phase === "finale" ? "Phase finale" : "Phase de poules"} · ${suiv.mode === "points" ? `en ${suiv.cible} points` : `${Math.round(suiv.duree / 60)} min`}</div>
         ${liste.map((m) => `<div class="match-lect"><span class="ellipse">${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))} – ${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}</span><span class="ph">${esc(T.nomPhase(m, ms))}</span></div>`).join("")}
       </div>
       <button class="btn rouge large" id="lancer" type="button" ${incomplet ? "disabled" : ""}>Lancer la rotation ${suiv.num}</button>
-      ${incomplet ? `<div class="aide">En attente des résultats précédents.</div>` : `<div class="aide">Le chrono démarre en même temps sur le site, l'overlay et le stream.</div>`}`;
+      ${incomplet ? `<div class="aide">En attente des résultats précédents.</div>` : `<div class="aide">${suiv.mode === "points" ? "Les matchs passent en cours sur le site, l'overlay et le stream." : "Le chrono démarre en même temps sur le site, l'overlay et le stream."}</div>`}`;
     if (!incomplet) $("#lancer").addEventListener("click", () => lancer(suiv, liste));
     return;
   }
@@ -300,8 +304,9 @@ function majChrono() {
   const c = $("#chrono");
   if (!cur || !c) return;
   const reste = T.tempsRestant(cur, api.maintenant());
-  c.textContent = fmtChrono(reste);
-  $("#chronoTxt").textContent = reste != null && reste <= 0 ? "Temps écoulé · saisis les scores" : "En cours";
+  c.textContent = T.texteChrono(cur, api.maintenant(), fmtChrono);
+  $("#chronoTxt").textContent = cur.mode === "points" ? "En cours · match en points"
+    : reste != null && reste <= 0 ? "Temps écoulé · saisis les scores" : "En cours";
   c.style.color = reste != null && reste <= 0 ? "var(--rouge-clair)" : "";
 }
 setInterval(majChrono, 500);
