@@ -233,6 +233,8 @@ export function genererFinale(equipes, matchs, rotationsExistantes, cfg) {
   const nbTours = Math.round(Math.log2(S));
   const terrains = Math.max(1, cfg.format.terrains || 1);
   const duree = Math.round((cfg.format.dureeFinaleMin || cfg.format.dureeRotationMin || 10) * 60);
+  const enPoints = (t) => t >= nbTours - (cfg.format.toursEnPoints || 0);
+  const cible = cfg.format.pointsCible || 25;
   const out = {};
 
   // Squelette de l'arbre
@@ -242,6 +244,7 @@ export function genererFinale(equipes, matchs, rotationsExistantes, cfg) {
       const id = `F-${t}-${String(i).padStart(2, "0")}`;
       const suivant = t < nbTours - 1 ? { id: `F-${t + 1}-${String(Math.floor(i / 2)).padStart(2, "0")}`, slot: i % 2 ? "B" : "A" } : null;
       out[id] = { phase: "finale", tour: t, index: i, nbTours, A: null, B: null, statut: STATUT.AVENIR, suivant };
+      if (enPoints(t)) { out[id].mode = "points"; out[id].cible = cible; }
     }
   }
   // Premier tour, et exempts envoyés directement au tour suivant
@@ -260,7 +263,9 @@ export function genererFinale(equipes, matchs, rotationsExistantes, cfg) {
     const aJouer = Object.values(out).filter((m) => m.tour === t && !m.exempt).sort((a, b) => a.index - b.index);
     for (let k = 0; k < aJouer.length; k += terrains) {
       aJouer.slice(k, k + terrains).forEach((m) => (m.rotation = n));
-      rotations[cleRotation(n)] = { num: n, phase: "finale", tour: t, statut: STATUT.AVENIR, duree };
+      rotations[cleRotation(n)] = enPoints(t)
+        ? { num: n, phase: "finale", tour: t, statut: STATUT.AVENIR, mode: "points", cible }
+        : { num: n, phase: "finale", tour: t, statut: STATUT.AVENIR, duree };
       n++;
     }
   }
@@ -280,6 +285,12 @@ export function majValidation(m, scoreA, scoreB, gagnantForce, matchs, cfg) {
   const a = Number(scoreA), b = Number(scoreB);
   if (!Number.isFinite(a) || !Number.isFinite(b) || a < 0 || b < 0) throw new Error("Score invalide");
   let gagnant = a > b ? "A" : b > a ? "B" : null;
+  if (m.mode === "points") {
+    const ecart = cfg.format.ecartMin ?? 2;
+    if (Math.max(a, b) < m.cible || Math.abs(a - b) < ecart) {
+      throw new Error(`${nomPhase(m, matchs)} en ${m.cible} points : le gagnant doit atteindre ${m.cible}${ecart > 1 ? ` avec ${ecart} points d'écart` : ""}`);
+    }
+  }
   if (gagnant === null) {
     if (egaliteInterdite(m, cfg)) {
       if (gagnantForce !== "A" && gagnantForce !== "B") throw new Error("Égalité : choisis le gagnant du point en or");
@@ -321,8 +332,23 @@ export function matchsDeRotation(matchs, num) {
 
 // Millisecondes restantes (négatif = temps écoulé)
 export function tempsRestant(rot, maintenant) {
-  if (!rot || !rot.debut) return null;
+  if (!rot || !rot.debut || !rot.duree) return null;
   return rot.debut + rot.duree * 1000 - maintenant;
+}
+
+// Texte à la place du chrono : "08:42", ou "25 PTS" pour un match en points
+export function texteChrono(rot, maintenant, fmt) {
+  if (rot && rot.mode === "points") return `${rot.cible} PTS`;
+  return fmt(tempsRestant(rot, maintenant));
+}
+
+// Le match en points est-il gagné ? Renvoie "A", "B" ou null
+export function gagnantAuxPoints(m, a, b, cfg) {
+  if (!m || m.mode !== "points") return null;
+  const ecart = cfg.format.ecartMin ?? 2;
+  if (a >= m.cible && a - b >= ecart) return "A";
+  if (b >= m.cible && b - a >= ecart) return "B";
+  return null;
 }
 
 export function vainqueurTournoi(matchs) {
