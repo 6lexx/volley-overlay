@@ -130,10 +130,25 @@ function rendre() {
     $("#nomB").textContent = nom(m.B) || "";
     $("#ptA").textContent = p.A || 0;
     $("#ptB").textContent = p.B || 0;
+    majAideFin(m, p.A || 0, p.B || 0);
   }
   $("#retirerVictoire").hidden = !victoireActive();
   document.querySelectorAll("[data-bandeau]").forEach((b) => b.setAttribute("aria-pressed", String((live.bandeau || "") === b.dataset.bandeau)));
   majChrono();
+}
+
+function majAideFin(m, a, b) {
+  const el = $("#aideFin");
+  if (m.mode !== "points") {
+    el.textContent = `À la fin du chrono : la victoire s'affiche ${CFG.affichage.victoireSec} s et le score part dans la saisie des organisateurs.`;
+    el.style.color = "";
+    return;
+  }
+  const g = T.gagnantAuxPoints(m, a, b, CFG);
+  el.textContent = g
+    ? `${nom(g === "A" ? m.A : m.B)} a gagné : appuie sur « Terminer le match ».`
+    : `Match en ${m.cible} points${(CFG.format.ecartMin ?? 2) > 1 ? ` avec ${CFG.format.ecartMin ?? 2} points d'écart` : ""}.`;
+  el.style.color = g ? "#fff" : "";
 }
 
 function victoireActive() {
@@ -144,7 +159,7 @@ function victoireActive() {
 function majChrono() {
   const m = ms.find((x) => x.id === live.matchId);
   const rot = m && rots.find((r) => r.num === m.rotation);
-  $("#chrono").textContent = rot && rot.debut ? fmtChrono(T.tempsRestant(rot, api.maintenant())) : "--:--";
+  $("#chrono").textContent = rot && (rot.debut || rot.mode === "points") ? T.texteChrono(rot, api.maintenant(), fmtChrono) : "--:--";
   $("#retirerVictoire").hidden = !victoireActive();
 }
 setInterval(majChrono, 500);
@@ -162,6 +177,8 @@ document.querySelectorAll("[data-pt]").forEach((b) => b.addEventListener("click"
   const v = Math.max(0, actuel + Number(b.dataset.d));
   live.points = { ...(live.points || {}), [id]: { ...(live.points?.[id] || { A: 0, B: 0 }), [s]: v } };
   $("#pt" + s).textContent = v;   // affichage immédiat
+  const mm = ms.find((x) => x.id === id);
+  if (mm) majAideFin(mm, live.points[id].A || 0, live.points[id].B || 0);
   envoyer({ [`live/points/${id}/${s}`]: v });
 }));
 
