@@ -82,7 +82,7 @@ function matchs() {
   const cur = T.rotationEnCours(rots);
   let html = "";
   if (cur) {
-    html += `<div class="titre-section rouge"><span>En cours · rotation ${cur.num}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${fmtChrono(T.tempsRestant(cur, api.maintenant()))}</span></div>`;
+    html += `<div class="titre-section rouge"><span>En cours · rotation ${cur.num}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${T.texteChrono(cur, api.maintenant(), fmtChrono)}</span></div>`;
     for (const m of T.matchsDeRotation(ms, cur.num)) {
       const filme = live.matchId === m.id;
       const p = filme ? live.points?.[m.id] || { A: 0, B: 0 } : null;
@@ -132,7 +132,7 @@ function arbre() {
       html += `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A || m.B))} <span>· exempt, qualifié d'office</span></div></div>`;
       continue;
     }
-    const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours · " + fmtChrono(T.tempsRestant(rots.find((r) => r.num === m.rotation), api.maintenant())) : "À venir";
+    const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours · " + T.texteChrono(rots.find((r) => r.num === m.rotation), api.maintenant(), fmtChrono) : "À venir";
     const r = T.resultat(m);
     let suite = "";
     if (m.suivant && r) suite = `${esc(nom(r === "A" ? m.A : m.B))} passe au tour suivant`;
