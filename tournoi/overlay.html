@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/style.css">
+<link rel="stylesheet" href="shared/ecrans.css">
 <style>
   /* --- Score, en haut à gauche --- */
   #score { position: absolute; left: 56px; top: 48px; width: 470px; display: flex; flex-direction: column; }
@@ -55,11 +56,14 @@
   #tag span { width: 3px; height: 28px; background: var(--rouge); }
   #tag i { font-style: normal; font-weight: 600; color: #DAD7D2; }
 
-  body.apercu .scene { background: #2E2F33; }
+  /* Neutre : on libère les coins du bas quand un bandeau ou la victoire s'affiche */
+  #ecran.bas-pris .puce.bg, #ecran.bas-pris .puce.bd { opacity: 0; }
+  .puce { transition: opacity .3s; }
 </style>
 </head>
 <body class="transparent">
 <div class="scene" id="scene">
+  <div class="ecran" id="ecran"></div>
   <div id="score" class="apparait cache">
     <div class="haut"><div class="phase" id="sPhase"></div><div class="chrono" id="sChrono">--:--</div></div>
     <div class="corps">
@@ -92,13 +96,18 @@
 </div>
 
 <script src="config.js"></script>
+<script src="shared/qrcode.js"></script>
 <script type="module">
 import { CFG, $, param, court, fmtChrono, monterScene, nomEquipe } from "./shared/outils.js";
 import { connecter } from "./shared/firebase.js";
+import { htmlEcran, ECRANS } from "./shared/ecrans.js";
 import * as T from "./shared/moteur.js";
 
 monterScene($("#scene"));
-if (param("apercu") === "1") document.body.classList.add("apercu");   // fond gris pour tester hors Streamlabs
+if (param("apercu") === "1") document.body.classList.add("apercu");   // faux fond pour tester hors Streamlabs
+if (param("fond") === "opaque") document.body.classList.add("opaque");
+const voile = Number(param("voile"));
+if (voile > 0 && voile <= 1) document.documentElement.style.setProperty("--voile", voile);
 const avecTag = param("tag") !== "0";
 $("#tNom").textContent = CFG.nom;
 $("#tTwitch").textContent = CFG.twitch;
@@ -121,8 +130,12 @@ function rendre() {
   const v = live.victoire;
   const vActive = !!(v && v.ts && maintenant - v.ts < dureeV);
   const bandeau = live.bandeau;
+  const ecran = ECRANS.includes(live.ecran) ? live.ecran : "neutre";   // rien de choisi = plateau neutre
+  const surCamera = ecran === "match" || ecran === "neutre";
+  majEcran(ecran, maintenant);
+  $("#ecran").classList.toggle("bas-pris", vActive || !!bandeau);
   const m = ms.find((x) => x.id === live.matchId);
-  const scoreVisible = !!m && m.statut === T.STATUT.ENCOURS && !vActive && !bandeau;
+  const scoreVisible = ecran === "match" && !!m && m.statut === T.STATUT.ENCOURS && !vActive && !bandeau;
 
   // Score
   if (m) {
@@ -154,15 +167,39 @@ function rendre() {
     }
     $("#vJauge").style.width = Math.max(0, 100 - ((maintenant - v.ts) / dureeV) * 100) + "%";
   }
-  montrer($("#victoire"), vActive);
+  montrer($("#victoire"), vActive && surCamera);
 
   // Interview / balade
   if (bandeau) $("#bTitre").textContent = bandeau === "balade" ? "BALADE DANS LE TOURNOI" : "INTERVIEW";
-  montrer($("#bandeau"), !!bandeau && !vActive);
+  montrer($("#bandeau"), !!bandeau && !vActive && surCamera);
 
-  montrer($("#tag"), avecTag && !vActive);
+  montrer($("#tag"), avecTag && ecran === "match" && !vActive);
 }
 setInterval(rendre, 250);
+
+// Écran plein cadre, avec un fondu quand il change
+let ecranActuel = null, htmlActuel = "", enFondu = false;
+function majEcran(ecran, maintenant) {
+  const el = $("#ecran");
+  const html = ecran === "match" ? "" : htmlEcran(ecran, { eqs, ms, rots, maintenant: () => maintenant });
+  if (ecran !== ecranActuel && ecranActuel !== null) {
+    if (enFondu) return;
+    enFondu = true;
+    el.classList.add("sortie");
+    setTimeout(() => {
+      ecranActuel = ecran; htmlActuel = html;
+      el.innerHTML = html;
+      el.classList.toggle("voile", ecran !== "match" && ecran !== "neutre");
+      el.classList.remove("sortie");
+      enFondu = false;
+    }, 350);
+    return;
+  }
+  if (enFondu) return;
+  ecranActuel = ecran;
+  el.classList.toggle("voile", ecran !== "match" && ecran !== "neutre");
+  if (html !== htmlActuel) { el.innerHTML = html; htmlActuel = html; }
+}
 </script>
 </body>
 </html>
