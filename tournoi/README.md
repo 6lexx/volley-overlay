@@ -11,7 +11,7 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 | `orga.html` | Saisie des organisateurs : équipes, rotations, scores |
 | `pilotage.html` | Ton écran : match filmé, points, victoire, bandeau |
 | `overlay.html` | Source navigateur par-dessus la caméra |
-| `scene.html` | Scènes plein écran : `?vue=poules`, `?vue=arbre`, `?vue=pause` |
+| `scene.html` | Scènes sur la caméra assombrie : `?vue=poules`, `arbre`, `pause`, `intermatch`, `neutre` |
 | `config.js` | Réglages du tournoi (nom, format, durées, terrains) |
 | `shared/moteur.js` | La logique : planning, classements, arbre |
 | `shared/firebase.js` | Connexion Firebase et mode démo |
@@ -34,14 +34,17 @@ Les onglets d'un **même navigateur** se synchronisent entre eux.
    - `…/tournoi/pilotage.html?demo=1`
    - `…/tournoi/overlay.html?demo=1&apercu=1` (`apercu=1` met un fond gris)
    - `…/tournoi/index.html?demo=1`
-3. Dans **orga** : « Remplir avec 16 équipes de démo », puis « Générer le planning »,
+3. Dans **orga** : « Remplir avec des équipes de démo » (2 poules de 6), puis « Générer le planning »,
    puis « Lancer la rotation 1 ».
 4. Dans **pilotage** : touche un match, ajoute des points. L'overlay et le site
    suivent. « Terminer le match » (deux appuis) : la victoire s'affiche 20 s, et le
    score apparaît dans orga avec « Rempli par le stream ».
 5. Dans **orga** : tape les scores des autres matchs, « Valider la rotation »,
    lance la suivante… À la fin des poules : « Générer la phase finale ».
-6. Ouvre aussi `scene.html?demo=1&vue=poules`, `&vue=arbre` et `&vue=pause`.
+6. Ouvre aussi `scene.html?demo=1&apercu=1&vue=poules`, puis `vue=arbre`, `vue=pause`
+   et `vue=intermatch` (`apercu=1` met un faux fond de gymnase derrière le voile).
+
+Autre nombre d'équipes en démo : `orga.html?demo=1&equipes=16&parPoule=4`.
 
 Pour repartir de zéro en démo : orga › Zone sensible › Tout effacer.
 
@@ -105,6 +108,8 @@ Pour un autre tournoi plus tard : change `id`, et crée deux nouvelles clés.
 | `…/tournoi/scene.html?vue=poules` | Streamlabs, scène « Poules » |
 | `…/tournoi/scene.html?vue=arbre` | Streamlabs, scène « Arbre » |
 | `…/tournoi/scene.html?vue=pause` | Streamlabs, scène « Pause » |
+| `…/tournoi/scene.html?vue=intermatch` | Streamlabs, scène « Inter-match » |
+| `…/tournoi/scene.html?vue=neutre` | Streamlabs, scène « Plateau » (pour vous filmer) |
 
 Garde les liens avec clé hors du dépôt (notes du téléphone, message privé).
 
@@ -123,12 +128,26 @@ Garde les liens avec clé hors du dépôt (notes du téléphone, message privé)
 
 Pour chaque source navigateur : largeur **1920**, hauteur **1080**.
 
-| Scène | Sources |
+| Scène | Sources (de bas en haut) |
 |---|---|
 | Match | Caméra + `overlay.html` |
-| Poules | `scene.html?vue=poules` |
-| Arbre | `scene.html?vue=arbre` |
-| Pause | `scene.html?vue=pause` |
+| Inter-match | Caméra + `scene.html?vue=intermatch` |
+| Poules | Caméra + `scene.html?vue=poules` |
+| Arbre | Caméra + `scene.html?vue=arbre` |
+| Pause | Caméra + `scene.html?vue=pause` |
+| Plateau | Caméra + `scene.html?vue=neutre` |
+
+Les scènes posent un **voile sombre** sur la caméra : on voit encore le gymnase
+derrière les cartes. Pour régler l'assombrissement, ajoute `&voile=0.5` (plus clair)
+ou `&voile=0.8` (plus sombre) ; la valeur par défaut est 0.66.
+Sans caméra derrière : `&fond=opaque`.
+
+L'**inter-match** montre les résultats de la dernière rotation validée et les
+matchs à suivre. Pratique entre deux rotations, quand tu reviens au micro.
+
+La scène **neutre** (plateau) laisse la caméra libre pour vous filmer : seulement
+quatre petits encarts dans les coins (logo et nom du tournoi, heure et date,
+QR code, chaîne Twitch), sans voile.
 
 L'overlay gère tout seul le score, la victoire et le bandeau interview/balade
 (pilotés depuis `pilotage.html`). Pour masquer la signature en bas à droite :
@@ -153,6 +172,11 @@ Vérifie `terrains`, `dureeRotationMin` et `qualifiesParPoule` dans `config.js`
 
 **Fin des poules** : orga affiche le classement › « Générer la phase finale ».
 Le gagnant de chaque match avance tout seul dans l'arbre.
+
+**Demies et finale en 25 points** : pas de chrono, l'overlay affiche « 25 PTS ».
+Dans pilotage, un message te prévient quand une équipe a gagné (25 avec 2 points
+d'écart). Dans orga, un score qui ne respecte pas la règle est refusé.
+Réglages dans `config.js` : `toursEnPoints`, `pointsCible`, `ecartMin`.
 
 **Une erreur ?** orga › Corriger un résultat. Le classement et l'arbre se
 recalculent. En phase finale, on ne peut plus changer le gagnant si le match
