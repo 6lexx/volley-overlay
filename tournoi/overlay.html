@@ -137,7 +137,7 @@ function rendre() {
     $("#eqB").classList.toggle("mene", b >= a && b > 0);
     const rot = rots.find((r) => r.num === m.rotation);
     const reste = T.tempsRestant(rot, maintenant);
-    $("#sChrono").textContent = fmtChrono(reste);
+    $("#sChrono").textContent = T.texteChrono(rot, maintenant, fmtChrono);
     $("#sChrono").classList.toggle("fini", reste != null && reste <= 0);
   }
   montrer($("#score"), scoreVisible);
