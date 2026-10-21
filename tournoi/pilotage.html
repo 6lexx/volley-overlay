@@ -21,6 +21,14 @@
   .plus { width: 96px; height: 64px; border: 0; background: var(--rouge); color: #fff; font-size: 34px; font-weight: 700; }
   .bandeaux { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .bandeaux .btn[aria-pressed="true"] { background: #fff; color: var(--encre); border-color: #fff; }
+  .ecrans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ecrans .btn { min-height: 60px; display: flex; flex-direction: column; justify-content: center; line-height: 1.1; }
+  .ecrans .btn small { font-family: var(--corps); font-size: 12px; font-weight: 700; letter-spacing: .5px; color: var(--nuit-texte); text-transform: none; margin-top: 3px; }
+  .ecrans .btn[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); }
+  .ecrans .btn[aria-pressed="true"] small { color: #FFE3E7; }
+  .ecrans .btn:first-child { grid-column: 1 / -1; }
+  .surEcran { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .surEcran b { font-family: var(--cond); font-size: 26px; font-weight: 800; text-transform: uppercase; }
 </style>
 </head>
 <body class="sombre">
@@ -35,6 +43,12 @@
 <div id="fatal" class="fatal" hidden></div>
 
 <main class="contenu appli" id="app" hidden>
+  <div class="bloc">
+    <div class="surEcran"><span class="etat" style="white-space:nowrap">À l'écran</span><b id="ecranActuel">Plateau</b></div>
+    <div class="ecrans" id="ecrans"></div>
+    <div class="aide" id="aideEcran">Retirer un écran revient au plateau neutre (logo, heure, QR code, chaîne).</div>
+  </div>
+
   <div class="aide" id="aideChoix"></div>
   <div class="choix" id="choix"></div>
 
@@ -73,7 +87,7 @@
       <button class="btn petit" type="button" data-bandeau="interview">Interview</button>
       <button class="btn petit" type="button" data-bandeau="balade">Balade</button>
     </div>
-    <div class="aide">Pendant un bandeau, le score est masqué sur l'overlay.</div>
+    <div class="aide">S'affiche sur les écrans Match et Plateau. Pendant un bandeau, le score est masqué.</div>
   </div>
 </main>
 
@@ -82,6 +96,7 @@
 import { CFG, $, param, esc, fmtChrono, toast, doubleAppui, nomEquipe } from "./shared/outils.js";
 import { connecter, DEMO } from "./shared/firebase.js";
 import * as T from "./shared/moteur.js";
+import { ECRANS, NOMS_ECRANS } from "./shared/ecrans.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
 if (DEMO) $("#demo").hidden = false;
@@ -133,6 +148,7 @@ function rendre() {
     majAideFin(m, p.A || 0, p.B || 0);
   }
   $("#retirerVictoire").hidden = !victoireActive();
+  rendreEcrans(m);
   document.querySelectorAll("[data-bandeau]").forEach((b) => b.setAttribute("aria-pressed", String((live.bandeau || "") === b.dataset.bandeau)));
   majChrono();
 }
@@ -197,6 +213,29 @@ doubleAppui($("#terminer"), "Appuie encore pour confirmer", () => {
 });
 
 $("#retirerVictoire").addEventListener("click", () => envoyer({ "live/victoire": null }));
+
+// ---------- Écran affiché sur le stream ----------
+function rendreEcrans(m) {
+  const actuel = ECRANS.includes(live.ecran) ? live.ecran : null;
+  $("#ecranActuel").textContent = NOMS_ECRANS[actuel || "neutre"];
+  $("#ecrans").innerHTML = ECRANS.map((e) => {
+    const on = e === actuel;
+    return `<button class="btn" type="button" data-ecran="${e}" aria-pressed="${on}">${esc(NOMS_ECRANS[e])}<small>${on ? "À l'écran · touche pour retirer" : esc(sousTexte(e))}</small></button>`;
+  }).join("");
+  const aide = $("#aideEcran");
+  if (actuel === "match" && !m) aide.textContent = "Choisis le match filmé plus bas : le score s'affichera dès que sa rotation sera lancée.";
+  else if (actuel === "match" && m.statut !== T.STATUT.ENCOURS) aide.textContent = "Le score s'affichera quand la rotation de ce match sera lancée.";
+  else aide.textContent = "Retirer un écran revient au plateau neutre (logo, heure, QR code, chaîne).";
+}
+function sousTexte(e) {
+  return { match: "score et chrono du match filmé", intermatch: "résultats et matchs à suivre", poules: "classement des poules", arbre: "phase finale", pause: "pause et à suivre" }[e] || "";
+}
+$("#ecrans").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-ecran]");
+  if (!b) return;
+  const e = b.dataset.ecran;
+  envoyer({ "live/ecran": live.ecran === e ? null : e });
+});
 
 document.querySelectorAll("[data-bandeau]").forEach((b) => b.addEventListener("click", () => {
   envoyer({ "live/bandeau": b.dataset.bandeau || null });
