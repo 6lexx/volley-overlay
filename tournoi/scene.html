@@ -9,321 +9,44 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/style.css">
-<style>
-  /* Voile sombre posé sur la caméra : on devine le gymnase derrière */
-  :root { --voile: .66; --clair: #E4E1DC; }
-  .scene { background: rgba(10, 10, 14, var(--voile)); color: #fff; }
-  body.opaque .scene { background: var(--nuit); }
-  /* Aperçu hors Streamlabs : un faux fond de gymnase */
-  body.apercu { background: repeating-linear-gradient(115deg, #7B6A55 0 120px, #8E7C64 120px 240px), #7B6A55; }
-
-  .entete-scene { position: absolute; left: 96px; right: 96px; top: 64px; display: flex; align-items: flex-end; justify-content: space-between; }
-  .entete-scene .sur { font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 3px; color: var(--rouge-clair); text-transform: uppercase; }
-  .entete-scene h1 { margin: 6px 0 0; font-family: var(--cond); font-size: 104px; font-weight: 800; line-height: .95; color: #fff; }
-  .entete-scene .droite { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-size: 28px; font-weight: 600; color: var(--clair); }
-  .entete-scene .traits { width: 300px; }
-  .message { position: absolute; left: 96px; right: 96px; top: 420px; text-align: center; font-family: var(--cond); font-size: 56px; font-weight: 700; color: var(--clair); }
-
-  /* Poules */
-  #grille { position: absolute; left: 96px; right: 96px; top: 290px; bottom: 120px; display: grid; gap: 32px; align-items: start; }
-  .poule { background: #fff; color: var(--encre); display: flex; flex-direction: column; min-height: 0; }
-  .poule .tete { background: var(--rouge); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; }
-  .poule .tete b { font-family: var(--cond); font-size: 44px; font-weight: 800; letter-spacing: 1px; }
-  .poule .tete span { font-family: var(--cond); font-size: 24px; font-weight: 600; color: #FFE3E7; letter-spacing: 1px; }
-  .poule .rg { display: flex; align-items: center; gap: 14px; padding-right: 22px; border-bottom: 2px solid var(--ligne); }
-  .poule .rg:last-child { border-bottom: 0; }
-  .poule .rg .b { width: 10px; align-self: stretch; }
-  .poule .rg.q .b { background: var(--rouge); }
-  .poule .rg .r { width: 34px; font-family: var(--cond); font-weight: 800; color: var(--gris-clair); }
-  .poule .rg.q .r { color: var(--rouge); }
-  .poule .rg .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .poule .rg .s { font-family: var(--cond); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .legende { position: absolute; left: 96px; right: 96px; bottom: 56px; display: flex; align-items: center; gap: 40px; font-size: 28px; font-weight: 600; color: var(--clair); }
-  .legende i { display: inline-block; width: 28px; height: 28px; background: var(--rouge); border: 2px solid #fff; vertical-align: middle; margin-right: 12px; }
-
-  /* Arbre */
-  .col-titre { position: absolute; top: 246px; font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 2px; color: var(--clair); text-transform: uppercase; }
-  .col-titre small { font-size: 24px; color: var(--rouge-clair); margin-left: 10px; }
-  .trait { position: absolute; background: rgba(255, 255, 255, .55); }
-  .m { position: absolute; background: #fff; color: var(--encre); display: flex; flex-direction: column; }
-  .m .rg { display: flex; align-items: center; gap: 14px; padding-right: 18px; border-bottom: 2px solid #F1EFEC; }
-  .m .rg:last-child { border-bottom: 0; }
-  .m .rg .b { width: 8px; align-self: stretch; }
-  .m .rg.g .b { background: var(--rouge); }
-  .m .rg .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .m .rg .s { font-family: var(--cond); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gris-clair); }
-  .m .rg.g .s { color: var(--rouge); }
-  .m .rg.p .n, .m .rg.p .s { color: var(--gris-clair); }
-  .m .rg.att .n { color: var(--gris-clair); font-style: italic; font-weight: 600; }
-  .m .live { background: var(--rouge); color: #fff; font-family: var(--cond); font-size: 24px; font-weight: 700; letter-spacing: 1.5px; padding: 4px 18px; }
-  .champion { position: absolute; background: var(--rouge); color: #fff; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 24px; }
-  .champion::before { content: ""; height: 6px; width: 64px; background: #fff; }
-  .champion span { font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 2px; color: #FFE3E7; }
-  .champion b { font-family: var(--cond); font-size: 44px; font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
-
-  /* Listes de matchs (pause, inter-match) */
-  .liste { background: #fff; color: var(--encre); display: flex; flex-direction: column; }
-  .liste .tete { background: var(--rouge); color: #fff; padding: 20px 32px; font-family: var(--cond); font-size: 44px; font-weight: 800; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
-  .liste .tete small { font-size: 26px; font-weight: 700; color: #FFE3E7; letter-spacing: 1px; white-space: nowrap; }
-  .liste .tete.encre { background: var(--encre); }
-  .liste .tete.encre small { color: #C9C7C3; }
-  .ligne-m { display: flex; align-items: center; gap: 24px; padding: 0 32px; height: var(--hl, 128px); border-bottom: 2px solid var(--ligne); }
-  .ligne-m:last-child { border-bottom: 0; }
-  .ligne-m .ph { width: 150px; flex: none; font-family: var(--cond); font-size: 32px; font-weight: 800; color: var(--rouge); text-transform: uppercase; line-height: 1; }
-  .ligne-m .eqs { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-family: var(--cond); font-size: 36px; font-weight: 700; }
-  .ligne-m .eqs > div { display: flex; align-items: baseline; gap: 16px; }
-  .ligne-m .eqs .nm { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ligne-m .eqs .sc { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gris-clair); }
-  .ligne-m .eqs .g .sc { color: var(--rouge); }
-  .ligne-m .eqs .p .nm { color: var(--gris-clair); }
-  .ligne-m .eqs span.vs { color: var(--gris-clair); font-weight: 600; }
-  .vide-p { padding: 32px; font-size: 32px; color: var(--gris); }
-
-  /* Pause */
-  #pause { position: absolute; inset: 96px; display: flex; gap: 72px; }
-  #pause .gauche { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
-  #pause .sur { font-family: var(--cond); font-size: 32px; font-weight: 700; letter-spacing: 3px; color: var(--rouge-clair); text-transform: uppercase; }
-  #pause h1 { margin: 18px 0; font-family: var(--cond); font-size: 240px; font-weight: 800; line-height: .85; color: #fff; }
-  #pause .traits { width: 520px; }
-  #pause .traits::before { height: 8px; }
-  #pause .phrase { font-size: 44px; font-weight: 600; margin-top: 30px; color: #fff; }
-  #pause .droite { width: 760px; align-self: flex-start; }
-
-  .qr { display: flex; align-items: center; gap: 32px; }
-  .qr .code { width: 220px; height: 220px; background: #fff; padding: 10px; flex: none; }
-  .qr .code svg { width: 100%; height: 100%; display: block; }
-  .qr b { display: block; font-family: var(--cond); font-size: 44px; font-weight: 800; color: #fff; }
-  .qr span { font-size: 30px; font-weight: 600; color: var(--rouge-clair); overflow-wrap: anywhere; }
-
-  /* Inter-match */
-  #inter { position: absolute; left: 96px; right: 96px; top: 290px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start; }
-  #inter-bas { position: absolute; left: 96px; right: 96px; bottom: 64px; }
-  #inter-bas .qr .code { width: 150px; height: 150px; padding: 8px; }
-  #inter-bas .qr b { font-size: 36px; }
-  #inter-bas .qr span { font-size: 26px; }
-  /* Neutre : rien au centre, la caméra reste libre */
-  body.neutre .scene { background: transparent; }
-  .puce { position: absolute; display: flex; align-items: center; gap: 16px; background: rgba(21, 21, 26, .8); color: #fff; padding: 12px 20px; }
-  .puce.hg { left: 48px; top: 40px; padding: 10px 22px 10px 10px; }
-  .puce.hd { right: 48px; top: 40px; flex-direction: column; align-items: flex-end; gap: 2px; padding: 10px 22px; }
-  .puce.bg { left: 48px; bottom: 40px; padding: 10px 20px 10px 10px; }
-  .puce.bd { right: 48px; bottom: 40px; }
-  .puce .logo { width: 72px; height: 72px; border-radius: 50%; background: #fff; padding: 5px; flex: none; }
-  .puce .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
-  .puce .nom { font-family: var(--cond); font-size: 30px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; line-height: 1; }
-  .puce .nom small { display: block; margin-top: 4px; font-size: 20px; font-weight: 600; letter-spacing: 1px; color: var(--rouge-clair); }
-  .puce .heure { font-family: var(--cond); font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
-  .puce .date { font-family: var(--cond); font-size: 20px; font-weight: 600; letter-spacing: 1px; color: var(--clair); text-transform: uppercase; }
-  .puce .qrmini { width: 104px; height: 104px; background: #fff; padding: 6px; flex: none; }
-  .puce .qrmini svg { width: 100%; height: 100%; display: block; }
-  .puce .txt b { display: block; font-family: var(--cond); font-size: 24px; font-weight: 800; }
-  .puce .txt span { font-size: 18px; font-weight: 600; color: var(--rouge-clair); }
-  .puce .tw { font-family: var(--cond); font-size: 26px; font-weight: 600; color: #DAD7D2; }
-  .puce .barre { width: 3px; height: 26px; background: var(--rouge); }
-</style>
+<link rel="stylesheet" href="shared/ecrans.css">
 </head>
+<!--
+  Une seule scène, fixée par l'URL : scene.html?vue=poules|arbre|pause|intermatch|neutre
+  Le plus simple reste overlay.html, où tout se pilote depuis pilotage.html.
+-->
 <body class="transparent">
-<div class="scene" id="scene"></div>
+<div class="scene" id="scene"><div class="ecran" id="ecran"></div></div>
 
 <script src="config.js"></script>
 <script src="shared/qrcode.js"></script>
 <script type="module">
-import { CFG, $, param, esc, fmtChrono, monterScene, qrSvg, nomEquipe } from "./shared/outils.js";
+import { CFG, $, param, monterScene } from "./shared/outils.js";
 import { connecter } from "./shared/firebase.js";
+import { htmlEcran } from "./shared/ecrans.js";
 import * as T from "./shared/moteur.js";
 
-const scene = $("#scene");
-monterScene(scene);
+monterScene($("#scene"));
 const vue = param("vue") || "poules";
 if (param("apercu") === "1") document.body.classList.add("apercu");
 if (param("fond") === "opaque") document.body.classList.add("opaque");
-if (vue === "neutre") document.body.classList.add("neutre");
 const voile = Number(param("voile"));
 if (voile > 0 && voile <= 1) document.documentElement.style.setProperty("--voile", voile);
+if (vue !== "neutre") $("#ecran").classList.add("voile");
 document.title = `Scène ${vue} · ${CFG.nom}`;
 
 const api = await connecter();
-let eqs = [], ms = [], rots = [], dernier = "";
+let ctx = { eqs: [], ms: [], rots: [], maintenant: () => api.maintenant() }, dernier = "";
 api.ecouter("", (v) => {
   const d = v || {};
-  eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
+  ctx = { ...ctx, eqs: T.listeEquipes(d), ms: T.listeMatchs(d), rots: T.listeRotations(d) };
   rendre();
 });
-setInterval(rendre, 1000);   // chronos
-
-const nom = (id) => nomEquipe(eqs, id);
-const nomOuAttente = (m, s) => nom(m[s]) || T.etiquetteAttente(m, s, ms);
-const entete = (titre, droite) => `<div class="entete-scene">
-  <div><div class="sur">${esc(CFG.nom)} · ${esc(CFG.sousTitre || "")}</div><h1>${titre}</h1></div>
-  <div class="droite"><div class="traits"></div><div>${droite}</div></div></div>`;
-let qrCache = "";
-const qr = () => {
-  if (!qrCache) qrCache = qrSvg(CFG.siteUrl);
-  const url = CFG.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  return `<div class="qr"><div class="code">${qrCache}</div><div><b>Suis l'arbre en direct</b><span>${esc(url)}</span></div></div>`;
-};
-
 function rendre() {
-  const html = vue === "arbre" ? arbre() : vue === "pause" ? pause() : vue === "intermatch" ? interMatch() : vue === "neutre" ? neutre() : poules();
-  if (html !== dernier) { scene.innerHTML = html; dernier = html; }
+  const html = htmlEcran(vue, ctx);
+  if (html !== dernier) { $("#ecran").innerHTML = html; dernier = html; }
 }
-
-// ---------------- Classement des poules ----------------
-function poules() {
-  const ps = T.poulesDe(eqs);
-  if (!ps.length) return entete("PHASE DE POULES", "") + `<div class="message">Les poules arrivent bientôt.</div>`;
-  const q = CFG.format.qualifiesParPoule;
-  const pm = ms.filter((m) => m.phase === "poule");
-  const joues = pm.filter((m) => m.statut === T.STATUT.TERMINE).length;
-  const cols = Math.min(ps.length, 4), lignesGrille = Math.ceil(ps.length / 4);
-  const maxEq = Math.max(...ps.map((p) => eqs.filter((e) => e.poule === p).length));
-  const hDispo = (670 - 32 * (lignesGrille - 1)) / lignesGrille - 70;
-  const h = Math.max(40, Math.min(100, Math.floor(hDispo / maxEq)));
-  const fs = Math.round(Math.min(cols <= 2 ? 40 : 34, h * (cols <= 2 ? 0.5 : 0.42)));
-  const avecNuls = pm.some((m) => m.statut === T.STATUT.TERMINE && T.resultat(m) === "nul");
-  const cartes = ps.map((p) => {
-    const cl = T.classement(eqs, ms, p, CFG);
-    return `<div class="poule"><div class="tete"><b>POULE ${p}</b><span>${avecNuls ? "V · N · D · ±" : "V · D · ±"}</span></div>` +
-      cl.map((l) => `<div class="rg ${l.rang <= q ? "q" : ""}" style="height:${h}px">
-        <div class="b"></div><div class="r" style="font-size:${fs + 2}px">${l.rang}</div>
-        <div class="n" style="font-size:${fs}px">${esc(l.nom)}</div>
-        <div class="s" style="font-size:${fs - 2}px">${l.V} · ${avecNuls ? l.N + " · " : ""}${l.D} · ${l.diff > 0 ? "+" : l.diff < 0 ? "−" : ""}${Math.abs(l.diff)}</div></div>`).join("") + `</div>`;
-  }).join("");
-  const egal = CFG.format.egalitePoules === "point-en-or" ? "Égalité : point en or" : `Victoire ${CFG.format.points.victoire} pts · nul ${CFG.format.points.nul} pt`;
-  return entete("PHASE DE POULES", `Après ${joues} match${joues > 1 ? "s" : ""} sur ${pm.length} · en direct`) +
-    `<div id="grille" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${cartes}</div>
-     <div class="legende"><div><i></i>Qualifiés pour la phase finale</div><div>${esc(egal)}</div></div>`;
-}
-
-// ---------------- Arbre final ----------------
-function arbre() {
-  const fin = ms.filter((m) => m.phase === "finale");
-  if (!fin.length) return entete("PHASE FINALE", "") + `<div class="message">L'arbre s'affiche à la fin des poules.</div>`;
-  const N = fin[0].nbTours, c0 = fin.filter((m) => m.tour === 0).length;
-  const X0 = 96, Y0 = 300, H = 740, GAP = 90, WCH = 258;
-  const W = Math.floor((1728 - WCH - GAP * N) / N);
-  const rowH = Math.max(34, Math.min(64, Math.floor((H / c0 - 20) / 2)));
-  const fs = Math.round(rowH * 0.5);
-  const colX = (t) => X0 + t * (W + GAP);
-  const centre = (t, i) => Y0 + (H / (c0 / 2 ** t)) * (i + 0.5);
-  let out = entete("PHASE FINALE", "Le gagnant avance tout seul");
-
-  for (let t = 0; t < N; t++) {
-    const m0 = fin.find((m) => m.tour === t);
-    const pts = m0?.mode === "points" ? `<small>en ${m0.cible} pts</small>` : "";
-    out += `<div class="col-titre" style="left:${colX(t)}px;width:${W}px">${esc(T.nomTourPluriel(t, N))}${pts}</div>`;
-  }
-  const trait = (x, y, w, h) => `<div class="trait" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`;
-  for (let t = 0; t < N - 1; t++) {
-    const nb = c0 / 2 ** (t + 1);
-    for (let i = 0; i < nb; i++) {
-      const a = Math.round(centre(t, 2 * i)), b = Math.round(centre(t, 2 * i + 1)), c = Math.round(centre(t + 1, i));
-      const xr = colX(t) + W, xm = xr + GAP / 2;
-      out += trait(xr, a - 1, GAP / 2, 3) + trait(xr, b - 1, GAP / 2, 3) + trait(xm - 1, a, 3, b - a + 2) + trait(xm, c - 1, GAP / 2, 3);
-    }
-  }
-  const cF = Math.round(centre(N - 1, 0));
-  out += trait(colX(N - 1) + W, cF - 1, GAP, 3);
-
-  const maintenant = api.maintenant();
-  for (const m of fin) {
-    const top = Math.round(centre(m.tour, m.index) - rowH);
-    const r = T.resultat(m);
-    const ligne = (s) => {
-      const id = m[s];
-      if (m.exempt && !id) return `<div class="rg att" style="height:${rowH}px"><div class="b"></div><div class="n" style="font-size:${fs}px">Exempt</div></div>`;
-      const cls = !id ? "att" : r === s ? "g" : r && r !== s ? "p" : "";
-      const sc = m.statut === T.STATUT.TERMINE && !m.exempt ? m["score" + s] : "";
-      return `<div class="rg ${cls}" style="height:${rowH}px"><div class="b"></div>
-        <div class="n" style="font-size:${fs}px">${esc(nomOuAttente(m, s))}</div>
-        <div class="s" style="font-size:${fs + 2}px">${sc}</div></div>`;
-    };
-    let chip = "";
-    if (m.statut === T.STATUT.ENCOURS) {
-      const rot = rots.find((x) => x.num === m.rotation);
-      chip = `<div class="live">EN COURS · ${T.texteChrono(rot, maintenant, fmtChrono)}</div>`;
-    }
-    out += `<div class="m" style="left:${colX(m.tour)}px;top:${top}px;width:${W}px">${ligne("A")}${ligne("B")}${chip}</div>`;
-  }
-  const champ = T.vainqueurTournoi(ms);
-  out += `<div class="champion" style="left:${colX(N - 1) + W + GAP}px;top:${cF - 110}px;width:${WCH}px;height:220px">
-    <span>VAINQUEUR</span><b>${esc(champ ? nom(champ) : "À venir")}</b></div>`;
-  return out;
-}
-
-// ---------------- Listes de matchs ----------------
-function lignesAVenir(liste) {
-  return liste.map((m) => `<div class="ligne-m">
-      <div class="ph">${esc(T.nomPhase(m, ms))}</div>
-      <div class="eqs"><div><span class="nm">${esc(nomOuAttente(m, "A"))}</span></div><div><span class="nm"><span class="vs">vs </span>${esc(nomOuAttente(m, "B"))}</span></div></div>
-    </div>`).join("");
-}
-
-function lignesResultats(liste) {
-  return liste.map((m) => {
-    const r = T.resultat(m);
-    const cote = (s) => `<div class="${r === s ? "g" : r && r !== "nul" ? "p" : ""}"><span class="nm">${esc(nom(m[s]))}</span><span class="sc">${m["score" + s]}</span></div>`;
-    return `<div class="ligne-m"><div class="ph">${esc(T.nomPhase(m, ms))}</div><div class="eqs">${cote("A")}${cote("B")}</div></div>`;
-  }).join("");
-}
-
-function carteAVenir() {
-  const cur = T.rotationEnCours(rots), suiv = T.prochaineRotation(rots);
-  const rot = suiv || cur;
-  const liste = rot ? T.matchsDeRotation(ms, rot.num) : [];
-  const info = rot ? (rot.mode === "points" ? `ROTATION ${rot.num} · ${rot.cible} PTS` : `ROTATION ${rot.num}`) : "";
-  return `<div class="liste"><div class="tete">À SUIVRE${info ? `<small>${info}</small>` : ""}</div>
-    ${liste.length ? lignesAVenir(liste) : `<div class="vide-p">${T.vainqueurTournoi(ms) ? "Le tournoi est terminé." : "Programme à venir."}</div>`}</div>`;
-}
-
-// ---------------- Pause ----------------
-function pause() {
-  return `<div id="pause">
-    <div class="gauche">
-      <div>
-        <div class="sur">${esc(CFG.nom)}</div>
-        <h1>PAUSE</h1>
-        <div class="traits"></div>
-        <div class="phrase">On revient dans quelques minutes.</div>
-      </div>
-      ${qr()}
-    </div>
-    <div class="droite">${carteAVenir()}</div>
-  </div>`;
-}
-
-// ---------------- Inter-match ----------------
-function interMatch() {
-  const finies = rots.filter((r) => r.statut === T.STATUT.TERMINE);
-  const der = finies[finies.length - 1];
-  const res = der ? T.matchsDeRotation(ms, der.num).filter((m) => m.statut === T.STATUT.TERMINE && !m.exempt) : [];
-  const carteRes = `<div class="liste"><div class="tete encre">RÉSULTATS${der ? `<small>ROTATION ${der.num}</small>` : ""}</div>
-    ${res.length ? lignesResultats(res) : `<div class="vide-p">Premiers résultats après la rotation 1.</div>`}</div>`;
-  const champ = T.vainqueurTournoi(ms);
-  const droite = champ ? `Vainqueur : ${esc(nom(champ))}` : T.poulesTerminees(ms) || ms.some((m) => m.phase === "finale") ? "Phase finale" : "Phase de poules";
-  const suiv = T.prochaineRotation(rots) || T.rotationEnCours(rots);
-  const n = Math.max(res.length, suiv ? T.matchsDeRotation(ms, suiv.num).length : 0, 1);
-  const hl = Math.max(84, Math.min(128, Math.floor(460 / n)));
-  return entete("ENTRE DEUX MATCHS", droite) +
-    `<div id="inter" style="--hl:${hl}px">${carteRes}${carteAVenir()}</div>
-     <div id="inter-bas">${qr()}</div>`;
-}
-
-// ---------------- Neutre : pour se filmer ----------------
-function neutre() {
-  if (!qrCache) qrCache = qrSvg(CFG.siteUrl);
-  const url = CFG.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  const now = new Date(api.maintenant());
-  const heure = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
-  const date = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-  return `<div class="puce hg">
-      ${CFG.logo ? `<div class="logo"><img src="${esc(CFG.logo)}" alt="Ramonville Volley"></div>` : ""}
-      <div class="nom">${esc(CFG.nom)}<small>${esc(CFG.lieu || "")}</small></div>
-    </div>
-    <div class="puce hd"><div class="heure">${heure}</div><div class="date">${esc(date)}</div></div>
-    <div class="puce bg"><div class="qrmini">${qrCache}</div><div class="txt"><b>Suis l'arbre en direct</b><span>${esc(url)}</span></div></div>
-    <div class="puce bd"><div class="nom" style="font-size:26px">En direct</div><div class="barre"></div><div class="tw">${esc(CFG.twitch)}</div></div>`;
-}
+setInterval(rendre, 1000);
 </script>
 </body>
 </html>
