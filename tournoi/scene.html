@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scène · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  .scene { background: var(--brume); }
+  .entete-scene { position: absolute; left: 96px; right: 96px; top: 64px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .entete-scene .sur { font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 3px; color: var(--rouge); text-transform: uppercase; }
+  .entete-scene h1 { margin: 6px 0 0; font-family: var(--cond); font-size: 104px; font-weight: 800; line-height: .95; }
+  .entete-scene .droite { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; font-size: 28px; font-weight: 600; color: var(--gris); }
+  .entete-scene .traits { width: 300px; }
+  .message { position: absolute; left: 96px; right: 96px; top: 420px; text-align: center; font-family: var(--cond); font-size: 56px; font-weight: 700; color: var(--gris); }
+
+  /* Poules */
+  #grille { position: absolute; left: 96px; right: 96px; top: 290px; bottom: 120px; display: grid; gap: 32px; align-items: start; }
+  .poule { background: #fff; display: flex; flex-direction: column; min-height: 0; }
+  .poule .tete { background: var(--encre); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; }
+  .poule .tete b { font-family: var(--cond); font-size: 44px; font-weight: 800; letter-spacing: 1px; }
+  .poule .tete span { font-family: var(--cond); font-size: 24px; font-weight: 600; color: #C9C7C3; letter-spacing: 1px; }
+  .poule .rg { display: flex; align-items: center; gap: 14px; padding-right: 22px; border-bottom: 2px solid var(--ligne); }
+  .poule .rg:last-child { border-bottom: 0; }
+  .poule .rg .b { width: 10px; align-self: stretch; }
+  .poule .rg.q .b { background: var(--rouge); }
+  .poule .rg .r { width: 34px; font-family: var(--cond); font-weight: 800; color: var(--gris-clair); }
+  .poule .rg.q .r { color: var(--rouge); }
+  .poule .rg .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .poule .rg .s { font-family: var(--cond); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .legende { position: absolute; left: 96px; right: 96px; bottom: 56px; display: flex; align-items: center; gap: 40px; font-size: 28px; font-weight: 600; color: var(--gris); }
+  .legende i { display: inline-block; width: 28px; height: 28px; background: var(--rouge); vertical-align: middle; margin-right: 12px; }
+
+  /* Arbre */
+  .col-titre { position: absolute; top: 246px; font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 2px; color: var(--gris); text-transform: uppercase; }
+  .trait { position: absolute; background: #C4BFB8; }
+  .m { position: absolute; background: #fff; display: flex; flex-direction: column; }
+  .m .rg { display: flex; align-items: center; gap: 14px; padding-right: 18px; border-bottom: 2px solid #F1EFEC; }
+  .m .rg:last-child { border-bottom: 0; }
+  .m .rg .b { width: 8px; align-self: stretch; }
+  .m .rg.g .b { background: var(--rouge); }
+  .m .rg .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m .rg .s { font-family: var(--cond); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gris-clair); }
+  .m .rg.g .s { color: var(--rouge); }
+  .m .rg.p .n, .m .rg.p .s { color: var(--gris-clair); }
+  .m .rg.att .n { color: var(--gris-clair); font-style: italic; font-weight: 600; }
+  .m .live { background: var(--rouge); color: #fff; font-family: var(--cond); font-size: 24px; font-weight: 700; letter-spacing: 1.5px; padding: 4px 18px; }
+  .champion { position: absolute; background: var(--encre); color: #fff; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 24px; }
+  .champion::before { content: ""; height: 6px; width: 64px; background: var(--rouge); }
+  .champion span { font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 2px; color: #C9C7C3; }
+  .champion b { font-family: var(--cond); font-size: 44px; font-weight: 800; line-height: 1.05; overflow-wrap: anywhere; }
+
+  /* Pause */
+  #pause { position: absolute; inset: 96px; display: flex; gap: 72px; }
+  #pause .gauche { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  #pause .sur { font-family: var(--cond); font-size: 32px; font-weight: 700; letter-spacing: 3px; color: var(--rouge); text-transform: uppercase; }
+  #pause h1 { margin: 18px 0; font-family: var(--cond); font-size: 240px; font-weight: 800; line-height: .85; }
+  #pause .traits { width: 520px; }
+  #pause .traits::before { height: 8px; }
+  #pause .phrase { font-size: 44px; font-weight: 600; margin-top: 30px; }
+  #pause .qr { display: flex; align-items: center; gap: 32px; }
+  #pause .qr .code { width: 220px; height: 220px; background: #fff; padding: 10px; }
+  #pause .qr .code svg { width: 100%; height: 100%; display: block; }
+  #pause .qr b { display: block; font-family: var(--cond); font-size: 44px; font-weight: 800; }
+  #pause .qr span { font-size: 30px; font-weight: 600; color: var(--rouge); overflow-wrap: anywhere; }
+  #pause .droite { width: 760px; background: #fff; display: flex; flex-direction: column; align-self: flex-start; }
+  #pause .droite .tete { background: var(--encre); color: #fff; padding: 22px 32px; font-family: var(--cond); font-size: 48px; font-weight: 800; letter-spacing: 2px; display: flex; justify-content: space-between; align-items: baseline; }
+  #pause .droite .tete small { font-size: 28px; font-weight: 700; color: #C9C7C3; letter-spacing: 1px; }
+  #pause .prochain { display: flex; align-items: center; gap: 24px; padding: 0 32px; height: 132px; border-bottom: 2px solid var(--ligne); }
+  #pause .prochain:last-child { border-bottom: 0; }
+  #pause .prochain .ph { width: 170px; font-family: var(--cond); font-size: 34px; font-weight: 800; color: var(--rouge); text-transform: uppercase; line-height: 1; }
+  #pause .prochain .eqs { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-size: 36px; font-weight: 700; }
+  #pause .prochain .eqs div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pause .prochain .eqs span { color: var(--gris-clair); font-weight: 600; }
+  #pause .vide-p { padding: 32px; font-size: 32px; color: var(--gris); }
+</style>
+</head>
+<body class="plein">
+<div class="scene" id="scene"></div>
+
+<script src="config.js"></script>
+<script src="shared/qrcode.js"></script>
+<script type="module">
+import { CFG, $, param, esc, fmtChrono, monterScene, qrSvg, nomEquipe } from "./shared/outils.js";
+import { connecter } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+const scene = $("#scene");
+monterScene(scene);
+const vue = param("vue") || "poules";
+document.title = `Scène ${vue} · ${CFG.nom}`;
+
+const api = await connecter();
+let eqs = [], ms = [], rots = [], dernier = "";
+api.ecouter("", (v) => {
+  const d = v || {};
+  eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
+  rendre();
+});
+setInterval(rendre, 1000);   // chronos
+
+const nom = (id) => nomEquipe(eqs, id);
+const entete = (titre, droite) => `<div class="entete-scene">
+  <div><div class="sur">${esc(CFG.nom)} · ${esc(CFG.sousTitre || "")}</div><h1>${titre}</h1></div>
+  <div class="droite"><div class="traits sombre"></div><div>${droite}</div></div></div>`;
+
+function rendre() {
+  const html = vue === "arbre" ? arbre() : vue === "pause" ? pause() : poules();
+  if (html !== dernier) { scene.innerHTML = html; dernier = html; }
+}
+
+// ---------------- Classement des poules ----------------
+function poules() {
+  const ps = T.poulesDe(eqs);
+  if (!ps.length) return entete("PHASE DE POULES", "") + `<div class="message">Les poules arrivent bientôt.</div>`;
+  const q = CFG.format.qualifiesParPoule;
+  const pm = ms.filter((m) => m.phase === "poule");
+  const joues = pm.filter((m) => m.statut === T.STATUT.TERMINE).length;
+  const cols = Math.min(ps.length, 4), lignesGrille = Math.ceil(ps.length / 4);
+  const maxEq = Math.max(...ps.map((p) => eqs.filter((e) => e.poule === p).length));
+  const hDispo = (670 - 32 * (lignesGrille - 1)) / lignesGrille - 70;
+  const h = Math.max(44, Math.min(104, Math.floor(hDispo / maxEq)));
+  const fs = Math.round(Math.min(34, h * 0.42));
+  const avecNuls = pm.some((m) => m.statut === T.STATUT.TERMINE && T.resultat(m) === "nul");
+  const cartes = ps.map((p) => {
+    const cl = T.classement(eqs, ms, p, CFG);
+    return `<div class="poule"><div class="tete"><b>POULE ${p}</b><span>${avecNuls ? "V · N · D · ±" : "V · D · ±"}</span></div>` +
+      cl.map((l) => `<div class="rg ${l.rang <= q ? "q" : ""}" style="height:${h}px">
+        <div class="b"></div><div class="r" style="font-size:${fs + 2}px">${l.rang}</div>
+        <div class="n" style="font-size:${fs}px">${esc(l.nom)}</div>
+        <div class="s" style="font-size:${fs - 2}px">${l.V} · ${avecNuls ? l.N + " · " : ""}${l.D} · ${l.diff > 0 ? "+" : l.diff < 0 ? "−" : ""}${Math.abs(l.diff)}</div></div>`).join("") + `</div>`;
+  }).join("");
+  const egal = CFG.format.egalitePoules === "point-en-or" ? "Égalité : point en or" : `Victoire ${CFG.format.points.victoire} pts · nul ${CFG.format.points.nul} pt`;
+  return entete("PHASE DE POULES", `Après ${joues} match${joues > 1 ? "s" : ""} sur ${pm.length} · en direct`) +
+    `<div id="grille" style="grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:repeat(${lignesGrille},auto)">${cartes}</div>
+     <div class="legende"><div><i></i>Qualifiés pour la phase finale</div><div>${esc(egal)}</div></div>`;
+}
+
+// ---------------- Arbre final ----------------
+function arbre() {
+  const fin = ms.filter((m) => m.phase === "finale");
+  if (!fin.length) return entete("PHASE FINALE", "") + `<div class="message">L'arbre s'affiche à la fin des poules.</div>`;
+  const N = fin[0].nbTours, c0 = fin.filter((m) => m.tour === 0).length;
+  const X0 = 96, Y0 = 300, H = 740, GAP = 90, WCH = 258;
+  const W = Math.floor((1728 - WCH - GAP * N) / N);
+  const rowH = Math.max(34, Math.min(64, Math.floor((H / c0 - 20) / 2)));
+  const fs = Math.round(rowH * 0.5);
+  const colX = (t) => X0 + t * (W + GAP);
+  const centre = (t, i) => Y0 + (H / (c0 / 2 ** t)) * (i + 0.5);
+  let out = entete("PHASE FINALE", "Le gagnant avance tout seul");
+
+  for (let t = 0; t < N; t++) {
+    const rot = rots.find((r) => r.phase === "finale" && r.tour === t);
+    const titre = T.nomTourPluriel(t, N) + (t === N - 1 ? "" : "");
+    out += `<div class="col-titre" style="left:${colX(t)}px;width:${W}px">${esc(titre)}${rot && rot.statut === T.STATUT.AVENIR && t === N - 1 ? "" : ""}</div>`;
+  }
+  // Traits
+  const trait = (x, y, w, h) => `<div class="trait" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`;
+  for (let t = 0; t < N - 1; t++) {
+    const nb = c0 / 2 ** (t + 1);
+    for (let i = 0; i < nb; i++) {
+      const a = Math.round(centre(t, 2 * i)), b = Math.round(centre(t, 2 * i + 1)), c = Math.round(centre(t + 1, i));
+      const xr = colX(t) + W, xm = xr + GAP / 2;
+      out += trait(xr, a - 1, GAP / 2, 3) + trait(xr, b - 1, GAP / 2, 3) + trait(xm - 1, a, 3, b - a + 2) + trait(xm, c - 1, GAP / 2, 3);
+    }
+  }
+  const cF = Math.round(centre(N - 1, 0));
+  out += trait(colX(N - 1) + W, cF - 1, GAP, 3);
+
+  // Matchs
+  const maintenant = api.maintenant();
+  for (const m of fin) {
+    const top = Math.round(centre(m.tour, m.index) - rowH);
+    const r = T.resultat(m);
+    const ligne = (s) => {
+      const id = m[s];
+      if (m.exempt && !id) return `<div class="rg att" style="height:${rowH}px"><div class="b"></div><div class="n" style="font-size:${fs}px">Exempt</div></div>`;
+      const cls = !id ? "att" : r === s ? "g" : r && r !== s ? "p" : "";
+      const sc = m.statut === T.STATUT.TERMINE && !m.exempt ? m["score" + s] : "";
+      return `<div class="rg ${cls}" style="height:${rowH}px"><div class="b"></div>
+        <div class="n" style="font-size:${fs}px">${esc(id ? nom(id) : T.etiquetteAttente(m, s, ms))}</div>
+        <div class="s" style="font-size:${fs + 2}px">${sc}</div></div>`;
+    };
+    let chip = "";
+    if (m.statut === T.STATUT.ENCOURS) {
+      const rot = rots.find((x) => x.num === m.rotation);
+      chip = `<div class="live">EN COURS · ${fmtChrono(T.tempsRestant(rot, maintenant))}</div>`;
+    }
+    out += `<div class="m" style="left:${colX(m.tour)}px;top:${top}px;width:${W}px">${ligne("A")}${ligne("B")}${chip}</div>`;
+  }
+  const champ = T.vainqueurTournoi(ms);
+  out += `<div class="champion" style="left:${colX(N - 1) + W + GAP}px;top:${cF - 110}px;width:${WCH}px;height:220px">
+    <span>VAINQUEUR</span><b>${esc(champ ? nom(champ) : "À venir")}</b></div>`;
+  return out;
+}
+
+// ---------------- Pause ----------------
+let qrCache = "";
+function pause() {
+  const cur = T.rotationEnCours(rots), suiv = T.prochaineRotation(rots);
+  const rot = suiv || cur;
+  const liste = rot ? T.matchsDeRotation(ms, rot.num) : [];
+  if (!qrCache) qrCache = qrSvg(CFG.siteUrl);
+  const url = CFG.siteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const lignes = liste.length ? liste.map((m) => `<div class="prochain">
+      <div class="ph">${esc(T.nomPhase(m, ms))}</div>
+      <div class="eqs"><div>${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))}</div><div><span>vs </span>${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}</div></div>
+    </div>`).join("") : `<div class="vide-p">${T.vainqueurTournoi(ms) ? "Le tournoi est terminé." : "Programme à venir."}</div>`;
+  return `<div id="pause">
+    <div class="gauche">
+      <div>
+        <div class="sur">${esc(CFG.nom)}</div>
+        <h1>PAUSE</h1>
+        <div class="traits sombre"></div>
+        <div class="phrase">On revient dans quelques minutes.</div>
+      </div>
+      <div class="qr"><div class="code">${qrCache}</div><div><b>Suis l'arbre en direct</b><span>${esc(url)}</span></div></div>
+    </div>
+    <div class="droite">
+      <div class="tete">À SUIVRE${rot ? `<small>ROTATION ${rot.num}</small>` : ""}</div>
+      ${lignes}
+    </div>
+  </div>`;
+}
+</script>
+</body>
+</html>

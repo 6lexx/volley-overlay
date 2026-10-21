@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pilotage stream · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  .choix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .choix button { min-height: 64px; padding: 8px 10px; border: 2px solid var(--nuit-ligne); background: var(--nuit); color: #fff; text-align: left; font-size: 15px; font-weight: 600; line-height: 1.25; }
+  .choix button[aria-pressed="true"] { background: #fff; color: var(--encre); border-color: #fff; font-weight: 700; }
+  .choix button small { display: block; font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--nuit-texte); margin-bottom: 2px; }
+  .choix button[aria-pressed="true"] small { color: var(--rouge); }
+  .compteur { display: flex; align-items: center; gap: 12px; }
+  .compteur .val { flex: 1 1 auto; text-align: center; font-family: var(--cond); font-size: 64px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  .moins { width: 64px; height: 64px; border: 2px solid var(--nuit-ligne); background: var(--nuit); color: #fff; font-size: 34px; font-weight: 700; }
+  .plus { width: 96px; height: 64px; border: 0; background: var(--rouge); color: #fff; font-size: 34px; font-weight: 700; }
+  .bandeaux { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .bandeaux .btn[aria-pressed="true"] { background: #fff; color: var(--encre); border-color: #fff; }
+</style>
+</head>
+<body class="sombre">
+<div id="demo" class="demo-banniere" hidden>Mode démo : ouvre overlay.html?demo=1 dans un autre onglet pour voir le résultat.</div>
+<header class="entete-sombre">
+  <div>
+    <h1>STREAM · MATCH FILMÉ</h1>
+    <p>Ce que tu touches ici s'affiche sur l'overlay</p>
+  </div>
+  <span class="point" id="dot" title="Connexion"></span>
+</header>
+<div id="fatal" class="fatal" hidden></div>
+
+<main class="contenu appli" id="app" hidden>
+  <div class="aide" id="aideChoix"></div>
+  <div class="choix" id="choix"></div>
+
+  <div id="zoneMatch" hidden style="display:flex;flex-direction:column;gap:12px">
+    <div class="bloc">
+      <div class="ligne entre">
+        <span class="etat" id="phase"></span>
+        <span class="chrono-grand" id="chrono" style="font-size:30px">--:--</span>
+      </div>
+    </div>
+    <div class="bloc">
+      <div class="ellipse" style="font-size:17px;font-weight:700" id="nomA"></div>
+      <div class="compteur">
+        <button class="moins" type="button" data-pt="A" data-d="-1" aria-label="Retirer un point">−</button>
+        <div class="val" id="ptA">0</div>
+        <button class="plus" type="button" data-pt="A" data-d="1" aria-label="Ajouter un point">+</button>
+      </div>
+    </div>
+    <div class="bloc">
+      <div class="ellipse" style="font-size:17px;font-weight:700" id="nomB"></div>
+      <div class="compteur">
+        <button class="moins" type="button" data-pt="B" data-d="-1" aria-label="Retirer un point">−</button>
+        <div class="val" id="ptB">0</div>
+        <button class="plus" type="button" data-pt="B" data-d="1" aria-label="Ajouter un point">+</button>
+      </div>
+    </div>
+    <button class="btn plein large" id="terminer" type="button">Terminer le match</button>
+    <button class="btn petit" id="retirerVictoire" type="button" hidden>Retirer le bandeau victoire</button>
+    <div class="aide" id="aideFin">À la fin du chrono : la victoire s'affiche 20 s et le score part dans la saisie des organisateurs.</div>
+  </div>
+
+  <div class="bloc">
+    <h2>Bandeau</h2>
+    <div class="bandeaux">
+      <button class="btn petit" type="button" data-bandeau="">Aucun</button>
+      <button class="btn petit" type="button" data-bandeau="interview">Interview</button>
+      <button class="btn petit" type="button" data-bandeau="balade">Balade</button>
+    </div>
+    <div class="aide">Pendant un bandeau, le score est masqué sur l'overlay.</div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, param, esc, fmtChrono, toast, doubleAppui, nomEquipe } from "./shared/outils.js";
+import { connecter, DEMO } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
+if (DEMO) $("#demo").hidden = false;
+
+let api;
+try {
+  api = await connecter({ role: "stream", cle: param("key") });
+} catch (e) {
+  fatal(esc(e.message) + "<br><br>Lien attendu : <code>pilotage.html?key=CLÉ_STREAM</code><br>ou <code>pilotage.html?demo=1</code> pour tester.");
+  throw e;
+}
+$("#app").hidden = false;
+api.surConnexion((on) => $("#dot").classList.toggle("on", on));
+
+let data = {}, eqs = [], ms = [], rots = [], live = {};
+const envoyer = (u, ok) => api.maj(u).then(() => ok && toast(ok)).catch((e) => toast("Erreur : " + (e.code || e.message), true));
+const nom = (id) => nomEquipe(eqs, id);
+
+api.ecouter("", (v) => {
+  data = v || {};
+  eqs = T.listeEquipes(data); ms = T.listeMatchs(data); rots = T.listeRotations(data);
+  live = data.live || {};
+  rendre();
+}, (e) => fatal("Lecture refusée (" + esc(e.code) + ")."));
+
+function candidats() {
+  const cur = T.rotationEnCours(rots), suiv = T.prochaineRotation(rots);
+  const r = cur || suiv;
+  return { rot: r, liste: r ? T.matchsDeRotation(ms, r.num).filter((m) => m.A && m.B) : [] };
+}
+
+function rendre() {
+  const { rot, liste } = candidats();
+  $("#aideChoix").textContent = !rot ? "Aucun match en cours ou à venir."
+    : rot.statut === T.STATUT.ENCOURS ? `Rotation ${rot.num} en cours · touche le match que tu filmes`
+    : `Rotation ${rot.num} pas encore lancée · tu peux déjà choisir ton match`;
+  $("#choix").innerHTML = liste.map((m) => `<button type="button" data-choix="${m.id}" aria-pressed="${live.matchId === m.id}">
+      <small>${esc(T.nomPhase(m, ms).toUpperCase())}</small>${esc(nom(m.A))} <span style="opacity:.6">vs</span> ${esc(nom(m.B))}</button>`).join("");
+
+  const m = ms.find((x) => x.id === live.matchId);
+  $("#zoneMatch").hidden = !m;
+  if (m) {
+    const p = live.points?.[m.id] || { A: 0, B: 0 };
+    $("#phase").textContent = T.nomPhase(m, ms) + (m.statut === T.STATUT.ENCOURS ? "" : m.statut === T.STATUT.TERMINE ? " · validé" : " · pas lancé");
+    $("#nomA").textContent = nom(m.A) || "";
+    $("#nomB").textContent = nom(m.B) || "";
+    $("#ptA").textContent = p.A || 0;
+    $("#ptB").textContent = p.B || 0;
+  }
+  $("#retirerVictoire").hidden = !victoireActive();
+  document.querySelectorAll("[data-bandeau]").forEach((b) => b.setAttribute("aria-pressed", String((live.bandeau || "") === b.dataset.bandeau)));
+  majChrono();
+}
+
+function victoireActive() {
+  const v = live.victoire;
+  return !!(v && v.ts && api.maintenant() - v.ts < CFG.affichage.victoireSec * 1000);
+}
+
+function majChrono() {
+  const m = ms.find((x) => x.id === live.matchId);
+  const rot = m && rots.find((r) => r.num === m.rotation);
+  $("#chrono").textContent = rot && rot.debut ? fmtChrono(T.tempsRestant(rot, api.maintenant())) : "--:--";
+  $("#retirerVictoire").hidden = !victoireActive();
+}
+setInterval(majChrono, 500);
+
+$("#choix").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-choix]");
+  if (b) envoyer({ "live/matchId": b.dataset.choix, "live/victoire": null });
+});
+
+document.querySelectorAll("[data-pt]").forEach((b) => b.addEventListener("click", () => {
+  const id = live.matchId;
+  if (!id) return;
+  const s = b.dataset.pt;
+  const actuel = live.points?.[id]?.[s] || 0;
+  const v = Math.max(0, actuel + Number(b.dataset.d));
+  live.points = { ...(live.points || {}), [id]: { ...(live.points?.[id] || { A: 0, B: 0 }), [s]: v } };
+  $("#pt" + s).textContent = v;   // affichage immédiat
+  envoyer({ [`live/points/${id}/${s}`]: v });
+}));
+
+doubleAppui($("#terminer"), "Appuie encore pour confirmer", () => {
+  const m = ms.find((x) => x.id === live.matchId);
+  if (!m) return;
+  const p = live.points?.[m.id] || { A: 0, B: 0 };
+  const A = p.A || 0, B = p.B || 0;
+  const u = { [`matchs/${m.id}/saisieStream`]: { A, B } };
+  if (A === B) {
+    envoyer(u, "Égalité : score envoyé, pas de bandeau victoire");
+    return;
+  }
+  u["live/victoire"] = { matchId: m.id, A, B, ts: api.ts() };
+  envoyer(u, "Victoire affichée, score envoyé aux orgas");
+});
+
+$("#retirerVictoire").addEventListener("click", () => envoyer({ "live/victoire": null }));
+
+document.querySelectorAll("[data-bandeau]").forEach((b) => b.addEventListener("click", () => {
+  envoyer({ "live/bandeau": b.dataset.bandeau || null });
+}));
+</script>
+</body>
+</html>

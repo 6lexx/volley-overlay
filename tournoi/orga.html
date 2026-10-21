@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Organisation · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  details.bloc > summary { cursor: pointer; font-family: var(--cond); font-size: 20px; font-weight: 800; list-style: none; display: flex; justify-content: space-between; align-items: center; min-height: 32px; }
+  details.bloc > summary::-webkit-details-marker { display: none; }
+  details.bloc > summary::after { content: "+"; font-size: 26px; color: var(--nuit-texte); }
+  details.bloc[open] > summary::after { content: "–"; }
+  .poule-groupe { display: flex; flex-direction: column; gap: 0; }
+  .poule-groupe + .poule-groupe { margin-top: 6px; }
+  .poule-titre { font-family: var(--cond); font-weight: 800; font-size: 16px; letter-spacing: 1px; color: var(--rouge-clair); padding: 6px 0 2px; }
+  .tie { flex-wrap: wrap; }
+  .tie .btn { flex: 1 1 0; }
+  .tie .btn[aria-pressed="true"] { background: #fff; color: var(--encre); border-color: #fff; }
+  .match-lect { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--nuit-ligne); font-weight: 600; }
+  .match-lect .ph { font-family: var(--cond); color: var(--nuit-texte); white-space: nowrap; }
+  .corr { border-top: 1px solid var(--nuit-ligne); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .champion { font-family: var(--cond); font-size: 34px; font-weight: 800; }
+</style>
+</head>
+<body class="sombre">
+<div id="demo" class="demo-banniere" hidden>Mode démo : rien n'est envoyé sur internet. Ouvre les autres pages avec <b>?demo=1</b> dans ce même navigateur.</div>
+<header class="entete-sombre">
+  <div>
+    <h1>ORGANISATION</h1>
+    <p id="sousTitre">Tournoi · saisie des résultats</p>
+  </div>
+  <span class="point" id="dot" title="Connexion"></span>
+</header>
+<div id="fatal" class="fatal" hidden></div>
+
+<main class="contenu appli" id="app" hidden>
+
+  <!-- ============ Avant le tournoi ============ -->
+  <section id="prep" hidden style="display:flex;flex-direction:column;gap:12px">
+    <div class="bloc">
+      <h2 id="titreEq">Équipes</h2>
+      <form id="formEq" class="ligne" style="flex-wrap:wrap">
+        <label for="nomEq" class="sous" style="width:100%">Nom de l'équipe</label>
+        <input id="nomEq" class="champ" style="flex:1 1 180px" maxlength="40" autocomplete="off" required>
+        <label for="pouleEq" class="sous" hidden>Poule</label>
+        <select id="pouleEq" class="champ" style="width:96px" aria-label="Poule"></select>
+        <button class="btn rouge" type="submit">Ajouter</button>
+      </form>
+      <div id="listeEq" class="liste-eq"></div>
+      <button class="btn petit" id="remplirDemo" type="button" hidden>Remplir avec 16 équipes de démo</button>
+    </div>
+    <div class="bloc">
+      <h2>Planning</h2>
+      <div class="aide" id="resumePlanning"></div>
+      <button class="btn plein large" id="generer" type="button">Générer le planning</button>
+    </div>
+  </section>
+
+  <!-- ============ Pendant le tournoi ============ -->
+  <section id="jeu" hidden style="display:flex;flex-direction:column;gap:12px">
+    <div id="blocRotation" style="display:flex;flex-direction:column;gap:12px"></div>
+
+    <details class="bloc" id="detCorr">
+      <summary>Corriger un résultat</summary>
+      <div class="aide">Le classement et l'arbre se recalculent tout seuls.</div>
+      <div id="listeCorr" style="display:flex;flex-direction:column;gap:10px"></div>
+    </details>
+
+    <details class="bloc">
+      <summary>Équipes</summary>
+      <div class="aide">Pour corriger une faute dans un nom.</div>
+      <div id="listeEqJeu" class="liste-eq"></div>
+    </details>
+
+    <details class="bloc">
+      <summary>Zone sensible</summary>
+      <button class="btn petit" id="refaire" type="button">Refaire le planning</button>
+      <div class="aide" id="refaireAide"></div>
+      <button class="btn petit" id="annulerFinale" type="button">Annuler la phase finale</button>
+      <button class="btn petit" id="toutEffacer" type="button">Tout effacer (équipes et résultats)</button>
+    </details>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, param, esc, fmtChrono, toast, doubleAppui, nomEquipe } from "./shared/outils.js";
+import { connecter, DEMO, TID } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
+const POULES = "ABCDEFGH".split("");
+
+$("#sousTitre").textContent = `${CFG.nom} · saisie des résultats`;
+$("#pouleEq").innerHTML = POULES.map((p) => `<option value="${p}">Poule ${p}</option>`).join("");
+if (DEMO) { $("#demo").hidden = false; $("#remplirDemo").hidden = false; }
+
+let api;
+try {
+  api = await connecter({ role: "orga", cle: param("key") });
+} catch (e) {
+  fatal(esc(e.message) + "<br><br>Lien attendu : <code>orga.html?key=CLÉ_ORGA</code><br>ou <code>orga.html?demo=1</code> pour tester.");
+  throw e;
+}
+$("#app").hidden = false;
+api.surConnexion((on) => $("#dot").classList.toggle("on", on));
+
+let data = {}, eqs = [], ms = [], rots = [];
+const brouillons = {};       // scores tapés mais pas encore validés
+let sigRot = "", sigCorr = "", sigEq = "";
+
+const envoyer = async (majs, ok) => {
+  try { await api.maj(majs); if (ok) toast(ok); }
+  catch (e) { toast("Erreur : " + (e.code || e.message), true); }
+};
+const nom = (id) => nomEquipe(eqs, id);
+
+api.ecouter("", (v) => { data = v || {}; rendre(); }, (e) => fatal("Lecture refusée (" + esc(e.code) + ")."));
+
+function rendre() {
+  eqs = T.listeEquipes(data); ms = T.listeMatchs(data); rots = T.listeRotations(data);
+  const planifie = ms.length > 0;
+  $("#prep").hidden = planifie;
+  $("#jeu").hidden = !planifie;
+  if (!planifie) rendrePrep(); else rendreJeu();
+}
+
+// ================= Préparation =================
+
+function groupesHtml(boutons) {
+  const poules = T.poulesDe(eqs);
+  if (!eqs.length) return `<div class="aide">Aucune équipe pour l'instant.</div>`;
+  return poules.map((p) => `<div class="poule-groupe"><div class="poule-titre">POULE ${p}</div>` +
+    eqs.filter((e) => e.poule === p).map((e) => `<div class="item"><span class="nm ellipse">${esc(e.nom)}</span>${boutons(e)}</div>`).join("") +
+    `</div>`).join("");
+}
+
+function rendrePrep() {
+  $("#titreEq").textContent = `Équipes (${eqs.length})`;
+  $("#listeEq").innerHTML = groupesHtml((e) =>
+    `<button class="btn petit" data-poule="${e.id}" type="button" aria-label="Changer la poule de ${esc(e.nom)}">${esc(e.poule)}</button>` +
+    `<button class="btn petit" data-suppr="${e.id}" type="button" aria-label="Supprimer ${esc(e.nom)}">✕</button>`);
+
+  const poules = T.poulesDe(eqs);
+  const tropPetites = poules.filter((p) => eqs.filter((e) => e.poule === p).length < 2);
+  const g = $("#generer");
+  if (!eqs.length) { g.disabled = true; $("#resumePlanning").textContent = "Ajoute les équipes et leur poule, puis génère le planning."; return; }
+  if (tropPetites.length) { g.disabled = true; $("#resumePlanning").textContent = `Il faut au moins 2 équipes dans la poule ${tropPetites.join(", ")}.`; return; }
+  const essai = T.planifierPoules(eqs, CFG);
+  const nbR = Object.keys(essai.rotations).length, nbM = Object.keys(essai.matchs).length;
+  const q = CFG.format.qualifiesParPoule;
+  g.disabled = false;
+  $("#resumePlanning").innerHTML = `${poules.length} poule${poules.length > 1 ? "s" : ""}, ${nbM} matchs en ${nbR} rotations de ${CFG.format.dureeRotationMin} min (${CFG.format.terrains} terrains).<br>` +
+    `${q} qualifié${q > 1 ? "s" : ""} par poule pour la phase finale. Ces réglages se changent dans <b>config.js</b>.`;
+}
+
+$("#formEq").addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const n = $("#nomEq").value.trim();
+  if (!n) return;
+  if (eqs.some((e) => e.nom.toLowerCase() === n.toLowerCase())) { toast("Ce nom existe déjà", true); return; }
+  const p = $("#pouleEq").value;
+  const ordre = eqs.filter((e) => e.poule === p).length;
+  envoyer({ [`equipes/${T.nouvelId()}`]: { nom: n, poule: p, ordre } });
+  $("#nomEq").value = "";
+  $("#nomEq").focus();
+});
+
+$("#listeEq").addEventListener("click", (ev) => {
+  const s = ev.target.closest("[data-suppr]"), p = ev.target.closest("[data-poule]");
+  if (s) envoyer({ [`equipes/${s.dataset.suppr}`]: null }, "Équipe supprimée");
+  if (p) {
+    const e = eqs.find((x) => x.id === p.dataset.poule);
+    const i = POULES.indexOf(e.poule);
+    envoyer({ [`equipes/${e.id}/poule`]: POULES[(i + 1) % POULES.length] });
+  }
+});
+
+$("#generer").addEventListener("click", () => {
+  const { matchs, rotations } = T.planifierPoules(eqs, CFG);
+  const u = {};
+  for (const [id, m] of Object.entries(matchs)) u[`matchs/${id}`] = m;
+  for (const [id, r] of Object.entries(rotations)) u[`rotations/${id}`] = r;
+  envoyer(u, "Planning généré");
+});
+
+$("#remplirDemo").addEventListener("click", () => {
+  const noms = ["Les Smasheurs du Dimanche", "Block Party", "Les Filets Mignons", "Service Compris",
+    "Les Manchettes Volantes", "Ace Ventura", "Les Libéros Libres", "Smash Bros",
+    "Les Passeurs d'Âmes", "Réception Royale", "Les Contres Attaques", "Feinte et Furieux",
+    "Les Bloqueurs Fous", "Team Tie-Break", "Les Rois du Bord", "Volley Gang"];
+  const u = {};
+  noms.forEach((n, i) => (u[`equipes/${T.nouvelId()}${i}`] = { nom: n, poule: POULES[Math.floor(i / 4)], ordre: i % 4 }));
+  envoyer(u, "16 équipes ajoutées");
+});
+
+// ================= Pendant le tournoi =================
+
+function valeurs(m) {
+  const b = brouillons[m.id];
+  if (b) return b;
+  if (m.statut === T.STATUT.TERMINE) return { A: m.scoreA, B: m.scoreB, g: m.gagnant === "nul" ? null : m.gagnant };
+  if (m.saisieStream) return { A: m.saisieStream.A, B: m.saisieStream.B, g: null };
+  return { A: "", B: "", g: null };
+}
+
+function carteSaisie(m, idPrefixe) {
+  const v = valeurs(m);
+  const etat = m.saisieStream && !brouillons[m.id] ? `<span class="etat rouge">Rempli par le stream</span>` : `<span class="etat">${v.A !== "" && v.B !== "" ? "Prêt" : "À saisir"}</span>`;
+  const egal = v.A !== "" && v.A === v.B && T.egaliteInterdite(m, CFG);
+  const cote = (s) => `<div class="ligne">
+      <label class="ellipse" style="flex:1 1 auto;font-weight:600;font-size:17px" for="${idPrefixe}-${m.id}-${s}">${esc(nom(m[s]) || T.etiquetteAttente(m, s, ms))}</label>
+      <input class="champ score-in" id="${idPrefixe}-${m.id}-${s}" type="number" inputmode="numeric" min="0" max="999" data-mid="${m.id}" data-side="${s}" value="${esc(v[s])}">
+    </div>`;
+  return `<div class="bloc" data-carte="${m.id}">
+    <div class="ligne entre"><span class="etat">${esc(T.nomPhase(m, ms))}</span>${idPrefixe === "s" ? etat : ""}</div>
+    ${cote("A")}${cote("B")}
+    <div class="ligne tie" data-tie="${m.id}" ${egal ? "" : "hidden"}>
+      <span class="aide" style="width:100%">Égalité : qui a gagné le point en or ?</span>
+      <button class="btn petit" type="button" data-or="${m.id}" data-g="A" aria-pressed="${v.g === "A"}">${esc(nom(m.A) || "A")}</button>
+      <button class="btn petit" type="button" data-or="${m.id}" data-g="B" aria-pressed="${v.g === "B"}">${esc(nom(m.B) || "B")}</button>
+    </div>
+  </div>`;
+}
+
+function rendreJeu() {
+  const cur = T.rotationEnCours(rots), suiv = T.prochaineRotation(rots);
+  const sig = JSON.stringify([cur?.id, cur?.debut, suiv?.id, rots.length, eqs.map((e) => e.nom),
+    ms.map((m) => [m.id, m.statut, m.A, m.B, m.saisieStream, m.rotation])]);
+  if (sig !== sigRot) { sigRot = sig; rendreRotation(cur, suiv); }
+  rendreCorrections();
+  rendreEquipesJeu();
+  const aucunLance = rots.every((r) => r.statut === T.STATUT.AVENIR);
+  $("#refaire").disabled = !aucunLance;
+  $("#refaireAide").textContent = aucunLance ? "Revient à la liste des équipes, tant qu'aucune rotation n'est lancée." : "Impossible : une rotation a déjà été lancée.";
+  const fin = ms.filter((m) => m.phase === "finale");
+  $("#annulerFinale").hidden = !fin.length;
+  $("#annulerFinale").disabled = fin.some((m) => !m.exempt && m.statut !== T.STATUT.AVENIR);
+}
+
+function rendreRotation(cur, suiv) {
+  const total = rots.length;
+  const el = $("#blocRotation");
+  if (cur) {
+    const liste = T.matchsDeRotation(ms, cur.num);
+    el.innerHTML = `<div class="bloc">
+        <div class="ligne entre">
+          <div><h2>ROTATION ${cur.num} SUR ${total}</h2><div class="sous" id="chronoTxt">En cours</div></div>
+          <div class="chrono-grand" id="chrono">--:--</div>
+        </div>
+      </div>
+      <div class="aide">À la fin du chrono, tape le score final de chaque match, puis valide.</div>
+      ${liste.map((m) => carteSaisie(m, "s")).join("")}
+      <button class="btn plein large" id="valider" type="button">Valider la rotation ${cur.num}</button>
+      <button class="btn petit" id="relancer" type="button">Relancer le chrono à zéro</button>`;
+    $("#valider").addEventListener("click", () => validerRotation(cur, liste));
+    doubleAppui($("#relancer"), "Appuie encore pour relancer", () => envoyer({ [`rotations/${cur.id}/debut`]: api.ts() }, "Chrono relancé"));
+    majChrono();
+    return;
+  }
+  if (suiv) {
+    const liste = T.matchsDeRotation(ms, suiv.num);
+    const incomplet = liste.some((m) => !m.A || !m.B);
+    el.innerHTML = `<div class="bloc">
+        <h2>PROCHAINE : ROTATION ${suiv.num} SUR ${total}</h2>
+        <div class="sous">${suiv.phase === "finale" ? "Phase finale" : "Phase de poules"} · ${Math.round(suiv.duree / 60)} min</div>
+        ${liste.map((m) => `<div class="match-lect"><span class="ellipse">${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))} – ${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}</span><span class="ph">${esc(T.nomPhase(m, ms))}</span></div>`).join("")}
+      </div>
+      <button class="btn rouge large" id="lancer" type="button" ${incomplet ? "disabled" : ""}>Lancer la rotation ${suiv.num}</button>
+      ${incomplet ? `<div class="aide">En attente des résultats précédents.</div>` : `<div class="aide">Le chrono démarre en même temps sur le site, l'overlay et le stream.</div>`}`;
+    if (!incomplet) $("#lancer").addEventListener("click", () => lancer(suiv, liste));
+    return;
+  }
+  const finale = ms.filter((m) => m.phase === "finale");
+  if (!finale.length && T.poulesTerminees(ms)) {
+    const poules = T.poulesDe(eqs);
+    const q = CFG.format.qualifiesParPoule;
+    el.innerHTML = `<div class="bloc">
+        <h2>POULES TERMINÉES</h2>
+        ${poules.map((p) => `<div class="poule-groupe"><div class="poule-titre">POULE ${p}</div>` +
+          T.classement(eqs, ms, p, CFG).map((l) => `<div class="match-lect"><span class="ellipse">${l.rang}. ${esc(l.nom)}${l.rang <= q ? " ✓" : ""}</span><span class="ph">${l.points} pts · ${l.diff > 0 ? "+" : ""}${l.diff}</span></div>`).join("") + `</div>`).join("")}
+      </div>
+      <button class="btn rouge large" id="genFinale" type="button">Générer la phase finale</button>
+      <div class="aide">Les ${q} premiers de chaque poule sont qualifiés. Vérifie le classement avant.</div>`;
+    $("#genFinale").addEventListener("click", genererFinale);
+    return;
+  }
+  const champion = T.vainqueurTournoi(ms);
+  el.innerHTML = champion
+    ? `<div class="bloc"><span class="etat vert">Tournoi terminé</span><div class="champion">Vainqueur : ${esc(nom(champion))}</div></div>`
+    : `<div class="bloc"><h2>EN ATTENTE</h2><div class="aide">Aucune rotation à lancer pour l'instant.</div></div>`;
+}
+
+function majChrono() {
+  const cur = T.rotationEnCours(rots);
+  const c = $("#chrono");
+  if (!cur || !c) return;
+  const reste = T.tempsRestant(cur, api.maintenant());
+  c.textContent = fmtChrono(reste);
+  $("#chronoTxt").textContent = reste != null && reste <= 0 ? "Temps écoulé · saisis les scores" : "En cours";
+  c.style.color = reste != null && reste <= 0 ? "var(--rouge-clair)" : "";
+}
+setInterval(majChrono, 500);
+
+// Saisie : on garde les chiffres tapés même si l'écran se met à jour
+document.addEventListener("input", (ev) => {
+  const i = ev.target.closest("input[data-mid]");
+  if (!i) return;
+  const m = ms.find((x) => x.id === i.dataset.mid);
+  const b = (brouillons[m.id] ||= { ...valeurs(m) });
+  b[i.dataset.side] = i.value === "" ? "" : Number(i.value);
+  const tie = document.querySelectorAll(`[data-tie="${m.id}"]`);
+  tie.forEach((t) => (t.hidden = !(b.A !== "" && b.A === b.B && T.egaliteInterdite(m, CFG))));
+});
+document.addEventListener("click", (ev) => {
+  const o = ev.target.closest("[data-or]");
+  if (!o) return;
+  const m = ms.find((x) => x.id === o.dataset.or);
+  const b = (brouillons[m.id] ||= { ...valeurs(m) });
+  b.g = o.dataset.g;
+  document.querySelectorAll(`[data-or="${m.id}"]`).forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.g === b.g)));
+});
+
+function lancer(rot, liste) {
+  const u = { [`rotations/${rot.id}/statut`]: T.STATUT.ENCOURS, [`rotations/${rot.id}/debut`]: api.ts() };
+  liste.forEach((m) => (u[`matchs/${m.id}/statut`] = T.STATUT.ENCOURS));
+  envoyer(u, `Rotation ${rot.num} lancée`);
+}
+
+async function validerRotation(rot, liste) {
+  const u = {};
+  let copie = ms.map((m) => ({ ...m }));
+  try {
+    for (const m of liste) {
+      const v = valeurs(m);
+      if (v.A === "" || v.B === "" || v.A == null || v.B == null) throw new Error(`Score manquant : ${T.nomPhase(m, ms)}`);
+      const part = T.majValidation(copie.find((x) => x.id === m.id), v.A, v.B, v.g, copie, CFG);
+      Object.assign(u, part);
+      copie = copie.map((x) => {   // on applique pour les matchs suivants
+        const c = { ...x };
+        for (const [k, val] of Object.entries(part)) { const [, id, f] = k.split("/"); if (id === x.id) c[f] = val; }
+        return c;
+      });
+    }
+  } catch (e) { toast(e.message, true); return; }
+  u[`rotations/${rot.id}/statut`] = T.STATUT.TERMINE;
+  u[`rotations/${rot.id}/fin`] = api.ts();
+  await envoyer(u, `Rotation ${rot.num} validée`);
+  liste.forEach((m) => delete brouillons[m.id]);
+}
+
+function genererFinale() {
+  const { matchs, rotations } = T.genererFinale(eqs, ms, rots, CFG);
+  const u = {};
+  for (const [id, m] of Object.entries(matchs)) u[`matchs/${id}`] = m;
+  for (const [id, r] of Object.entries(rotations)) u[`rotations/${id}`] = r;
+  envoyer(u, "Phase finale générée");
+}
+
+// ---------- Corrections ----------
+
+function rendreCorrections() {
+  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE && !m.exempt).sort((a, b) => b.rotation - a.rotation);
+  const sig = JSON.stringify([finis.map((m) => [m.id, m.scoreA, m.scoreB, m.gagnant, m.A, m.B]), eqs.map((e) => e.nom)]);
+  if (sig === sigCorr) return;
+  sigCorr = sig;
+  $("#listeCorr").innerHTML = finis.length
+    ? finis.map((m) => `<div class="corr">${carteSaisie(m, "c")}<button class="btn petit" type="button" data-corr="${m.id}">Enregistrer la correction</button></div>`).join("")
+    : `<div class="aide">Aucun match terminé.</div>`;
+}
+
+$("#listeCorr").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-corr]");
+  if (!b) return;
+  const m = ms.find((x) => x.id === b.dataset.corr);
+  const v = valeurs(m);
+  try {
+    const u = T.majValidation(m, v.A, v.B, v.g, ms, CFG);
+    envoyer(u, "Résultat corrigé").then(() => delete brouillons[m.id]);
+  } catch (e) { toast(e.message, true); }
+});
+
+// ---------- Équipes pendant le tournoi ----------
+
+function rendreEquipesJeu() {
+  const sig = JSON.stringify(eqs.map((e) => [e.id, e.nom, e.poule]));
+  if (sig === sigEq) return;
+  sigEq = sig;
+  $("#listeEqJeu").innerHTML = groupesHtml((e) => `<button class="btn petit" data-renom="${e.id}" type="button" aria-label="Renommer ${esc(e.nom)}">Renommer</button>`);
+}
+$("#listeEqJeu").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-renom]");
+  if (!b) return;
+  const e = eqs.find((x) => x.id === b.dataset.renom);
+  const n = prompt("Nouveau nom", e.nom);
+  if (n && n.trim()) envoyer({ [`equipes/${e.id}/nom`]: n.trim().slice(0, 40) }, "Nom modifié");
+});
+
+// ---------- Zone sensible ----------
+
+doubleAppui($("#refaire"), "Appuie encore pour confirmer", () => envoyer({ matchs: null, rotations: null }, "Planning effacé"));
+doubleAppui($("#annulerFinale"), "Appuie encore pour confirmer", () => {
+  const u = {};
+  ms.filter((m) => m.phase === "finale").forEach((m) => (u[`matchs/${m.id}`] = null));
+  rots.filter((r) => r.phase === "finale").forEach((r) => (u[`rotations/${r.id}`] = null));
+  envoyer(u, "Phase finale annulée");
+});
+doubleAppui($("#toutEffacer"), "Sûr ? Tout sera perdu", () => envoyer({ equipes: null, matchs: null, rotations: null, live: null }, "Tournoi effacé"));
+</script>
+</body>
+</html>

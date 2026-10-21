@@ -1,0 +1,37 @@
+{
+  "_lisezmoi": "Ces deux blocs s'AJOUTENT à tes règles actuelles, au même niveau que \"secrets\", \"controllers\" et \"matches\". Ne supprime rien d'autre. Retire aussi cette ligne _lisezmoi avant de publier.",
+
+  "tournoiAcces": {
+    "$tid": {
+      "$role": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid && ($role === 'orga' || $role === 'stream') && newData.val() === root.child('secrets').child('tournoi_' + $tid + '_' + $role).val()"
+        }
+      }
+    }
+  },
+
+  "tournois": {
+    "$tid": {
+      ".read": true,
+      "equipes": {
+        ".write": "auth != null && root.child('tournoiAcces').child($tid).child('orga').child(auth.uid).exists()"
+      },
+      "rotations": {
+        ".write": "auth != null && root.child('tournoiAcces').child($tid).child('orga').child(auth.uid).exists()"
+      },
+      "matchs": {
+        ".write": "auth != null && root.child('tournoiAcces').child($tid).child('orga').child(auth.uid).exists()",
+        "$mid": {
+          "saisieStream": {
+            ".write": "auth != null && root.child('tournoiAcces').child($tid).child('stream').child(auth.uid).exists()"
+          }
+        }
+      },
+      "live": {
+        ".write": "auth != null && (root.child('tournoiAcces').child($tid).child('stream').child(auth.uid).exists() || root.child('tournoiAcces').child($tid).child('orga').child(auth.uid).exists())"
+      }
+    }
+  }
+}

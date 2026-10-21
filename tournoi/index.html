@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#D3121F">
+<title>Tournoi RMV Indoor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+</head>
+<body>
+<div class="appli">
+  <div id="demo" class="demo-banniere" hidden>Mode démo</div>
+  <header class="entete">
+    <h1 id="titre"></h1>
+    <p id="sousTitre"></p>
+  </header>
+  <nav class="onglets" role="tablist" aria-label="Sections">
+    <button role="tab" data-onglet="matchs" aria-selected="true">Matchs</button>
+    <button role="tab" data-onglet="poules" aria-selected="false">Poules</button>
+    <button role="tab" data-onglet="arbre" aria-selected="false">Arbre</button>
+  </nav>
+  <main class="contenu" id="contenu" role="tabpanel" aria-live="polite"></main>
+  <p class="note" style="padding:0 16px 24px">Mise à jour automatique · en live sur <a id="lienTwitch" href="#"></a></p>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, esc, fmtChrono, nomEquipe } from "./shared/outils.js";
+import { connecter, DEMO } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+$("#titre").textContent = CFG.nom;
+$("#sousTitre").textContent = [CFG.date, CFG.lieu].filter(Boolean).join(" · ");
+$("#lienTwitch").textContent = CFG.twitch;
+$("#lienTwitch").href = "https://" + CFG.twitch.replace(/^https?:\/\//, "");
+if (DEMO) $("#demo").hidden = false;
+
+let onglet = ["matchs", "poules", "arbre"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "matchs";
+let tourChoisi = null;
+let eqs = [], ms = [], rots = [], live = {}, dernier = "";
+const nom = (id) => nomEquipe(eqs, id);
+
+document.querySelectorAll("[data-onglet]").forEach((b) => b.addEventListener("click", () => {
+  onglet = b.dataset.onglet;
+  history.replaceState(null, "", "#" + onglet);
+  rendre(true);
+}));
+$("#contenu").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-tour]");
+  if (b) { tourChoisi = Number(b.dataset.tour); rendre(true); }
+});
+
+const api = await connecter();
+api.ecouter("", (v) => {
+  const d = v || {};
+  eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
+  live = d.live || {};
+  rendre();
+});
+setInterval(() => rendre(), 1000);
+
+function rendre(force) {
+  document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.onglet === onglet)));
+  const html = onglet === "poules" ? poules() : onglet === "arbre" ? arbre() : matchs();
+  if (force || html !== dernier) { $("#contenu").innerHTML = html; dernier = html; }
+}
+
+const ligne = (m, s, sc) => {
+  const r = T.resultat(m), id = m[s];
+  const cls = !id ? "attente" : r === s ? "gagne" : r && r !== s && r !== "nul" ? "perd" : "";
+  return `<div class="ligne-eq ${cls}"><div class="barre"></div>
+    <div class="nom ellipse">${esc(id ? nom(id) : T.etiquetteAttente(m, s, ms))}</div>
+    <div class="sc">${sc ?? ""}</div></div>`;
+};
+
+// ---------------- Matchs ----------------
+function matchs() {
+  if (!ms.length) return `<div class="vide">Le programme arrive bientôt.</div>`;
+  const cur = T.rotationEnCours(rots);
+  let html = "";
+  if (cur) {
+    html += `<div class="titre-section rouge"><span>En cours · rotation ${cur.num}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${fmtChrono(T.tempsRestant(cur, api.maintenant()))}</span></div>`;
+    for (const m of T.matchsDeRotation(ms, cur.num)) {
+      const filme = live.matchId === m.id;
+      const p = filme ? live.points?.[m.id] || { A: 0, B: 0 } : null;
+      html += `<div class="carte"><div class="carte-tete ${filme ? "" : "clair"}"><span>${esc(T.nomPhase(m, ms))}</span>${filme ? `<span class="direct">EN DIRECT SUR TWITCH</span>` : ""}</div>
+        ${ligne(m, "A", filme ? p.A || 0 : m.statut === T.STATUT.TERMINE ? m.scoreA : "")}${ligne(m, "B", filme ? p.B || 0 : m.statut === T.STATUT.TERMINE ? m.scoreB : "")}</div>`;
+    }
+  } else {
+    const champ = T.vainqueurTournoi(ms);
+    html += champ
+      ? `<div class="carte"><div class="carte-tete"><span>Vainqueur du tournoi</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`
+      : `<div class="vide">Pas de match en cours pour l'instant.</div>`;
+  }
+  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE && !m.exempt).sort((a, b) => b.rotation - a.rotation || a.id.localeCompare(b.id));
+  if (finis.length) {
+    html += `<div class="titre-section"><span>Terminés</span></div>`;
+    html += finis.map((m) => `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A))} <span>vs</span> ${esc(nom(m.B))}</div><div class="sc">${m.scoreA} – ${m.scoreB}</div></div>`).join("");
+  }
+  return html;
+}
+
+// ---------------- Poules ----------------
+function poules() {
+  const ps = T.poulesDe(eqs);
+  if (!ps.length) return `<div class="vide">Les poules arrivent bientôt.</div>`;
+  const q = CFG.format.qualifiesParPoule;
+  return ps.map((p) => {
+    const cl = T.classement(eqs, ms, p, CFG);
+    return `<div class="carte"><div class="carte-tete"><span>Poule ${p}</span></div>
+      <table class="classement"><thead><tr><th scope="col"><span class="vh">Rang</span></th><th scope="col">Équipe</th><th scope="col">J</th><th scope="col">V</th><th scope="col">±</th><th scope="col">Pts</th></tr></thead><tbody>` +
+      cl.map((l) => `<tr class="${l.rang <= q ? "qualif" : ""}"><td class="rg">${l.rang}</td><td class="eq"><div class="ellipse">${esc(l.nom)}</div></td><td>${l.J}</td><td>${l.V}</td><td>${l.diff > 0 ? "+" : ""}${l.diff}</td><td class="pts">${l.points}</td></tr>`).join("") +
+      `</tbody></table></div>`;
+  }).join("") + `<p class="note">Les ${q} premiers de chaque poule vont en phase finale.</p>`;
+}
+
+// ---------------- Arbre ----------------
+function arbre() {
+  const fin = ms.filter((m) => m.phase === "finale");
+  if (!fin.length) return `<div class="vide">L'arbre s'affiche à la fin des poules.</div>`;
+  const N = fin[0].nbTours;
+  const enCours = [...Array(N).keys()].find((t) => fin.some((m) => m.tour === t && m.statut !== T.STATUT.TERMINE));
+  const t = tourChoisi ?? enCours ?? N - 1;
+  let html = `<div class="pastilles">` + [...Array(N).keys()].map((k) =>
+    `<button class="pastille" type="button" data-tour="${k}" aria-pressed="${k === t}">${T.nomTourPluriel(k, N)}</button>`).join("") + `</div>`;
+  const liste = fin.filter((m) => m.tour === t).sort((a, b) => a.index - b.index);
+  for (const m of liste) {
+    if (m.exempt) {
+      html += `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A || m.B))} <span>· exempt, qualifié d'office</span></div></div>`;
+      continue;
+    }
+    const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours · " + fmtChrono(T.tempsRestant(rots.find((r) => r.num === m.rotation), api.maintenant())) : "À venir";
+    const r = T.resultat(m);
+    let suite = "";
+    if (m.suivant && r) suite = `${esc(nom(r === "A" ? m.A : m.B))} passe au tour suivant`;
+    else if (m.suivant) {
+      const s = fin.find((x) => x.id === m.suivant.id);
+      const autre = s && s[m.suivant.slot === "A" ? "B" : "A"];
+      suite = autre ? `Le gagnant affronte ${esc(nom(autre))}` : "";
+    }
+    html += `<div class="titre-section ${m.statut === T.STATUT.ENCOURS ? "rouge" : ""}"><span>${esc(T.nomPhase(m, ms))}</span><span style="font-size:15px">${etat}</span></div>
+      <div class="carte">${ligne(m, "A", m.statut === T.STATUT.TERMINE ? m.scoreA : "")}${ligne(m, "B", m.statut === T.STATUT.TERMINE ? m.scoreB : "")}</div>
+      ${suite ? `<div class="note" style="text-align:left">${suite}</div>` : ""}`;
+  }
+  const champ = T.vainqueurTournoi(ms);
+  if (champ) html += `<div class="carte"><div class="carte-tete"><span>Vainqueur</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`;
+  return html;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Overlay · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  /* --- Score, en haut à gauche --- */
+  #score { position: absolute; left: 56px; top: 48px; width: 470px; display: flex; flex-direction: column; }
+  #score .haut { display: flex; align-items: stretch; }
+  #score .phase { flex: 1 1 auto; background: var(--rouge); color: #fff; display: flex; align-items: center; padding: 6px 18px; font-family: var(--cond); font-size: 26px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  #score .chrono { background: var(--encre); color: #fff; display: flex; align-items: center; padding: 4px 18px; font-family: var(--cond); font-size: 38px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  #score .chrono.fini { color: var(--rouge-clair); }
+  #score .corps { background: #fff; }
+  #score .eq { display: flex; align-items: center; gap: 16px; height: 68px; border-bottom: 2px solid var(--ligne); }
+  #score .eq:last-child { border-bottom: 0; }
+  #score .eq .b { width: 8px; align-self: stretch; }
+  #score .eq.mene .b { background: var(--rouge); }
+  #score .eq .n { flex: 1 1 auto; font-family: var(--cond); font-size: 36px; font-weight: 700; white-space: nowrap; overflow: hidden; }
+  #score .eq .p { width: 96px; text-align: center; font-family: var(--cond); font-size: 56px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; color: var(--gris); }
+  #score .eq.mene .p { color: var(--encre); }
+  #score .traits { margin-top: 5px; }
+
+  /* --- Victoire, en bas au centre --- */
+  #victoire { position: absolute; left: 300px; width: 1320px; bottom: 96px; display: flex; flex-direction: column; }
+  #victoire .traits { margin-bottom: 6px; }
+  #victoire .carte-v { background: #fff; display: flex; align-items: center; gap: 48px; padding: 36px 56px 40px; }
+  #victoire .gauche { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  #victoire .etiq { align-self: flex-start; background: var(--rouge); color: #fff; font-family: var(--cond); font-size: 34px; font-weight: 800; letter-spacing: 3px; padding: 4px 18px; }
+  #victoire .gagnant { font-family: var(--cond); font-size: 96px; font-weight: 800; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #victoire .face { font-size: 30px; font-weight: 600; color: var(--gris); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #victoire .sc { display: flex; align-items: baseline; gap: 18px; font-family: var(--cond); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+  #victoire .sc .g { font-size: 120px; color: var(--rouge); }
+  #victoire .sc .t, #victoire .sc .l { color: #A9A59F; }
+  #victoire .sc .t { font-size: 64px; }
+  #victoire .sc .l { font-size: 120px; }
+  #victoire .jauge { height: 8px; background: #F1EFEC; }
+  #victoire .jauge div { height: 8px; background: var(--encre); width: 100%; }
+
+  /* --- Interview / balade, en bas à gauche --- */
+  #bandeau { position: absolute; left: 96px; bottom: 96px; display: flex; flex-direction: column; align-items: flex-start; }
+  #bandeau .sur { background: var(--encre); color: #fff; font-family: var(--cond); font-size: 26px; font-weight: 700; letter-spacing: 2px; padding: 8px 18px; text-transform: uppercase; }
+  #bandeau .titre { background: #fff; display: flex; align-items: center; gap: 20px; padding: 22px 44px 24px 36px; font-family: var(--cond); font-size: 68px; font-weight: 800; line-height: 1; letter-spacing: 1px; }
+  #bandeau .titre::before { content: ""; width: 10px; height: 60px; background: var(--rouge); }
+  #bandeau .traits { margin-top: 6px; width: 100%; }
+
+  /* --- Signature, en bas à droite --- */
+  #tag { position: absolute; right: 64px; bottom: 56px; display: flex; align-items: center; gap: 14px; background: rgba(21,21,26,.86); color: #fff; padding: 12px 22px; font-family: var(--cond); font-size: 28px; }
+  #tag b { font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  #tag span { width: 3px; height: 28px; background: var(--rouge); }
+  #tag i { font-style: normal; font-weight: 600; color: #DAD7D2; }
+
+  body.apercu .scene { background: #2E2F33; }
+</style>
+</head>
+<body class="transparent">
+<div class="scene" id="scene">
+  <div id="score" class="apparait cache">
+    <div class="haut"><div class="phase" id="sPhase"></div><div class="chrono" id="sChrono">--:--</div></div>
+    <div class="corps">
+      <div class="eq" id="eqA"><div class="b"></div><div class="n" id="nA"></div><div class="p" id="pA">0</div></div>
+      <div class="eq" id="eqB"><div class="b"></div><div class="n" id="nB"></div><div class="p" id="pB">0</div></div>
+    </div>
+    <div class="traits"></div>
+  </div>
+
+  <div id="victoire" class="apparait cache">
+    <div class="traits inverse"></div>
+    <div class="carte-v">
+      <div class="gauche">
+        <div class="etiq">VICTOIRE</div>
+        <div class="gagnant" id="vNom"></div>
+        <div class="face" id="vFace"></div>
+      </div>
+      <div class="sc"><div class="g" id="vG">0</div><div class="t">–</div><div class="l" id="vL">0</div></div>
+    </div>
+    <div class="jauge"><div id="vJauge"></div></div>
+  </div>
+
+  <div id="bandeau" class="apparait cache">
+    <div class="sur" id="bSur"></div>
+    <div class="titre" id="bTitre"></div>
+    <div class="traits"></div>
+  </div>
+
+  <div id="tag" class="apparait"><b id="tNom"></b><span></span><i id="tTwitch"></i></div>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, param, court, fmtChrono, monterScene, nomEquipe } from "./shared/outils.js";
+import { connecter } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+monterScene($("#scene"));
+if (param("apercu") === "1") document.body.classList.add("apercu");   // fond gris pour tester hors Streamlabs
+const avecTag = param("tag") !== "0";
+$("#tNom").textContent = CFG.nom;
+$("#tTwitch").textContent = CFG.twitch;
+$("#bSur").textContent = `En direct du ${CFG.nom}`;
+
+const api = await connecter();
+let eqs = [], ms = [], rots = [], live = {};
+api.ecouter("", (v) => {
+  const d = v || {};
+  eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
+  live = d.live || {};
+  rendre();
+});
+
+const montrer = (el, oui) => el.classList.toggle("cache", !oui);
+
+function rendre() {
+  const maintenant = api.maintenant();
+  const dureeV = CFG.affichage.victoireSec * 1000;
+  const v = live.victoire;
+  const vActive = !!(v && v.ts && maintenant - v.ts < dureeV);
+  const bandeau = live.bandeau;
+  const m = ms.find((x) => x.id === live.matchId);
+  const scoreVisible = !!m && m.statut === T.STATUT.ENCOURS && !vActive && !bandeau;
+
+  // Score
+  if (m) {
+    const p = live.points?.[m.id] || { A: 0, B: 0 };
+    const a = p.A || 0, b = p.B || 0;
+    $("#sPhase").textContent = T.nomPhase(m, ms);
+    $("#nA").textContent = court(nomEquipe(eqs, m.A));
+    $("#nB").textContent = court(nomEquipe(eqs, m.B));
+    $("#pA").textContent = a;
+    $("#pB").textContent = b;
+    $("#eqA").classList.toggle("mene", a >= b && a > 0);
+    $("#eqB").classList.toggle("mene", b >= a && b > 0);
+    const rot = rots.find((r) => r.num === m.rotation);
+    const reste = T.tempsRestant(rot, maintenant);
+    $("#sChrono").textContent = fmtChrono(reste);
+    $("#sChrono").classList.toggle("fini", reste != null && reste <= 0);
+  }
+  montrer($("#score"), scoreVisible);
+
+  // Victoire
+  if (vActive) {
+    const mv = ms.find((x) => x.id === v.matchId);
+    if (mv) {
+      const gA = v.A > v.B;
+      $("#vNom").textContent = nomEquipe(eqs, gA ? mv.A : mv.B) || "";
+      $("#vFace").textContent = "Face à " + (nomEquipe(eqs, gA ? mv.B : mv.A) || "");
+      $("#vG").textContent = Math.max(v.A, v.B);
+      $("#vL").textContent = Math.min(v.A, v.B);
+    }
+    $("#vJauge").style.width = Math.max(0, 100 - ((maintenant - v.ts) / dureeV) * 100) + "%";
+  }
+  montrer($("#victoire"), vActive);
+
+  // Interview / balade
+  if (bandeau) $("#bTitre").textContent = bandeau === "balade" ? "BALADE DANS LE TOURNOI" : "INTERVIEW";
+  montrer($("#bandeau"), !!bandeau && !vActive);
+
+  montrer($("#tag"), avecTag && !vActive);
+}
+setInterval(rendre, 250);
+</script>
+</body>
+</html>
