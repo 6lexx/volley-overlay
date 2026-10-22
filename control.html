@@ -29,8 +29,8 @@
     --radius: 16px;
     --gap:    12px;
 
-    --score-size: clamp(72px, 22vw, 150px);
-    --plus-h:     clamp(110px, 24vh, 220px);
+    --score-size: clamp(60px, 17vw, 120px);
+    --plus-h:     clamp(92px, 19vh, 190px);
   }
 
   * { box-sizing: border-box; }
@@ -54,20 +54,20 @@
     min-height: 100dvh;
     display: grid;
     grid-template-rows: auto auto 1fr auto auto auto;
-    gap: var(--gap);
+    gap: 10px;
     padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);
   }
 
   /* ---------- En-tête ---------- */
   .header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .badge {
-    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    width: 38px; height: 38px; border-radius: 50%; flex: none;
     background: #fff; display: grid; place-items: center; overflow: hidden;
     box-shadow: 0 0 0 3px var(--red);
   }
   .badge img { width: 92%; height: 92%; object-fit: contain; }
   .badge:empty { display: none; }
-  .set-label { font: 900 26px/1 var(--num); letter-spacing: .02em; }
+  .set-label { font: 900 24px/1 var(--num); letter-spacing: .02em; }
   .history { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   .chip {
     background: var(--surface-2); color: var(--muted);
@@ -85,11 +85,11 @@
   .team {
     background: var(--surface); border-radius: var(--radius);
     border-top: 5px solid var(--c);
-    display: flex; flex-direction: column; gap: 10px; padding: 10px;
+    display: flex; flex-direction: column; gap: 8px; padding: 8px;
   }
   .tname {
     display: flex; align-items: center; justify-content: center; gap: 8px;
-    font: 900 30px/1 var(--num); letter-spacing: .04em;
+    font: 900 26px/1 var(--num); letter-spacing: .04em;
   }
   .serve { font-size: 22px; visibility: hidden; }
   .team.serving .serve { visibility: visible; }
@@ -113,10 +113,10 @@
   /* ---------- Aces : sur l'écran principal ---------- */
   .aces { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
   .ace-btn {
-    min-height: 64px; border-radius: 14px;
+    min-height: 54px; border-radius: 14px;
     background: var(--surface); color: var(--text);
     border: 3px solid var(--c);
-    font: 900 26px/1 var(--num); letter-spacing: .04em;
+    font: 900 24px/1 var(--num); letter-spacing: .04em;
     display: flex; align-items: center; justify-content: center; gap: 10px;
   }
   .ace-btn b { background: var(--c); color: var(--ct); min-width: 36px; padding: 5px 8px; border-radius: 8px; font-weight: 900; }
@@ -130,7 +130,33 @@
   }
   .chatbar.fresh { color: var(--text); }
   .chatbar .ic { flex: none; font-size: 15px; }
-  .chatbar .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chatbar .txt { flex: 1; min-width: 0; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow-wrap: anywhere; line-height: 1.2; }
+  .chatbar { align-items: flex-start; }
+
+  /* ---------- Moniteur : chat + overlay visible + aperçu du rendu ---------- */
+  .monitor { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: stretch; }
+  .mon-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .mon-left .chatbar { flex: 1; }
+  .mini-tools { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: auto; }
+  .mini-tools .tool { min-height: 44px; font-size: 16px; padding: 0 8px; line-height: 1.1; }
+  .preview {
+    position: relative; overflow: hidden; border-radius: 10px;
+    width: min(50vw, 260px); aspect-ratio: 16 / 9; align-self: start;
+    border: 2px solid var(--line); cursor: zoom-in;
+    background: repeating-conic-gradient(#3a3436 0% 25%, #2b2527 0% 50%) 0 0 / 14px 14px;   /* damier = transparent */
+  }
+  .preview iframe {
+    position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0;
+    transform-origin: 0 0; pointer-events: none;
+  }
+  .preview .tag {
+    position: absolute; left: 4px; top: 4px; z-index: 1;
+    background: rgba(0,0,0,.7); color: #fff; font-size: 12px; font-weight: 700; padding: 1px 6px; border-radius: 6px;
+  }
+  .preview[hidden] { display: none; }
+  .monitor.big { grid-template-columns: 1fr; }
+  .monitor.big .preview { width: 100%; grid-row: 1; cursor: zoom-out; }
+  .tool.pv-off { color: var(--muted); }
   .chatbar .who { font-weight: 700; }
   .chatbar .nb { flex: none; background: var(--red); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: 14px; }
   .chatbar .nb:empty { display: none; }
@@ -145,20 +171,20 @@
 
   /* ---------- Annuler : gros, isolé ---------- */
   .undo {
-    margin-top: 14px; min-height: 76px; border-radius: var(--radius);
+    margin-top: 4px; min-height: 62px; border-radius: var(--radius);
     background: var(--bg); color: var(--text);
     border: 3px solid var(--text);
-    font: 900 28px/1 var(--num); letter-spacing: .04em;
+    font: 900 26px/1 var(--num); letter-spacing: .04em;
   }
 
   /* ---------- Outils ---------- */
   .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
   .tool {
-    min-height: 56px; border-radius: 14px;
+    min-height: 50px; border-radius: 14px;
     background: var(--surface); border: 2px solid var(--line); font-size: 18px;
   }
   .tool.events {
-    grid-column: 1 / -1; min-height: 62px;
+    grid-column: 1 / -1; min-height: 56px;
     background: var(--red); border-color: var(--red); color: #fff; font-size: 20px;
   }
   .tool.off { border-color: var(--warn); color: var(--warn); }
@@ -321,9 +347,20 @@
     <div class="offline-msg" id="offlineMsg">Hors ligne : les actions partiront dès le retour du réseau.</div>
   </header>
 
-  <button class="chatbar" id="chatBar" hidden aria-label="Chat du stream">
-    <span class="ic">💬</span><span class="txt" id="chatLast">Chat du stream · en attente de messages</span><span class="nb" id="chatNb"></span>
-  </button>
+  <section class="monitor" id="monitor">
+    <div class="mon-left">
+      <button class="chatbar" id="chatBar" hidden aria-label="Chat du stream">
+        <span class="ic">💬</span><span class="txt" id="chatLast">Chat du stream · en attente de messages</span><span class="nb" id="chatNb"></span>
+      </button>
+      <div class="mini-tools">
+        <button class="tool" id="visBtn">Overlay visible</button>
+        <button class="tool" id="pvBtn" aria-label="Aperçu du rendu">📺</button>
+      </div>
+    </div>
+    <div class="preview" id="preview" hidden title="Aperçu du stream (appuie pour agrandir)">
+      <span class="tag">Aperçu</span>
+    </div>
+  </section>
 
   <main class="teams">
     <div class="banner" id="tbBanner">
@@ -360,7 +397,6 @@
   <nav class="tools">
     <button class="tool events" id="eventsBtn">Événements à l'écran</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
-    <button class="tool" id="visBtn">Overlay visible</button>
     <button class="tool danger" id="newBtn">Nouveau match</button>
   </nav>
 </div>
@@ -906,7 +942,7 @@ function render() {
   }
 
   const vis = $("visBtn");
-  vis.textContent = s.visible ? "Overlay visible" : "Overlay masqué";
+  vis.textContent = s.visible ? "👁 Visible" : "🚫 Masqué";
   vis.classList.toggle("off", !s.visible);
 
   if ($("sidebar").classList.contains("show")) renderEvents();
@@ -1366,6 +1402,40 @@ $("serveBtn").onclick   = () => act("toggleServe");
 $("visBtn").onclick     = () => act("toggleVisible");
 $("tbSwitch").onclick   = () => act("tbSwitch");
 $("tbDismiss").onclick  = () => act("tbDismiss");
+
+// ===========================================================
+//  Aperçu du rendu : l'overlay réel (display.html) en miniature
+//  Activable / désactivable ; le choix est retenu sur ce téléphone.
+// ===========================================================
+const PV_KEY = "volley-preview";
+let pvOn = true;
+try { pvOn = localStorage.getItem(PV_KEY) !== "0"; } catch {}
+let pvFrame = null;
+const pvFit = () => { if (pvFrame) pvFrame.style.transform = `scale(${$("preview").clientWidth / 1920})`; };
+function pvApply() {
+  const box = $("preview");
+  box.hidden = !pvOn;
+  $("pvBtn").textContent = pvOn ? "📺 ✓" : "📺 Aperçu";
+  $("pvBtn").classList.toggle("pv-off", !pvOn);
+  if (pvOn && !pvFrame) {                       // chargé seulement quand l'aperçu est actif (batterie, data)
+    pvFrame = document.createElement("iframe");
+    pvFrame.title = "Aperçu de l'overlay";
+    pvFrame.setAttribute("tabindex", "-1");
+    pvFrame.src = `display.html?m=${encodeURIComponent(M || "")}&v=${Date.now()}`;
+    box.appendChild(pvFrame);
+    requestAnimationFrame(pvFit);
+  } else if (!pvOn && pvFrame) {
+    pvFrame.remove(); pvFrame = null; $("monitor").classList.remove("big");
+  }
+}
+new ResizeObserver(pvFit).observe($("preview"));
+$("pvBtn").onclick = () => {
+  pvOn = !pvOn;
+  try { localStorage.setItem(PV_KEY, pvOn ? "1" : "0"); } catch {}
+  pvApply();
+};
+$("preview").onclick = () => { $("monitor").classList.toggle("big"); requestAnimationFrame(pvFit); };
+pvApply();
 
 // ===========================================================
 //  Chat du stream (Twitch) : lecture seule, connexion anonyme
