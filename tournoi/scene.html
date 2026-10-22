@@ -21,7 +21,7 @@
 <script src="config.js"></script>
 <script src="shared/qrcode.js"></script>
 <script type="module">
-import { CFG, $, param, monterScene } from "./shared/outils.js";
+import { CFG, $, param, monterScene, surSignalRecharge } from "./shared/outils.js";
 import { connecter } from "./shared/firebase.js";
 import { htmlEcran } from "./shared/ecrans.js";
 import * as T from "./shared/moteur.js";
@@ -39,6 +39,7 @@ const api = await connecter();
 let ctx = { eqs: [], ms: [], rots: [], maintenant: () => api.maintenant() }, dernier = "";
 api.ecouter("", (v) => {
   const d = v || {};
+  surSignalRecharge(d.live?.recharger);
   ctx = { ...ctx, eqs: T.listeEquipes(d), ms: T.listeMatchs(d), rots: T.listeRotations(d) };
   rendre();
 });
