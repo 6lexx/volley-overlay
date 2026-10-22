@@ -53,7 +53,7 @@
   .app {
     min-height: 100dvh;
     display: grid;
-    grid-template-rows: auto 1fr auto auto;
+    grid-template-rows: auto auto 1fr auto auto auto;
     gap: var(--gap);
     padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 12px);
   }
@@ -109,6 +109,39 @@
     font: 900 60px/1 var(--num);
     box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .28);
   }
+
+  /* ---------- Aces : sur l'écran principal ---------- */
+  .aces { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+  .ace-btn {
+    min-height: 64px; border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    border: 3px solid var(--c);
+    font: 900 26px/1 var(--num); letter-spacing: .04em;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .ace-btn b { background: var(--c); color: var(--ct); min-width: 36px; padding: 5px 8px; border-radius: 8px; font-weight: 900; }
+
+  /* ---------- Chat du stream : une ligne discrète, le détail dans un panneau ---------- */
+  .chatbar {
+    display: flex; align-items: center; gap: 8px; min-height: 40px;
+    background: var(--surface); border-radius: 10px; padding: 6px 10px;
+    font-size: 17px; color: var(--muted); text-align: left; overflow: hidden;
+    transition: color .4s;
+  }
+  .chatbar.fresh { color: var(--text); }
+  .chatbar .ic { flex: none; font-size: 15px; }
+  .chatbar .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chatbar .who { font-weight: 700; }
+  .chatbar .nb { flex: none; background: var(--red); color: #fff; border-radius: 99px; padding: 1px 8px; font-size: 14px; }
+  .chatbar .nb:empty { display: none; }
+  .chatbar[hidden] { display: none; }
+  .chat-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; -webkit-user-select: text; user-select: text; }
+  .chat-msg { background: var(--bg); border-radius: 10px; padding: 8px 10px; font-size: 19px; line-height: 1.3; overflow-wrap: anywhere; }
+  .chat-msg .who { font-weight: 700; margin-right: 6px; }
+  .chat-msg .at { float: right; color: var(--muted); font-size: 14px; margin-left: 8px; }
+  .chat-msg img { height: 1.4em; vertical-align: middle; }
+  .chat-state { color: var(--muted); font-size: 15px; margin: 0 0 6px; }
+  .ev-btns .nav-btn { background: var(--surface-2); color: var(--text); text-align: left; padding: 0 14px; }
 
   /* ---------- Annuler : gros, isolé ---------- */
   .undo {
@@ -288,6 +321,10 @@
     <div class="offline-msg" id="offlineMsg">Hors ligne : les actions partiront dès le retour du réseau.</div>
   </header>
 
+  <button class="chatbar" id="chatBar" hidden aria-label="Chat du stream">
+    <span class="ic">💬</span><span class="txt" id="chatLast">Chat du stream · en attente de messages</span><span class="nb" id="chatNb"></span>
+  </button>
+
   <main class="teams">
     <div class="banner" id="tbBanner">
       <span>Tie-break : changement de côté</span>
@@ -313,13 +350,15 @@
     </section>
   </main>
 
+  <div class="aces" id="aceRow">
+    <button class="ace-btn" data-pos="0">ACE <span class="aname"></span> <b>0</b></button>
+    <button class="ace-btn" data-pos="1">ACE <span class="aname"></span> <b>0</b></button>
+  </div>
+
   <button class="undo" id="undoBtn">↶ Annuler</button>
 
   <nav class="tools">
     <button class="tool events" id="eventsBtn">Événements à l'écran</button>
-    <button class="tool roster" id="rosterBtn">Joueurs présents</button>
-    <button class="tool results" id="resultsBtn">Résultats & replays</button>
-    <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
     <button class="tool" id="visBtn">Overlay visible</button>
     <button class="tool danger" id="newBtn">Nouveau match</button>
@@ -335,6 +374,17 @@
   </div>
   <div class="side-list" id="sideList"></div>
   <p class="side-note">Chaque bouton s'affiche tout de suite sur le stream.</p>
+</aside>
+
+<!-- Panneau latéral : chat du stream (lecture seule) -->
+<aside class="sidebar" id="chatSide" aria-label="Chat du stream">
+  <div class="side-head">
+    <h2>Chat du stream</h2>
+    <button class="close" id="closeChat" aria-label="Fermer">✕</button>
+  </div>
+  <p class="chat-state" id="chatState"></p>
+  <div class="chat-list" id="chatList"></div>
+  <p class="side-note">Lecture seule. Pour répondre, passe par Twitch.</p>
 </aside>
 
 <!-- Panneau latéral : joueurs présents -->
@@ -484,7 +534,7 @@ const EVENT_LIST = [
     { type: "teamIntro", label: "Présentation des équipes" }
   ]},
   { group: "Pendant le jeu", items: [
-    { type: "ace",     label: "Ace",        team: true },
+    { type: "ace",     label: "Aces" },
     { type: "timeout", label: "Temps mort", team: true }
   ]},
   { group: "Entre les sets", items: [
@@ -492,8 +542,13 @@ const EVENT_LIST = [
   ]},
   { group: "Fin du match", items: [
     { type: "matchWin", label: "Rejouer la victoire", team: true }
+  ]},
+  { group: "Équipe", items: [
+    { type: "nav", label: "Joueurs présents", open: "roster" },
+    { type: "nav", label: "Résultats & replays", open: "results" }
   ]}
 ];
+let rosterLabel = "Joueurs présents", resultsLabel = "Résultats & replays";   // libellés avec compteur
 
 const $ = (id) => document.getElementById(id);
 
@@ -822,6 +877,15 @@ function render() {
     [...dia.children].forEach((d, i) => d.classList.toggle("on", i < s.sets[t]));
   });
 
+  document.querySelectorAll(".ace-btn").forEach((b) => {
+    const t = order()[Number(b.dataset.pos)];
+    b.dataset.team = t;
+    b.style.setProperty("--c", teamColor(t));
+    b.style.setProperty("--ct", teamText(t));
+    b.querySelector(".aname").textContent = teams[t].short;
+    b.querySelector("b").textContent = s.aces[t];
+  });
+
   const showTb = isTieBreak(s) && s.phase === "playing" && R.tieBreakSwitchAt > 0
     && !s.tbSwitched && Math.max(s.score.A, s.score.B) >= R.tieBreakSwitchAt;
   $("tbBanner").classList.toggle("show", showTb);
@@ -880,6 +944,15 @@ function renderEvents() {
           b.onclick = () => sendEvent(item, t);
           btns.appendChild(b);
         });
+      } else if (item.type === "nav") {
+        btns.classList.add("single");
+        const b = document.createElement("button");
+        b.className = "nav-btn";
+        b.textContent = (item.open === "roster" ? rosterLabel : resultsLabel) + "  ›";
+        b.onclick = () => { closeSide(); item.open === "roster" ? openRoster() : openRes(); };
+        btns.appendChild(b);
+      } else if (item.type === "ace") {
+        // les boutons ACE sont sur l'écran principal ; ici, seulement la remise à zéro
       } else {
         if (item.type === "warmup" || item.type === "teamIntro") {
           const two = (label, fn, dark) => {
@@ -911,7 +984,9 @@ function renderEvents() {
         b.onclick = () => sendEvent(item, null);
         btns.appendChild(b);
       }
-      box.append(name, btns);
+      if (item.type === "nav") box.append(btns);
+      else if (item.type === "ace") box.append(name);
+      else box.append(name, btns);
       if (item.type === "ace" && state) {          // remise à zéro, en deux appuis
         const r = document.createElement("button");
         r.className = "ev-reset";
@@ -977,7 +1052,7 @@ function openSide()  { renderEvents(); $("sidebar").classList.add("show"); $("sc
 function closeSide() { $("sidebar").classList.remove("show"); $("scrim").classList.remove("show"); }
 $("eventsBtn").onclick = openSide;
 $("closeSide").onclick = closeSide;
-$("scrim").onclick = () => { closeSide(); closeRoster(); closeRes(); };
+$("scrim").onclick = () => { closeSide(); closeRoster(); closeRes(); closeChat(); };
 
 // ===========================================================
 //  Joueurs présents (échauffement)
@@ -991,7 +1066,7 @@ const isIn = (p) => !present || !!present[keyOf(p)];
 function renderRoster() {
   const n = ROSTER.filter(isIn).length;
   $("plCount").textContent = `${n} / ${ROSTER.length}`;
-  $("rosterBtn").textContent = `Joueurs présents · ${n}/${ROSTER.length}`;
+  rosterLabel = `Joueurs présents · ${n}/${ROSTER.length}`;
   const list = $("plList");
   list.replaceChildren(...ROSTER.map((p) => {
     const row = document.createElement("label");
@@ -1024,7 +1099,6 @@ function setAll(on) {
 }
 function openRoster()  { renderRoster(); $("rosterSide").classList.add("show"); $("scrim").classList.add("show"); }
 function closeRoster() { $("rosterSide").classList.remove("show"); $("scrim").classList.remove("show"); }
-$("rosterBtn").onclick = openRoster;
 $("closeRoster").onclick = closeRoster;
 $("plAll").onclick = () => setAll(true);
 $("plNone").onclick = () => setAll(false);
@@ -1165,7 +1239,7 @@ $("pastGo").onclick = () => guarded("past", async () => {
 function renderResults() {
   const rows = Object.entries(archive || {}).filter(([, r]) => r && r.date && r.sets)
     .sort((a, b) => b[1].date.localeCompare(a[1].date) || (b[1].createdAt || 0) - (a[1].createdAt || 0));
-  $("resultsBtn").textContent = `Résultats & replays · ${rows.length}`;
+  resultsLabel = `Résultats & replays · ${rows.length}`;
   const list = $("resList");
   if (!rows.length) { list.replaceChildren(mk("p", "side-note", "Aucun match enregistré. En fin de match, appuie sur « Enregistrer le résultat », ou ajoute un match passé.")); return; }
   // Ne pas reconstruire la liste pendant qu'on tape un lien
@@ -1217,7 +1291,6 @@ function resRow(key, r) {
 }
 function openRes()  { renderResults(); $("resSide").classList.add("show"); $("scrim").classList.add("show"); }
 function closeRes() { $("resSide").classList.remove("show"); $("scrim").classList.remove("show"); }
-$("resultsBtn").onclick = openRes;
 $("closeRes").onclick = closeRes;
 renderResults();
 
@@ -1277,14 +1350,150 @@ document.querySelectorAll(".team").forEach((el) => {
   el.querySelector(".plus").onclick = () => guarded("p" + el.dataset.team, () => act("point", el.dataset.team));
 });
 
+document.querySelectorAll(".ace-btn").forEach((b) => {
+  b.onclick = () => guarded("ace" + b.dataset.team, async () => {
+    const team = b.dataset.team;
+    await act("ace", team);
+    const t = state?.meta.teams[team];
+    if (t) toast(`Ace ${t.short} · ${state.aces[team]} dans le match`);
+  });
+});
+
 $("undoBtn").onclick    = () => guarded("undo", undo);
 $("confirmSet").onclick = () => guarded("set", () => act("confirmSet"));
 $("cancelSet").onclick  = () => guarded("undo", undo);
-$("swapBtn").onclick    = () => act("swap");
 $("serveBtn").onclick   = () => act("toggleServe");
 $("visBtn").onclick     = () => act("toggleVisible");
 $("tbSwitch").onclick   = () => act("tbSwitch");
 $("tbDismiss").onclick  = () => act("tbDismiss");
+
+// ===========================================================
+//  Chat du stream (Twitch) : lecture seule, connexion anonyme
+//  ?chat=0 pour couper, ?chat=autrechaine pour changer de chaîne
+// ===========================================================
+const CHAT_PARAM = new URLSearchParams(location.search).get("chat");
+const CHAT_CHANNEL = (CHAT_PARAM && CHAT_PARAM !== "1" ? CHAT_PARAM : (CFG.twitch || "silex62")).toLowerCase().replace(/^#/, "");
+const CHAT_ON = CHAT_PARAM !== "0" && /^[a-z0-9_]{3,25}$/.test(CHAT_CHANNEL);
+const CHAT_MAX = 60;
+const CHAT_IGNORE = new Set(["streamlabs", "streamelements", "nightbot", "moobot", "fossabot", "soundalerts", "wizebot"]);
+const chatMsgs = [];
+let chatUnread = 0, chatFreshTimer = 0, chatWs = null, chatRetry = 0;
+
+function chatState(txt) { $("chatState").textContent = txt; }
+
+function chatOpen()  { chatUnread = 0; $("chatNb").textContent = ""; renderChat(); $("chatSide").classList.add("show"); $("scrim").classList.add("show"); }
+function closeChat() { $("chatSide").classList.remove("show"); $("scrim").classList.remove("show"); }
+
+// Texte + emotes Twitch (images officielles), sans jamais injecter de HTML
+function chatBody(m) {
+  const frag = document.createDocumentFragment();
+  const chars = Array.from(m.text);
+  let i = 0;
+  for (const e of m.emotes) {
+    if (e.start > i) frag.append(chars.slice(i, e.start).join(""));
+    const img = document.createElement("img");
+    img.src = `https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(e.id)}/default/dark/1.0`;
+    img.alt = chars.slice(e.start, e.end + 1).join("");
+    frag.append(img);
+    i = e.end + 1;
+  }
+  if (i < chars.length) frag.append(chars.slice(i).join(""));
+  return frag;
+}
+
+function renderChat() {
+  const list = $("chatList");
+  if (!chatMsgs.length) { list.replaceChildren(mk("p", "side-note", "Aucun message pour l'instant.")); return; }
+  list.replaceChildren(...chatMsgs.map((m) => {
+    const d = document.createElement("div");
+    d.className = "chat-msg";
+    const at = document.createElement("span"); at.className = "at";
+    at.textContent = new Date(m.ts).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const who = document.createElement("span"); who.className = "who";
+    who.textContent = m.name; who.style.color = m.color;
+    d.append(at, who, chatBody(m));
+    return d;
+  }));
+  list.scrollTop = list.scrollHeight;
+}
+
+function chatPush(m) {
+  chatMsgs.push(m);
+  if (chatMsgs.length > CHAT_MAX) chatMsgs.shift();
+  const last = $("chatLast");
+  const who = document.createElement("span"); who.className = "who";
+  who.textContent = m.name + " : "; who.style.color = m.color;
+  last.replaceChildren(who, m.text);
+  const bar = $("chatBar");
+  bar.classList.add("fresh");
+  clearTimeout(chatFreshTimer);
+  chatFreshTimer = setTimeout(() => bar.classList.remove("fresh"), 20000);   // repasse en gris : discret
+  if ($("chatSide").classList.contains("show")) renderChat();
+  else { chatUnread++; $("chatNb").textContent = chatUnread > 99 ? "99+" : chatUnread; }
+}
+
+// Couleur lisible sur fond sombre
+function chatColor(c) {
+  if (!/^#[0-9a-f]{6}$/i.test(c || "")) return "#c9b8ff";
+  const n = parseInt(c.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) < 90 ? "#c9b8ff" : c;
+}
+
+function chatParse(line) {
+  let tags = {}, rest = line;
+  if (rest.startsWith("@")) {
+    const sp = rest.indexOf(" ");
+    rest.slice(1, sp).split(";").forEach((kv) => { const j = kv.indexOf("="); tags[kv.slice(0, j)] = kv.slice(j + 1); });
+    rest = rest.slice(sp + 1);
+  }
+  const m = rest.match(/^:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.*)$/);
+  if (!m) return null;
+  const login = m[1].toLowerCase();
+  let text = m[2];
+  if (text.startsWith("\u0001ACTION ")) text = text.slice(8, -1);                // /me
+  if (CHAT_IGNORE.has(login) || text.startsWith("!")) return null;          // bots et commandes
+  const emotes = [];
+  (tags.emotes || "").split("/").filter(Boolean).forEach((part) => {
+    const [id, pos] = part.split(":");
+    (pos || "").split(",").forEach((r) => { const [a, b] = r.split("-").map(Number); if (b >= a) emotes.push({ id, start: a, end: b }); });
+  });
+  emotes.sort((a, b) => a.start - b.start);
+  const name = (tags["display-name"] || "").replace(/\\s/g, " ") || login;
+  return { name, color: chatColor(tags.color), text, emotes, ts: Number(tags["tmi-sent-ts"]) || Date.now() };
+}
+
+function chatConnect() {
+  chatState(`Connexion à twitch.tv/${CHAT_CHANNEL}…`);
+  let ws;
+  try { ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443"); } catch { return chatLater(); }
+  chatWs = ws;
+  ws.onopen = () => {
+    ws.send("CAP REQ :twitch.tv/tags");
+    ws.send("PASS SCHMOOPIIE");
+    ws.send("NICK justinfan" + Math.floor(10000 + Math.random() * 80000));
+    ws.send("JOIN #" + CHAT_CHANNEL);
+  };
+  ws.onmessage = (ev) => {
+    String(ev.data).split("\r\n").forEach((line) => {
+      if (!line) return;
+      if (line.startsWith("PING")) { ws.send("PONG" + line.slice(4)); return; }
+      if (/ 366 /.test(line)) { chatRetry = 0; chatState(`Connecté à twitch.tv/${CHAT_CHANNEL}`); return; }
+      if (/ RECONNECT/.test(line)) { ws.close(); return; }
+      const m = chatParse(line);
+      if (m) chatPush(m);
+    });
+  };
+  ws.onclose = () => { if (chatWs === ws) chatLater(); };
+}
+function chatLater() {
+  const wait = Math.min(30, 2 ** chatRetry++) * 1000;
+  chatState(`Chat déconnecté, nouvelle tentative dans ${wait / 1000} s…`);
+  setTimeout(chatConnect, wait);
+}
+
+$("chatBar").onclick = chatOpen;
+$("closeChat").onclick = closeChat;
+if (CHAT_ON) { $("chatBar").hidden = false; chatConnect(); }
 
 // ===========================================================
 //  Divers
