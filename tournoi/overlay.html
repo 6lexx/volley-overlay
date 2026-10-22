@@ -98,7 +98,7 @@
 <script src="config.js"></script>
 <script src="shared/qrcode.js"></script>
 <script type="module">
-import { CFG, $, param, court, fmtChrono, monterScene, nomEquipe } from "./shared/outils.js";
+import { CFG, $, param, court, fmtChrono, monterScene, nomEquipe, surSignalRecharge } from "./shared/outils.js";
 import { connecter } from "./shared/firebase.js";
 import { htmlEcran, ECRANS } from "./shared/ecrans.js";
 import * as T from "./shared/moteur.js";
@@ -119,6 +119,7 @@ api.ecouter("", (v) => {
   const d = v || {};
   eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
   live = d.live || {};
+  surSignalRecharge(live.recharger);
   rendre();
 });
 
