@@ -73,3 +73,25 @@ export function doubleAppui(bouton, texteConfirm, action) {
 export function nomEquipe(equipes, id) {
   return equipes.find((e) => e.id === id)?.nom || null;
 }
+
+// ---------- Rechargement à distance (bouton du pilotage) ----------
+// Fichiers rafraîchis dans le cache du navigateur avant de recharger,
+// pour être sûr d'avoir la dernière version poussée sur GitHub.
+const FICHIERS = ["config.js", "shared/outils.js", "shared/firebase.js", "shared/moteur.js",
+  "shared/ecrans.js", "shared/style.css", "shared/ecrans.css", "shared/qrcode.js"];
+
+export async function rechargerFrais() {
+  await Promise.allSettled([location.href, ...FICHIERS].map((f) => fetch(f, { cache: "reload" })));
+  location.reload();
+}
+
+// À appeler à chaque lecture de live/recharger : la première valeur sert de
+// référence, toute nouvelle valeur recharge la page.
+let signalVu;
+export function surSignalRecharge(valeur) {
+  const v = valeur ?? null;
+  if (signalVu === undefined) { signalVu = v; return; }
+  if (v === signalVu) return;
+  signalVu = v;
+  rechargerFrais();
+}
