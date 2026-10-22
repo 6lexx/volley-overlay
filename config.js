@@ -61,7 +61,7 @@ window.SCORE_CONFIG = {
     { number: 9,  name: "Aurore", position: "Passeur",              punchline: "J'suis nulle mais toujours meilleure que toi", photo: "assets/joueurs/aurore.png" },
     { number: 2,  name: "Matthys", position: "Central",                  punchline: "Je met mes balles où je veux, et c'est souvent dans la gueule", photo: "assets/joueurs/matthys.png" },
     { number: 17,  name: "Louane", position: "Réceptionneur-attaquant",      punchline: "Les voy a destrozar.", photo: "assets/joueurs/louane.png" },
-    { number: 11,  name: "Maëva", position: "Pointu",                       punchline: "RODRIGUEEEEZZZ", photo: "assets/joueurs/maeva.png" },
+    { number: 11,  name: "Maëva", position: "Réceptionneur-attaquant",                       punchline: "RODRIGUEEEEZZZ", photo: "assets/joueurs/maeva.png" },
     { number: 19,  name: "Baptiste", position: "Réceptionneur-attaquant", punchline: "Je suis super photogénique", photo: "assets/joueurs/baptiste.png" },
     { number: 7, name: "Quentin", position: "Central",                   punchline: "Je fais aussi du basket", photo: "assets/joueurs/quentin.png" },
     { coach: true,  name: "Sovann", position: "Entraîneur",                   punchline: "J'entraîne tout ces fous", photo: "assets/joueurs/sovann.png" },
