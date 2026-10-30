@@ -7,18 +7,43 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 
 | Fichier | Rôle |
 |---|---|
-| `index.html` | Site public : matchs, poules, arbre (QR code) |
+| `index.html` | Site public : matchs, poules, arbre, classement final (QR code) |
 | `orga.html` | Saisie des organisateurs : équipes, rotations, scores |
-| `pilotage.html` | Ton écran : match filmé, points, victoire, bandeau |
-| `overlay.html` | Source navigateur par-dessus la caméra |
+| `pilotage.html` | Ton écran : choix de l'écran affiché, match filmé, points, victoire, bandeau |
+| `overlay.html` | **La seule source à mettre dans Streamlabs**, par-dessus la caméra |
 | `scene.html` | Scènes sur la caméra assombrie : `?vue=poules`, `arbre`, `pause`, `intermatch`, `neutre` |
-| `config.js` | Réglages du tournoi (nom, format, durées, terrains) |
-| `shared/moteur.js` | La logique : planning, classements, arbre |
+| `config.js` | Réglages du tournoi et **les 18 équipes** avec leur poule de brassage |
+| `shared/moteur.js` | La logique : brassage, phase 2, arbre, classement 1 à 18 |
 | `shared/firebase.js` | Connexion Firebase et mode démo |
 | `shared/outils.js` | Petites fonctions communes |
 | `shared/style.css` | La DA du tournoi |
+| `shared/ecrans.js` | Le contenu des écrans : poules, arbre, classement, pause, inter-match, plateau |
+| `shared/ecrans.css` | Leur mise en page |
 | `shared/qrcode.js` | Bibliothèque QR code (MIT, Kazuhiko Arase) |
 | `regles-firebase-a-ajouter.json` | Le bloc à ajouter aux règles Firebase |
+
+---
+
+## 0. Le déroulé du tournoi
+
+1. **Brassage** : 3 poules de 6 (A, B, C), positions AA à CF. 15 matchs par poule
+   dans l'ordre de la feuille (AA-AB, AC-AD, AE-AF, AA-AC…). Rotation 1 = matchs
+   1-2-3 de la poule A sur les 3 terrains, rotation 2 = poule B, rotation 3 = poule C,
+   rotation 4 = matchs 4-5-6 de la A… 15 rotations de 10 minutes.
+2. **Phase 2** : poule **Or** (1ers et 2es), **Argent** (3es et 4es), **Bronze**
+   (5es et 6es). Les trois 1ers prennent les positions A à C (classés entre eux),
+   les trois 2es D à F. Même modèle : 15 matchs, 15 rotations.
+3. **Phase finale**, en points avec 2 points d'écart :
+   - têtes de série 1 à 6 = classement de la poule Or, 7 et 8 = 1er et 2e Argent ;
+   - quarts 1-8, 4-5, 2-7, 3-6 ; demies ; places 1-2 (finale **25 pts**), 3-4, 5-6, 7-8 ;
+   - places 9-10 et 11-12 (Argent 3e-4e, 5e-6e), 13-14, 15-16, 17-18 (Bronze) ;
+   - tout en **21 pts** sauf la finale ; 7 rotations selon la grille des 3 terrains.
+
+**Égalité au coup de sifflet en poule** : on joue un dernier point. L'orga tape
+le score final, ou tape l'égalité et choisit qui a gagné le dernier point.
+
+**Classement d'une poule** : 1. victoires, 2. confrontation directe entre les
+équipes à égalité, 3. différence de points, 4. points marqués.
 
 ---
 
@@ -27,26 +52,28 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 Le mode démo garde tout dans ton navigateur, rien ne part sur internet.
 Les onglets d'un **même navigateur** se synchronisent entre eux.
 
-1. Pousse le dossier `tournoi/` sur GitHub (ou lance un petit serveur local,
-   voir plus bas : les pages ne marchent pas en double-cliquant sur le fichier).
-2. Ouvre ces 4 onglets dans le même navigateur :
+1. Ouvre ces onglets dans le même navigateur :
    - `…/tournoi/orga.html?demo=1`
    - `…/tournoi/pilotage.html?demo=1`
-   - `…/tournoi/overlay.html?demo=1&apercu=1` (`apercu=1` met un fond gris)
+   - `…/tournoi/overlay.html?demo=1&apercu=1` (`apercu=1` met un faux fond de gymnase)
    - `…/tournoi/index.html?demo=1`
-3. Dans **orga** : « Remplir avec des équipes de démo » (2 poules de 6), puis « Générer le planning »,
-   puis « Lancer la rotation 1 ».
-4. Dans **pilotage** : touche un match, ajoute des points. L'overlay et le site
-   suivent. « Terminer le match » (deux appuis) : la victoire s'affiche 20 s, et le
-   score apparaît dans orga avec « Rempli par le stream ».
-5. Dans **orga** : tape les scores des autres matchs, « Valider la rotation »,
-   lance la suivante… À la fin des poules : « Générer la phase finale ».
-6. Ouvre aussi `scene.html?demo=1&apercu=1&vue=poules`, puis `vue=arbre`, `vue=pause`
-   et `vue=intermatch` (`apercu=1` met un faux fond de gymnase derrière le voile).
+2. Dans **orga** : « Charger les 18 équipes ». Touche deux équipes pour les
+   échanger si besoin, puis « Générer le brassage ».
+3. « Lancer la rotation », puis **« Simulation : scores au hasard »** et
+   « Valider la rotation ». Recommence pour aller vite.
+4. À la fin du brassage : orga affiche le classement et la composition Or /
+   Argent / Bronze › « Générer la phase 2 ». Idem à la fin de la phase 2 avec
+   les têtes de série › « Générer la phase finale ».
+5. Dans **pilotage**, change d'écran (Match, Poules, Arbre, Classement…) et
+   regarde l'overlay suivre.
 
-Autre nombre d'équipes en démo : `orga.html?demo=1&equipes=16&parPoule=4`.
+Pour refaire une simulation : orga › Zone sensible › **« Recommencer (garder les
+équipes) »**. Pas besoin de recharger les équipes.
 
-Pour repartir de zéro en démo : orga › Zone sensible › Tout effacer.
+**Simulation en vrai Firebase** : ajoute `&t=test` à tous les liens (orga,
+pilotage, overlay, site) et crée les clés `tournoi_test_orga` et
+`tournoi_test_stream` dans `secrets`. Le bouton « scores au hasard » y apparaît
+aussi. Le vrai tournoi (`rmv-indoor-2026`) n'est pas touché.
 
 **Serveur local** (si tu ne veux pas pousser sur GitHub) : dans le dossier du dépôt,
 `python -m http.server 8000`, puis `http://localhost:8000/tournoi/orga.html?demo=1`.
@@ -117,70 +144,76 @@ Garde les liens avec clé hors du dépôt (notes du téléphone, message privé)
 
 1. Ouvre `orga.html?key=…` : le point en haut à droite passe au **vert**.
    Si tu vois « Clé refusée », la clé du lien ne correspond pas à celle de `secrets`.
-2. Ajoute une équipe test : elle apparaît dans `index.html` sur ton téléphone.
+2. « Charger les 18 équipes » : elles apparaissent dans `index.html` (onglet Poules) sur ton téléphone.
 3. Ouvre `pilotage.html?key=CLÉ_STREAM` : point vert aussi.
 4. Ouvre `orga.html?key=CLÉ_STREAM` (la mauvaise clé) : ça doit être refusé.
-5. Supprime l'équipe test.
+5. Zone sensible › « Tout effacer » pour repartir propre.
 
 ---
 
 ## 3. Streamlabs
 
-Pour chaque source navigateur : largeur **1920**, hauteur **1080**.
+**Une seule scène suffit** : la caméra, et par-dessus une source navigateur
+`overlay.html` en **1920 × 1080**. Tout le reste se pilote depuis la tablette,
+dans `pilotage.html` :
 
-| Scène | Sources (de bas en haut) |
+| Bouton du pilotage | Ce qui s'affiche sur la caméra |
 |---|---|
-| Match | Caméra + `overlay.html` |
-| Inter-match | Caméra + `scene.html?vue=intermatch` |
-| Poules | Caméra + `scene.html?vue=poules` |
-| Arbre | Caméra + `scene.html?vue=arbre` |
-| Pause | Caméra + `scene.html?vue=pause` |
-| Plateau | Caméra + `scene.html?vue=neutre` |
+| Match | Score et chrono du match filmé, victoire 20 s à la fin |
+| Inter-match | Résultats de la dernière rotation + matchs à suivre |
+| Poules | Classement des poules (brassage, puis Or / Argent / Bronze) |
+| Arbre | Quarts, demies, finale et places 3-4 |
+| Classement | Matchs de classement et classement final de 1 à 18 |
+| Pause | Pause, matchs à suivre, QR code |
+| *(rien d'affiché)* | Plateau neutre : logo, heure et date, QR code, chaîne |
 
-Les scènes posent un **voile sombre** sur la caméra : on voit encore le gymnase
-derrière les cartes. Pour régler l'assombrissement, ajoute `&voile=0.5` (plus clair)
-ou `&voile=0.8` (plus sombre) ; la valeur par défaut est 0.66.
-Sans caméra derrière : `&fond=opaque`.
+Toucher un écran affiché le **retire** et revient au plateau neutre.
+Les bandeaux Interview / Balade s'affichent sur Match et sur le plateau.
 
-L'**inter-match** montre les résultats de la dernière rotation validée et les
-matchs à suivre. Pratique entre deux rotations, quand tu reviens au micro.
+Les écrans Inter-match, Poules, Arbre et Pause posent un **voile sombre** sur la
+caméra : on voit encore le gymnase derrière les cartes. Pour régler
+l'assombrissement : `overlay.html?voile=0.5` (plus clair) ou `?voile=0.8`
+(plus sombre) ; 0.66 par défaut. Pour masquer la signature en bas à droite
+pendant les matchs : `?tag=0`.
 
-La scène **neutre** (plateau) laisse la caméra libre pour vous filmer : seulement
-quatre petits encarts dans les coins (logo et nom du tournoi, heure et date,
-QR code, chaîne Twitch), sans voile.
+`scene.html?vue=poules` (ou `arbre`, `pause`, `intermatch`, `neutre`) existe
+toujours si tu veux un écran fixe dans une scène Streamlabs à part.
 
-L'overlay gère tout seul le score, la victoire et le bandeau interview/balade
-(pilotés depuis `pilotage.html`). Pour masquer la signature en bas à droite :
-`overlay.html?tag=0`.
+**Après une mise à jour sur GitHub** : dans le pilotage, « Recharger l'overlay »
+(deux appuis). L'overlay du stream, l'aperçu et le pilotage se rechargent avec la
+dernière version, sans toucher à Streamlabs. Compte une seconde de coupure à
+l'écran, et attends 1 à 2 minutes après le push que GitHub Pages ait publié.
 
-Si une page ne se met pas à jour après un changement sur GitHub, ajoute `&v=2`
-(ou `?v=2`) à la fin de l'URL pour éviter l'ancienne version en cache.
+**Aperçu** : en haut du pilotage, « Afficher » montre en petit ce que voit le
+stream (avec un faux fond à la place de la caméra). Sur une tablette, il reste
+collé en haut quand tu descends vers les points. « Masquer » le coupe pour
+économiser batterie et data ; le choix est retenu sur l'appareil.
 
 ---
 
 ## 4. Le jour J
 
-**Avant** : orga › ajouter les équipes et leur poule › Générer le planning.
-Vérifie `terrains`, `dureeRotationMin` et `qualifiesParPoule` dans `config.js`
-**avant** de générer.
+**Avant** : orga › « Charger les 18 équipes » › vérifier / échanger › « Générer le brassage ».
+En cas de désistement : orga › Équipes › Renommer (l'équipe remplaçante garde la place).
 
 **À chaque rotation** :
 1. Orga : « Lancer la rotation » au coup de sifflet. Le chrono part partout.
 2. Toi : choisis le match filmé dans pilotage et compte les points.
-3. Fin du chrono : toi, « Terminer le match » ; les orgas tapent les autres scores,
+3. Fin du match : toi, « Terminer le match » ; les orgas tapent les autres scores,
    puis « Valider la rotation ».
 
-**Fin des poules** : orga affiche le classement › « Générer la phase finale ».
-Le gagnant de chaque match avance tout seul dans l'arbre.
+**Fin du brassage** : « Générer la phase 2 ». **Fin de la phase 2** : « Générer la
+phase finale ». Ensuite, gagnants et perdants avancent tout seuls dans l'arbre et
+les matchs de classement.
 
-**Demies et finale en 25 points** : pas de chrono, l'overlay affiche « 25 PTS ».
-Dans pilotage, un message te prévient quand une équipe a gagné (25 avec 2 points
-d'écart). Dans orga, un score qui ne respecte pas la règle est refusé.
-Réglages dans `config.js` : `toursEnPoints`, `pointsCible`, `ecartMin`.
+**Phase finale en points** : pas de chrono, l'overlay affiche « 21 PTS » (ou
+« 25 PTS » en finale). Dans pilotage, un message te prévient quand une équipe a
+gagné. Dans orga, un score qui ne respecte pas la règle est refusé.
 
 **Une erreur ?** orga › Corriger un résultat. Le classement et l'arbre se
-recalculent. En phase finale, on ne peut plus changer le gagnant si le match
-suivant a déjà commencé.
+recalculent. Un match de brassage ne se corrige plus une fois la phase 2 générée
+(idem phase 2 → phase finale) : annule d'abord la phase suivante dans la Zone
+sensible, tant qu'aucune de ses rotations n'est lancée.
 
 **Faux départ ?** « Relancer le chrono à zéro » (deux appuis).
 
@@ -195,5 +228,6 @@ suivant a déjà commencé.
   le temps restant à partir de l'heure du serveur Firebase.
 - Deux clés : les orgas ne peuvent pas toucher à l'overlay, et l'écran de
   pilotage ne peut modifier que le score proposé de son match (`saisieStream`).
-- En cas d'égalité : en poule, match nul (ou point en or, réglable dans
-  `config.js`) ; en phase finale, l'orga choisit le gagnant du point en or.
+- Aucun match nul : en cas d'égalité, l'orga indique qui a gagné le dernier point.
+- La composition des poules de phase 2 et l'arbre sont enregistrés dans les
+  matchs au moment où l'orga les génère.
