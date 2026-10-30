@@ -14,16 +14,21 @@
   details.bloc > summary::-webkit-details-marker { display: none; }
   details.bloc > summary::after { content: "+"; font-size: 26px; color: var(--nuit-texte); }
   details.bloc[open] > summary::after { content: "–"; }
-  .poule-groupe { display: flex; flex-direction: column; gap: 0; }
-  .poule-groupe + .poule-groupe { margin-top: 6px; }
-  .poule-titre { font-family: var(--cond); font-weight: 800; font-size: 16px; letter-spacing: 1px; color: var(--rouge-clair); padding: 6px 0 2px; }
+  .poule-titre { font-family: var(--cond); font-weight: 800; font-size: 16px; letter-spacing: 1px; color: var(--rouge-clair); padding: 8px 0 2px; text-transform: uppercase; }
   .tie { flex-wrap: wrap; }
   .tie .btn { flex: 1 1 0; }
   .tie .btn[aria-pressed="true"] { background: #fff; color: var(--encre); border-color: #fff; }
   .match-lect { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--nuit-ligne); font-weight: 600; }
   .match-lect .ph { font-family: var(--cond); color: var(--nuit-texte); white-space: nowrap; }
   .corr { border-top: 1px solid var(--nuit-ligne); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-  .champion { font-family: var(--cond); font-size: 34px; font-weight: 800; }
+  .champion { font-family: var(--cond); font-size: 30px; font-weight: 800; }
+  .case-eq { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: 2px solid var(--nuit-ligne); background: var(--nuit); color: #fff; text-align: left; margin-top: 6px; }
+  .case-eq[aria-pressed="true"] { border-color: #FFB020; background: #3A2F12; }
+  .case-eq .ps { font-family: var(--cond); font-weight: 800; font-size: 17px; color: var(--rouge-clair); width: 30px; flex: none; }
+  .case-eq .nm { flex: 1 1 auto; font-weight: 700; min-width: 0; }
+  .case-eq .nv { font-size: 12px; font-weight: 700; color: var(--nuit-texte); flex: none; }
+  .grille-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .simu { border-style: dashed; }
 </style>
 </head>
 <body class="sombre">
@@ -41,22 +46,20 @@
 
   <!-- ============ Avant le tournoi ============ -->
   <section id="prep" hidden style="display:flex;flex-direction:column;gap:12px">
-    <div class="bloc">
-      <h2 id="titreEq">Équipes</h2>
-      <form id="formEq" class="ligne" style="flex-wrap:wrap">
-        <label for="nomEq" class="sous" style="width:100%">Nom de l'équipe</label>
-        <input id="nomEq" class="champ" style="flex:1 1 180px" maxlength="40" autocomplete="off" required>
-        <label for="pouleEq" class="sous" hidden>Poule</label>
-        <select id="pouleEq" class="champ" style="width:132px;flex:none;padding-right:28px" aria-label="Poule"></select>
-        <button class="btn rouge" type="submit">Ajouter</button>
-      </form>
-      <div id="listeEq" class="liste-eq"></div>
-      <button class="btn petit" id="remplirDemo" type="button" hidden>Remplir avec des équipes de démo (2 poules de 6)</button>
+    <div class="bloc" id="blocCharger">
+      <h2>Équipes</h2>
+      <div class="aide">Les 18 équipes et leur répartition sont enregistrées dans <b>config.js</b>.</div>
+      <button class="btn rouge large" id="charger" type="button">Charger les 18 équipes</button>
     </div>
-    <div class="bloc">
-      <h2>Planning</h2>
-      <div class="aide" id="resumePlanning"></div>
-      <button class="btn plein large" id="generer" type="button">Générer le planning</button>
+    <div class="bloc" id="blocRepartition" hidden>
+      <h2>Brassage : répartition</h2>
+      <div class="aide">Touche une équipe puis une autre pour les échanger.</div>
+      <div class="grille-poules" id="repartition"></div>
+    </div>
+    <div class="bloc" id="blocLancer" hidden>
+      <h2>Prêt ?</h2>
+      <div class="aide">3 poules de 6, 15 matchs par poule, 15 rotations de <span id="dureeTxt"></span> min sur 3 terrains.</div>
+      <button class="btn plein large" id="genBrassage" type="button">Générer le brassage</button>
     </div>
   </section>
 
@@ -72,15 +75,15 @@
 
     <details class="bloc">
       <summary>Équipes</summary>
-      <div class="aide">Pour corriger une faute dans un nom.</div>
+      <div class="aide">Pour corriger un nom ou remplacer une équipe (elle garde sa place).</div>
       <div id="listeEqJeu" class="liste-eq"></div>
     </details>
 
     <details class="bloc">
       <summary>Zone sensible</summary>
-      <button class="btn petit" id="refaire" type="button">Refaire le planning</button>
-      <div class="aide" id="refaireAide"></div>
-      <button class="btn petit" id="annulerFinale" type="button">Annuler la phase finale</button>
+      <button class="btn petit" id="annulerPhase" type="button">Annuler la dernière phase générée</button>
+      <div class="aide" id="annulerAide"></div>
+      <button class="btn petit" id="recommencer" type="button">Recommencer (garder les équipes)</button>
       <button class="btn petit" id="toutEffacer" type="button">Tout effacer (équipes et résultats)</button>
     </details>
   </section>
@@ -93,11 +96,11 @@ import { connecter, DEMO, TID } from "./shared/firebase.js";
 import * as T from "./shared/moteur.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
-const POULES = "ABCDEFGH".split("");
-
 $("#sousTitre").textContent = `${CFG.nom} · saisie des résultats`;
-$("#pouleEq").innerHTML = POULES.map((p) => `<option value="${p}">Poule ${p}</option>`).join("");
-if (DEMO) { $("#demo").hidden = false; $("#remplirDemo").hidden = false; }
+$("#dureeTxt").textContent = CFG.format.dureeMatchPouleMin;
+if (DEMO) $("#demo").hidden = false;
+// Bouton « scores au hasard » : en démo, sur un tournoi de test (?t=…) ou avec ?simu=1
+const SIMU = DEMO || TID !== CFG.id || param("simu") === "1";
 
 let api;
 try {
@@ -111,157 +114,163 @@ api.surConnexion((on) => $("#dot").classList.toggle("on", on));
 
 let data = {}, eqs = [], ms = [], rots = [];
 const brouillons = {};       // scores tapés mais pas encore validés
-let sigRot = "", sigCorr = "", sigEq = "";
+let sigRot = "", sigCorr = "", sigEq = "", sigPrep = "", choixEchange = null;
 
 const envoyer = async (majs, ok) => {
-  try { await api.maj(majs); if (ok) toast(ok); }
-  catch (e) { toast("Erreur : " + (e.code || e.message), true); }
+  try { await api.maj(majs); if (ok) toast(ok); return true; }
+  catch (e) { toast("Erreur : " + (e.code || e.message), true); return false; }
 };
 const nom = (id) => nomEquipe(eqs, id);
+// Brassage : « AA », « BC »… ; phase 2 : « Or A », « Argent C »…
+const pos = (poule, p) => T.POULES.brassage.includes(poule) ? poule + T.LETTRES_POS[p] : `${T.COURTS_POULES[poule]} ${T.LETTRES_POS[p]}`;
 
 api.ecouter("", (v) => { data = v || {}; rendre(); }, (e) => fatal("Lecture refusée (" + esc(e.code) + ")."));
 
 function rendre() {
   eqs = T.listeEquipes(data); ms = T.listeMatchs(data); rots = T.listeRotations(data);
-  const planifie = ms.length > 0;
-  $("#prep").hidden = planifie;
-  $("#jeu").hidden = !planifie;
-  if (!planifie) rendrePrep(); else rendreJeu();
+  const lance = ms.length > 0;
+  $("#prep").hidden = lance;
+  $("#jeu").hidden = !lance;
+  if (!lance) rendrePrep(); else rendreJeu();
 }
 
 // ================= Préparation =================
 
-function groupesHtml(boutons) {
-  const poules = T.poulesDe(eqs);
-  if (!eqs.length) return `<div class="aide">Aucune équipe pour l'instant.</div>`;
-  return poules.map((p) => `<div class="poule-groupe"><div class="poule-titre">POULE ${p}</div>` +
-    eqs.filter((e) => e.poule === p).map((e) => `<div class="item"><span class="nm ellipse">${esc(e.nom)}</span>${boutons(e)}</div>`).join("") +
-    `</div>`).join("");
-}
-
 function rendrePrep() {
-  $("#titreEq").textContent = `Équipes (${eqs.length})`;
-  $("#listeEq").innerHTML = groupesHtml((e) =>
-    `<button class="btn petit" data-poule="${e.id}" type="button" aria-label="Changer la poule de ${esc(e.nom)}">${esc(e.poule)}</button>` +
-    `<button class="btn petit" data-suppr="${e.id}" type="button" aria-label="Supprimer ${esc(e.nom)}">✕</button>`);
-
-  const poules = T.poulesDe(eqs);
-  const tropPetites = poules.filter((p) => eqs.filter((e) => e.poule === p).length < 2);
-  const g = $("#generer");
-  if (!eqs.length) { g.disabled = true; $("#resumePlanning").textContent = "Ajoute les équipes et leur poule, puis génère le planning."; return; }
-  if (tropPetites.length) { g.disabled = true; $("#resumePlanning").textContent = `Il faut au moins 2 équipes dans la poule ${tropPetites.join(", ")}.`; return; }
-  const essai = T.planifierPoules(eqs, CFG);
-  const nbR = Object.keys(essai.rotations).length, nbM = Object.keys(essai.matchs).length;
-  const q = CFG.format.qualifiesParPoule;
-  g.disabled = false;
-  $("#resumePlanning").innerHTML = `${poules.length} poule${poules.length > 1 ? "s" : ""}, ${nbM} matchs en ${nbR} rotations de ${CFG.format.dureeRotationMin} min (${CFG.format.terrains} terrains).<br>` +
-    `${q} qualifié${q > 1 ? "s" : ""} par poule pour la phase finale. Ces réglages se changent dans <b>config.js</b>.`;
+  const sig = JSON.stringify([eqs.map((e) => [e.id, e.nom, e.poule, e.pos]), choixEchange]);
+  if (sig === sigPrep) return;
+  sigPrep = sig;
+  const charge = eqs.length > 0;
+  $("#blocCharger").hidden = charge;
+  $("#blocRepartition").hidden = !charge;
+  $("#blocLancer").hidden = !charge;
+  if (!charge) return;
+  $("#repartition").innerHTML = T.POULES.brassage.map((p) => `<div><div class="poule-titre">${T.NOMS_POULES[p]}</div>` +
+    eqs.filter((e) => e.poule === p).sort((a, b) => a.pos - b.pos).map((e) =>
+      `<button type="button" class="case-eq" data-eq="${e.id}" aria-pressed="${choixEchange === e.id}">
+        <span class="ps">${pos(p, e.pos)}</span><span class="nm ellipse">${esc(e.nom)}</span><span class="nv">${esc(e.niveau || "")}</span></button>`).join("") +
+    `</div>`).join("");
+  const ok = T.POULES.brassage.every((p) => eqs.filter((e) => e.poule === p).length === 6);
+  $("#genBrassage").disabled = !ok;
 }
 
-$("#formEq").addEventListener("submit", (ev) => {
-  ev.preventDefault();
-  const n = $("#nomEq").value.trim();
-  if (!n) return;
-  if (eqs.some((e) => e.nom.toLowerCase() === n.toLowerCase())) { toast("Ce nom existe déjà", true); return; }
-  const p = $("#pouleEq").value;
-  const ordre = eqs.filter((e) => e.poule === p).length;
-  envoyer({ [`equipes/${T.nouvelId()}`]: { nom: n, poule: p, ordre } });
-  $("#nomEq").value = "";
-  $("#nomEq").focus();
+$("#charger").addEventListener("click", () => {
+  const u = {}, compteur = {};
+  CFG.equipes.forEach((e, i) => {
+    const p = e.poule;
+    compteur[p] = (compteur[p] || 0);
+    u[`equipes/eq${String(i + 1).padStart(2, "0")}`] = { nom: e.nom, niveau: e.niveau || "", poule: p, pos: compteur[p]++ };
+  });
+  envoyer(u, `${CFG.equipes.length} équipes chargées`);
 });
 
-$("#listeEq").addEventListener("click", (ev) => {
-  const s = ev.target.closest("[data-suppr]"), p = ev.target.closest("[data-poule]");
-  if (s) envoyer({ [`equipes/${s.dataset.suppr}`]: null }, "Équipe supprimée");
-  if (p) {
-    const e = eqs.find((x) => x.id === p.dataset.poule);
-    const i = POULES.indexOf(e.poule);
-    envoyer({ [`equipes/${e.id}/poule`]: POULES[(i + 1) % POULES.length] });
-  }
+$("#repartition").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-eq]");
+  if (!b) return;
+  const id = b.dataset.eq;
+  if (!choixEchange) { choixEchange = id; sigPrep = ""; rendrePrep(); return; }
+  if (choixEchange === id) { choixEchange = null; sigPrep = ""; rendrePrep(); return; }
+  const a = eqs.find((e) => e.id === choixEchange), c = eqs.find((e) => e.id === id);
+  choixEchange = null;
+  envoyer({
+    [`equipes/${a.id}/poule`]: c.poule, [`equipes/${a.id}/pos`]: c.pos,
+    [`equipes/${c.id}/poule`]: a.poule, [`equipes/${c.id}/pos`]: a.pos
+  }, "Équipes échangées");
 });
 
-$("#generer").addEventListener("click", () => {
-  const { matchs, rotations } = T.planifierPoules(eqs, CFG);
+$("#genBrassage").addEventListener("click", () => {
+  const groupes = {};
+  T.POULES.brassage.forEach((p) => (groupes[p] = eqs.filter((e) => e.poule === p).sort((a, b) => a.pos - b.pos).map((e) => e.id)));
+  ecrirePhase(T.genererPoules("brassage", groupes, rots, CFG), "Brassage généré : 15 rotations");
+});
+
+function ecrirePhase({ matchs, rotations }, msg) {
   const u = {};
   for (const [id, m] of Object.entries(matchs)) u[`matchs/${id}`] = m;
   for (const [id, r] of Object.entries(rotations)) u[`rotations/${id}`] = r;
-  envoyer(u, "Planning généré");
-});
-
-$("#remplirDemo").addEventListener("click", () => {
-  const noms = ["Les Smasheurs du Dimanche", "Block Party", "Les Filets Mignons", "Service Compris",
-    "Les Manchettes Volantes", "Ace Ventura", "Les Libéros Libres", "Smash Bros",
-    "Les Passeurs d'Âmes", "Réception Royale", "Les Contres Attaques", "Feinte et Furieux",
-    "Les Bloqueurs Fous", "Team Tie-Break", "Les Rois du Bord", "Volley Gang"];
-  const u = {};
-  const parPoule = Number(param("parPoule")) || 6;
-  const total = Number(param("equipes")) || 12;
-  noms.slice(0, total).forEach((n, i) => (u[`equipes/${T.nouvelId()}${i}`] = { nom: n, poule: POULES[Math.floor(i / parPoule)], ordre: i % parPoule }));
-  envoyer(u, `${Math.min(total, noms.length)} équipes ajoutées`);
-});
+  return envoyer(u, msg);
+}
 
 // ================= Pendant le tournoi =================
 
 function valeurs(m) {
   const b = brouillons[m.id];
   if (b) return b;
-  if (m.statut === T.STATUT.TERMINE) return { A: m.scoreA, B: m.scoreB, g: m.gagnant === "nul" ? null : m.gagnant };
+  if (m.statut === T.STATUT.TERMINE) return { A: m.scoreA, B: m.scoreB, g: m.scoreA === m.scoreB ? m.gagnant : null };
   if (m.saisieStream) return { A: m.saisieStream.A, B: m.saisieStream.B, g: null };
   return { A: "", B: "", g: null };
 }
 
+const titreMatch = (m) => m.phase === "finale" ? T.nomPhase(m) : `${T.nomPhase(m)} · match ${m.num}`;
+
 function carteSaisie(m, idPrefixe) {
   const v = valeurs(m);
   const etat = m.saisieStream && !brouillons[m.id] ? `<span class="etat rouge">Rempli par le stream</span>` : `<span class="etat">${v.A !== "" && v.B !== "" ? "Prêt" : "À saisir"}</span>`;
-  const egal = v.A !== "" && v.A === v.B && T.egaliteInterdite(m, CFG);
+  const egal = v.A !== "" && v.A === v.B;
   const cote = (s) => `<div class="ligne">
       <label class="ellipse" style="flex:1 1 auto;font-weight:600;font-size:17px" for="${idPrefixe}-${m.id}-${s}">${esc(nom(m[s]) || T.etiquetteAttente(m, s, ms))}</label>
       <input class="champ score-in" id="${idPrefixe}-${m.id}-${s}" type="number" inputmode="numeric" min="0" max="999" data-mid="${m.id}" data-side="${s}" value="${esc(v[s])}">
     </div>`;
   return `<div class="bloc" data-carte="${m.id}">
-    <div class="ligne entre"><span class="etat">${esc(T.nomPhase(m, ms))}</span>${idPrefixe === "s" ? etat : ""}</div>
+    <div class="ligne entre"><span class="etat">${esc(titreMatch(m))}</span>${idPrefixe === "s" ? etat : ""}</div>
     ${cote("A")}${cote("B")}
     <div class="ligne tie" data-tie="${m.id}" ${egal ? "" : "hidden"}>
-      <span class="aide" style="width:100%">Égalité : qui a gagné le point en or ?</span>
+      <span class="aide" style="width:100%">Égalité : qui a gagné le dernier point ?</span>
       <button class="btn petit" type="button" data-or="${m.id}" data-g="A" aria-pressed="${v.g === "A"}">${esc(nom(m.A) || "A")}</button>
       <button class="btn petit" type="button" data-or="${m.id}" data-g="B" aria-pressed="${v.g === "B"}">${esc(nom(m.B) || "B")}</button>
     </div>
   </div>`;
 }
 
+function infoRotation(r) {
+  const deLaPhase = rots.filter((x) => x.phase === r.phase);
+  const i = deLaPhase.findIndex((x) => x.id === r.id) + 1;
+  const quoi = r.phase === "finale" ? `${r.cible} points` : `${T.NOMS_POULES[r.poule]} · ${Math.round(r.duree / 60)} min`;
+  return { titre: `${T.NOMS_PHASES[r.phase].toUpperCase()} · ROTATION ${i}/${deLaPhase.length}`, quoi };
+}
+
 function rendreJeu() {
   const cur = T.rotationEnCours(rots), suiv = T.prochaineRotation(rots);
   const sig = JSON.stringify([cur?.id, cur?.debut, suiv?.id, rots.length, eqs.map((e) => e.nom),
-    ms.map((m) => [m.id, m.statut, m.A, m.B, m.saisieStream, m.rotation])]);
+    ms.map((m) => [m.id, m.statut, m.A, m.B, m.saisieStream, m.scoreA, m.scoreB])]);
   if (sig !== sigRot) { sigRot = sig; rendreRotation(cur, suiv); }
   rendreCorrections();
   rendreEquipesJeu();
-  const aucunLance = rots.every((r) => r.statut === T.STATUT.AVENIR);
-  $("#refaire").disabled = !aucunLance;
-  $("#refaireAide").textContent = aucunLance ? "Revient à la liste des équipes, tant qu'aucune rotation n'est lancée." : "Impossible : une rotation a déjà été lancée.";
-  const fin = ms.filter((m) => m.phase === "finale");
-  $("#annulerFinale").hidden = !fin.length;
-  $("#annulerFinale").disabled = fin.some((m) => !m.exempt && m.statut !== T.STATUT.AVENIR);
+  const derniere = T.phaseCourante(ms);
+  const rotsDerniere = rots.filter((r) => r.phase === derniere);
+  const annulable = derniere && rotsDerniere.every((r) => r.statut === T.STATUT.AVENIR);
+  $("#annulerPhase").disabled = !annulable;
+  $("#annulerAide").textContent = !derniere ? "" : annulable
+    ? `Supprime « ${T.NOMS_PHASES[derniere]} » (aucune rotation lancée).`
+    : `Impossible : une rotation de « ${T.NOMS_PHASES[derniere]} » a déjà été lancée.`;
+}
+
+function htmlClassement(phase, poule, marque) {
+  return `<div class="poule-titre">${T.NOMS_POULES[poule]}</div>` +
+    T.classement(ms, phase, poule, eqs).map((l) => `<div class="match-lect"><span class="ellipse">${l.rang}. ${esc(l.nom)}${marque ? marque(l.rang) : ""}</span>
+      <span class="ph">${l.V} V · ${l.diff > 0 ? "+" : ""}${l.diff}</span></div>`).join("");
 }
 
 function rendreRotation(cur, suiv) {
-  const total = rots.length;
   const el = $("#blocRotation");
   if (cur) {
     const liste = T.matchsDeRotation(ms, cur.num);
+    const info = infoRotation(cur);
     el.innerHTML = `<div class="bloc">
         <div class="ligne entre">
-          <div><h2>ROTATION ${cur.num} SUR ${total}</h2><div class="sous" id="chronoTxt">En cours</div></div>
+          <div><h2>${info.titre}</h2><div class="sous" id="chronoTxt">${esc(info.quoi)}</div></div>
           <div class="chrono-grand" id="chrono">--:--</div>
         </div>
       </div>
       <div class="aide">${cur.mode === "points"
         ? `Match en ${cur.cible} points${(CFG.format.ecartMin ?? 2) > 1 ? ` avec ${CFG.format.ecartMin ?? 2} points d'écart` : ""} : à la fin, tape le score final puis valide.`
-        : "À la fin du chrono, tape le score final de chaque match, puis valide."}</div>
+        : "À la fin du chrono, tape le score final de chaque match (dernier point compris en cas d'égalité), puis valide."}</div>
       ${liste.map((m) => carteSaisie(m, "s")).join("")}
-      <button class="btn plein large" id="valider" type="button">Valider la rotation ${cur.num}</button>
+      ${SIMU ? `<button class="btn petit simu" id="hasard" type="button">Simulation : scores au hasard</button>` : ""}
+      <button class="btn plein large" id="valider" type="button">Valider la rotation</button>
       ${cur.mode === "points" ? "" : `<button class="btn petit" id="relancer" type="button">Relancer le chrono à zéro</button>`}`;
     $("#valider").addEventListener("click", () => validerRotation(cur, liste));
+    if ($("#hasard")) $("#hasard").addEventListener("click", () => scoresAuHasard(liste));
     if ($("#relancer")) doubleAppui($("#relancer"), "Appuie encore pour relancer", () => envoyer({ [`rotations/${cur.id}/debut`]: api.ts() }, "Chrono relancé"));
     majChrono();
     return;
@@ -269,34 +278,55 @@ function rendreRotation(cur, suiv) {
   if (suiv) {
     const liste = T.matchsDeRotation(ms, suiv.num);
     const incomplet = liste.some((m) => !m.A || !m.B);
+    const info = infoRotation(suiv);
     el.innerHTML = `<div class="bloc">
-        <h2>PROCHAINE : ROTATION ${suiv.num} SUR ${total}</h2>
-        <div class="sous">${suiv.phase === "finale" ? "Phase finale" : "Phase de poules"} · ${suiv.mode === "points" ? `en ${suiv.cible} points` : `${Math.round(suiv.duree / 60)} min`}</div>
-        ${liste.map((m) => `<div class="match-lect"><span class="ellipse">${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))} – ${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}</span><span class="ph">${esc(T.nomPhase(m, ms))}</span></div>`).join("")}
+        <h2>PROCHAINE : ${info.titre}</h2>
+        <div class="sous">${esc(info.quoi)}</div>
+        ${liste.map((m) => `<div class="match-lect"><span class="ellipse">${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))} – ${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}</span><span class="ph">T${m.terrain} · ${esc(T.nomPhase(m))}</span></div>`).join("")}
       </div>
-      <button class="btn rouge large" id="lancer" type="button" ${incomplet ? "disabled" : ""}>Lancer la rotation ${suiv.num}</button>
+      <button class="btn rouge large" id="lancer" type="button" ${incomplet ? "disabled" : ""}>Lancer la rotation</button>
       ${incomplet ? `<div class="aide">En attente des résultats précédents.</div>` : `<div class="aide">${suiv.mode === "points" ? "Les matchs passent en cours sur le site, l'overlay et le stream." : "Le chrono démarre en même temps sur le site, l'overlay et le stream."}</div>`}`;
     if (!incomplet) $("#lancer").addEventListener("click", () => lancer(suiv, liste));
     return;
   }
-  const finale = ms.filter((m) => m.phase === "finale");
-  if (!finale.length && T.poulesTerminees(ms)) {
-    const poules = T.poulesDe(eqs);
-    const q = CFG.format.qualifiesParPoule;
+  const phase = T.phaseCourante(ms);
+  if (phase === "brassage" && T.phaseTerminee(ms, "brassage")) {
+    const g = T.composerPhase2(ms, eqs);
     el.innerHTML = `<div class="bloc">
-        <h2>POULES TERMINÉES</h2>
-        ${poules.map((p) => `<div class="poule-groupe"><div class="poule-titre">POULE ${p}</div>` +
-          T.classement(eqs, ms, p, CFG).map((l) => `<div class="match-lect"><span class="ellipse">${l.rang}. ${esc(l.nom)}${l.rang <= q ? " ✓" : ""}</span><span class="ph">${l.points} pts · ${l.diff > 0 ? "+" : ""}${l.diff}</span></div>`).join("") + `</div>`).join("")}
+        <h2>BRASSAGE TERMINÉ</h2>
+        ${T.POULES.brassage.map((p) => htmlClassement("brassage", p, (r) => ` → ${r <= 2 ? "Or" : r <= 4 ? "Argent" : "Bronze"}`)).join("")}
       </div>
-      <button class="btn rouge large" id="genFinale" type="button">Générer la phase finale</button>
-      <div class="aide">Les ${q} premiers de chaque poule sont qualifiés. Vérifie le classement avant.</div>`;
-    $("#genFinale").addEventListener("click", genererFinale);
+      <div class="bloc"><h2>PHASE 2</h2>
+        ${T.POULES.phase2.map((p) => `<div class="poule-titre">${T.NOMS_POULES[p]}</div>` +
+          g[p].map((id, i) => `<div class="match-lect"><span class="ellipse">${pos(p, i)} · ${esc(nom(id))}</span></div>`).join("")).join("")}
+      </div>
+      <button class="btn rouge large" id="genPhase2" type="button">Générer la phase 2</button>
+      <div class="aide">Vérifie le classement avant : après, une correction du brassage ne change plus la composition.</div>`;
+    $("#genPhase2").addEventListener("click", () => ecrirePhase(T.genererPoules("phase2", T.composerPhase2(ms, eqs), rots, CFG), "Phase 2 générée : 15 rotations"));
     return;
   }
-  const champion = T.vainqueurTournoi(ms);
-  el.innerHTML = champion
-    ? `<div class="bloc"><span class="etat vert">Tournoi terminé</span><div class="champion">Vainqueur : ${esc(nom(champion))}</div></div>`
-    : `<div class="bloc"><h2>EN ATTENTE</h2><div class="aide">Aucune rotation à lancer pour l'instant.</div></div>`;
+  if (phase === "phase2" && T.phaseTerminee(ms, "phase2")) {
+    const s = T.seeds(ms, eqs);
+    el.innerHTML = `<div class="bloc">
+        <h2>PHASE 2 TERMINÉE</h2>
+        ${T.POULES.phase2.map((p) => htmlClassement("phase2", p)).join("")}
+      </div>
+      <div class="bloc"><h2>TÊTES DE SÉRIE</h2>
+        ${s.map((id, i) => `<div class="match-lect"><span class="ellipse">${i + 1}. ${esc(nom(id))}</span><span class="ph">${i < 6 ? "Or" : "Argent"}</span></div>`).join("")}
+        <div class="aide">Quarts : 1-8, 4-5, 2-7, 3-6. Les autres jouent les places 9 à 18.</div>
+      </div>
+      <button class="btn rouge large" id="genFinale" type="button">Générer la phase finale</button>`;
+    $("#genFinale").addEventListener("click", () => ecrirePhase(T.genererFinale(ms, rots, eqs, CFG), "Phase finale générée : 7 rotations"));
+    return;
+  }
+  if (phase === "finale" && T.phaseTerminee(ms, "finale")) {
+    el.innerHTML = `<div class="bloc"><span class="etat vert">Tournoi terminé</span>
+      <div class="champion">Vainqueur : ${esc(nom(T.vainqueurTournoi(ms)))}</div>
+      ${T.classementFinal(ms).map((x) => `<div class="match-lect"><span class="ellipse">${x.place}. ${esc(nom(x.id) || "—")}</span></div>`).join("")}
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="bloc"><h2>EN ATTENTE</h2><div class="aide">Aucune rotation à lancer pour l'instant.</div></div>`;
 }
 
 function majChrono() {
@@ -305,9 +335,8 @@ function majChrono() {
   if (!cur || !c) return;
   const reste = T.tempsRestant(cur, api.maintenant());
   c.textContent = T.texteChrono(cur, api.maintenant(), fmtChrono);
-  $("#chronoTxt").textContent = cur.mode === "points" ? "En cours · match en points"
-    : reste != null && reste <= 0 ? "Temps écoulé · saisis les scores" : "En cours";
-  c.style.color = reste != null && reste <= 0 ? "var(--rouge-clair)" : "";
+  if (cur.mode !== "points") $("#chronoTxt").textContent = reste != null && reste <= 0 ? "Temps écoulé · saisis les scores" : infoRotation(cur).quoi;
+  c.style.color = cur.mode !== "points" && reste != null && reste <= 0 ? "var(--rouge-clair)" : "";
 }
 setInterval(majChrono, 500);
 
@@ -318,8 +347,7 @@ document.addEventListener("input", (ev) => {
   const m = ms.find((x) => x.id === i.dataset.mid);
   const b = (brouillons[m.id] ||= { ...valeurs(m) });
   b[i.dataset.side] = i.value === "" ? "" : Number(i.value);
-  const tie = document.querySelectorAll(`[data-tie="${m.id}"]`);
-  tie.forEach((t) => (t.hidden = !(b.A !== "" && b.A === b.B && T.egaliteInterdite(m, CFG))));
+  document.querySelectorAll(`[data-tie="${m.id}"]`).forEach((t) => (t.hidden = !(b.A !== "" && b.A === b.B)));
 });
 document.addEventListener("click", (ev) => {
   const o = ev.target.closest("[data-or]");
@@ -333,7 +361,7 @@ document.addEventListener("click", (ev) => {
 function lancer(rot, liste) {
   const u = { [`rotations/${rot.id}/statut`]: T.STATUT.ENCOURS, [`rotations/${rot.id}/debut`]: api.ts() };
   liste.forEach((m) => (u[`matchs/${m.id}/statut`] = T.STATUT.ENCOURS));
-  envoyer(u, `Rotation ${rot.num} lancée`);
+  envoyer(u, "Rotation lancée");
 }
 
 async function validerRotation(rot, liste) {
@@ -342,10 +370,10 @@ async function validerRotation(rot, liste) {
   try {
     for (const m of liste) {
       const v = valeurs(m);
-      if (v.A === "" || v.B === "" || v.A == null || v.B == null) throw new Error(`Score manquant : ${T.nomPhase(m, ms)}`);
+      if (v.A === "" || v.B === "" || v.A == null || v.B == null) throw new Error(`Score manquant : ${titreMatch(m)}`);
       const part = T.majValidation(copie.find((x) => x.id === m.id), v.A, v.B, v.g, copie, CFG);
       Object.assign(u, part);
-      copie = copie.map((x) => {   // on applique pour les matchs suivants
+      copie = copie.map((x) => {
         const c = { ...x };
         for (const [k, val] of Object.entries(part)) { const [, id, f] = k.split("/"); if (id === x.id) c[f] = val; }
         return c;
@@ -354,27 +382,35 @@ async function validerRotation(rot, liste) {
   } catch (e) { toast(e.message, true); return; }
   u[`rotations/${rot.id}/statut`] = T.STATUT.TERMINE;
   u[`rotations/${rot.id}/fin`] = api.ts();
-  await envoyer(u, `Rotation ${rot.num} validée`);
-  liste.forEach((m) => delete brouillons[m.id]);
+  if (await envoyer(u, "Rotation validée")) liste.forEach((m) => delete brouillons[m.id]);
 }
 
-function genererFinale() {
-  const { matchs, rotations } = T.genererFinale(eqs, ms, rots, CFG);
-  const u = {};
-  for (const [id, m] of Object.entries(matchs)) u[`matchs/${id}`] = m;
-  for (const [id, r] of Object.entries(rotations)) u[`rotations/${id}`] = r;
-  envoyer(u, "Phase finale générée");
+// Simulation : des scores plausibles pour tester tout le déroulé
+function scoresAuHasard(liste) {
+  const r = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  for (const m of liste) {
+    let A, B;
+    if (m.mode === "points") {
+      const perdant = r(Math.max(0, m.cible - 12), m.cible - 2);
+      [A, B] = Math.random() < 0.5 ? [m.cible, perdant] : [perdant, m.cible];
+    } else {
+      A = r(6, 18); B = r(6, 18);
+    }
+    brouillons[m.id] = { A, B, g: A === B ? (Math.random() < 0.5 ? "A" : "B") : null };
+  }
+  sigRot = ""; rendreJeu();
+  toast("Scores tirés au hasard : vérifie puis valide");
 }
 
 // ---------- Corrections ----------
 
 function rendreCorrections() {
-  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE && !m.exempt).sort((a, b) => b.rotation - a.rotation);
+  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE).sort((a, b) => b.rotation - a.rotation || (a.terrain || 0) - (b.terrain || 0));
   const sig = JSON.stringify([finis.map((m) => [m.id, m.scoreA, m.scoreB, m.gagnant, m.A, m.B]), eqs.map((e) => e.nom)]);
   if (sig === sigCorr) return;
   sigCorr = sig;
   $("#listeCorr").innerHTML = finis.length
-    ? finis.map((m) => `<div class="corr">${carteSaisie(m, "c")}<button class="btn petit" type="button" data-corr="${m.id}">Enregistrer la correction</button></div>`).join("")
+    ? finis.slice(0, 30).map((m) => `<div class="corr">${carteSaisie(m, "c")}<button class="btn petit" type="button" data-corr="${m.id}">Enregistrer la correction</button></div>`).join("")
     : `<div class="aide">Aucun match terminé.</div>`;
 }
 
@@ -382,38 +418,46 @@ $("#listeCorr").addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-corr]");
   if (!b) return;
   const m = ms.find((x) => x.id === b.dataset.corr);
+  const suivante = T.phaseSuivante(m.phase);
+  if (m.phase !== "finale" && suivante && ms.some((x) => x.phase === suivante)) {
+    toast(`${T.NOMS_PHASES[suivante]} déjà générée : annule-la d'abord (Zone sensible) pour corriger ce match.`, true);
+    return;
+  }
   const v = valeurs(m);
   try {
     const u = T.majValidation(m, v.A, v.B, v.g, ms, CFG);
-    envoyer(u, "Résultat corrigé").then(() => delete brouillons[m.id]);
+    envoyer(u, "Résultat corrigé").then((ok) => ok && delete brouillons[m.id]);
   } catch (e) { toast(e.message, true); }
 });
 
 // ---------- Équipes pendant le tournoi ----------
 
 function rendreEquipesJeu() {
-  const sig = JSON.stringify(eqs.map((e) => [e.id, e.nom, e.poule]));
+  const sig = JSON.stringify(eqs.map((e) => [e.id, e.nom]));
   if (sig === sigEq) return;
   sigEq = sig;
-  $("#listeEqJeu").innerHTML = groupesHtml((e) => `<button class="btn petit" data-renom="${e.id}" type="button" aria-label="Renommer ${esc(e.nom)}">Renommer</button>`);
+  $("#listeEqJeu").innerHTML = eqs.map((e) => `<div class="item"><span class="nm ellipse">${esc(e.nom)}</span>
+    <button class="btn petit" data-renom="${e.id}" type="button" aria-label="Renommer ${esc(e.nom)}">Renommer</button></div>`).join("");
 }
 $("#listeEqJeu").addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-renom]");
   if (!b) return;
   const e = eqs.find((x) => x.id === b.dataset.renom);
   const n = prompt("Nouveau nom", e.nom);
-  if (n && n.trim()) envoyer({ [`equipes/${e.id}/nom`]: n.trim().slice(0, 40) }, "Nom modifié");
+  if (n && n.trim()) envoyer({ [`equipes/${e.id}/nom`]: n.trim().slice(0, 60) }, "Nom modifié");
 });
 
 // ---------- Zone sensible ----------
 
-doubleAppui($("#refaire"), "Appuie encore pour confirmer", () => envoyer({ matchs: null, rotations: null }, "Planning effacé"));
-doubleAppui($("#annulerFinale"), "Appuie encore pour confirmer", () => {
+doubleAppui($("#annulerPhase"), "Appuie encore pour confirmer", () => {
+  const phase = T.phaseCourante(ms);
+  if (!phase) return;
   const u = {};
-  ms.filter((m) => m.phase === "finale").forEach((m) => (u[`matchs/${m.id}`] = null));
-  rots.filter((r) => r.phase === "finale").forEach((r) => (u[`rotations/${r.id}`] = null));
-  envoyer(u, "Phase finale annulée");
+  ms.filter((m) => m.phase === phase).forEach((m) => (u[`matchs/${m.id}`] = null));
+  rots.filter((r) => r.phase === phase).forEach((r) => (u[`rotations/${r.id}`] = null));
+  envoyer(u, `${T.NOMS_PHASES[phase]} annulée`);
 });
+doubleAppui($("#recommencer"), "Sûr ? Résultats perdus", () => envoyer({ matchs: null, rotations: null, live: null }, "Tournoi remis à zéro, équipes gardées"));
 doubleAppui($("#toutEffacer"), "Sûr ? Tout sera perdu", () => envoyer({ equipes: null, matchs: null, rotations: null, live: null }, "Tournoi effacé"));
 </script>
 </body>
