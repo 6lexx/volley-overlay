@@ -16,7 +16,7 @@ window.TOURNOI_CONFIG = {
   twitch: "twitch.tv/silex62",
   logo:  "../assets/ramonville.png",   // logo du club, déjà dans le dépôt
 
-  // Adresse du site public (sert au QR code de la scène pause)
+  // Adresse du site public (sert au QR code)
   siteUrl: "https://6lexx.github.io/volley-overlay/tournoi/",
 
   // Même projet Firebase que l'overlay de ton équipe
@@ -28,24 +28,38 @@ window.TOURNOI_CONFIG = {
     appId:       "1:490432783373:web:a358da2d36195d42846144"
   },
 
+  // Déroulé : brassage (poules A, B, C) → phase 2 (Or, Argent, Bronze) → phase finale
   format: {
-    terrains:          3,    // matchs joués en même temps (sert au planning, jamais affiché)
-    dureeRotationMin: 20,    // durée d'un match de poule, en minutes
-    qualifiesParPoule: 3,    // 2 poules × 3 qualifiés = demies + finale
-
-    // Phase finale : les derniers tours se jouent en points, pas au temps.
-    // 2 = demies + finale ; 1 = finale seule ; 0 = tout au temps
-    toursEnPoints: 2,
-    pointsCible:  25,        // premier à 25…
-    ecartMin:      2,        // …avec 2 points d'écart (mettre 1 pour un 25 sec)
-    dureeFinaleMin: 20,      // durée des tours de phase finale qui restent au temps (ex. quarts)
-
-    points: { victoire: 3, nul: 1, defaite: 0 },
-    // "nul"         : une égalité en poule reste un match nul
-    // "point-en-or" : en cas d'égalité, l'orga choisit le gagnant du point en or
-    // (en phase finale, il faut toujours un gagnant)
-    egalitePoules: "nul"
+    dureeMatchPouleMin: 10,  // brassage et phase 2 : 10 minutes, un dernier point en cas d'égalité
+    pointsTour:   21,        // quarts, demies et matchs de classement
+    pointsFinale: 25,        // finale (places 1-2)
+    ecartMin:      2         // 2 points d'écart en phase finale
   },
+
+  // Les 18 équipes, réparties pour le brassage (positions A à F de chaque poule).
+  // Chargées en un clic dans l'écran orga ; échangeables avant de lancer.
+  equipes: [
+    { nom: "Rougail Saucisse",                          niveau: "Nationale",    poule: "A" },
+    { nom: "FAUTPASK’SADORT",                           niveau: "Nationale",    poule: "A" },
+    { nom: "En volley vous",                            niveau: "Prénationale", poule: "A" },
+    { nom: "Même nous même nous",                       niveau: "Régionale",    poule: "A" },
+    { nom: "Les chipies",                               niveau: "Régionale",    poule: "A" },
+    { nom: "bébés gras",                                niveau: "Loisir",       poule: "A" },
+
+    { nom: "Habibi",                                    niveau: "Nationale",    poule: "B" },
+    { nom: "Petit bebew",                               niveau: "Prénationale", poule: "B" },
+    { nom: "Les immigrés",                              niveau: "Prénationale", poule: "B" },
+    { nom: "Plot Plot Plot",                            niveau: "Prénationale", poule: "B" },
+    { nom: "Gay forevee",                               niveau: "Régionale",    poule: "B" },
+    { nom: "Belougras",                                 niveau: "Loisir",       poule: "B" },
+
+    { nom: "Les volley roux lent",                      niveau: "Nationale",    poule: "C" },
+    { nom: "Les baby",                                  niveau: "Prénationale", poule: "C" },
+    { nom: "Guérin",                                    niveau: "Prénationale", poule: "C" },
+    { nom: "Tié un cho",                                niveau: "Prénationale", poule: "C" },
+    { nom: "BTP",                                       niveau: "Régionale",    poule: "C" },
+    { nom: "Tape dans les 3 mètres j’suis pas ta mère", niveau: "Régionale",    poule: "C" }
+  ],
 
   affichage: {
     maxNom:       15,   // caractères avant "..." sur l'overlay
