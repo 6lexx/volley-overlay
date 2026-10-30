@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#D3121F">
 <title>Tournoi RMV Indoor</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -10,78 +10,246 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/style.css">
 <style>
-  .onglets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .onglets button { font-size: 16px; padding: 0 2px; min-width: 0; overflow: hidden; }
-  .carte-tete.or { background: #A87E0E; }
-  .carte-tete.argent { background: #63686E; }
-  .carte-tete.bronze { background: #8E5426; }
-  table.classement tr.or td.rg { color: #A87E0E; box-shadow: inset 6px 0 0 #D9A520; }
-  table.classement tr.argent td.rg { color: var(--gris); box-shadow: inset 6px 0 0 #A9ADB2; }
-  table.classement tr.bronze td.rg { color: #8E5426; box-shadow: inset 6px 0 0 #B5763A; }
-  .seed { font-family: var(--cond); font-weight: 800; color: var(--gris-clair); width: 22px; flex: none; text-align: center; }
-  .place { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--ligne); }
-  .place b { width: 28px; font-family: var(--cond); font-size: 22px; color: var(--gris-clair); }
-  .place.podium b { color: var(--rouge); }
-  .place span { font-weight: 600; }
-  .place span.vide { color: var(--gris-clair); }
-  .entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .btn-regles { flex: none; min-height: 44px; padding: 0 14px; border: 2px solid #fff; background: transparent; color: #fff; font-family: var(--cond); font-size: 17px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; }
-  .btn-regles:focus-visible, .fermer:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
-  dialog.regles { width: 100%; max-width: 560px; max-height: 100%; height: 100%; margin: 0 auto; padding: 0; border: 0; background: var(--brume); color: var(--encre); }
+  :root { --or: #D9A520; --or-fonce: #A87E0E; --argent: #A9ADB2; --argent-fonce: #63686E; --bronze: #B5763A; --bronze-fonce: #8E5426; --nav: 72px; }
+  body { background: var(--brume); }
+  .site { max-width: 560px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(var(--nav) + 24px + env(safe-area-inset-bottom)); }
+  .label { font-family: var(--cond); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: var(--gris); text-transform: uppercase; }
+  .carre { width: 28px; height: 28px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-family: var(--cond); font-size: 16px; font-weight: 800; }
+  .traits2 { display: flex; flex-direction: column; gap: 4px; width: 160px; }
+  .traits2::before { content: ""; height: 5px; background: #fff; }
+  .traits2::after { content: ""; height: 3px; width: 46%; background: var(--encre); }
+  .demo { background: #FFB020; color: var(--encre); font-weight: 700; font-size: 14px; text-align: center; padding: 6px; }
+
+  /* ---------- En-tête ---------- */
+  .tete { background: var(--rouge); color: #fff; padding: 16px 16px 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .tete-haut { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .tete .sur { font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #FFE3E7; text-transform: uppercase; }
+  .tete h1 { margin: 4px 0 0; font-family: var(--cond); font-size: 32px; font-weight: 800; line-height: .95; text-transform: uppercase; max-width: 220px; }
+  .btn-regles { flex: none; min-height: 44px; padding: 0 12px; border: 2px solid #fff; background: transparent; color: #fff; display: inline-flex; align-items: center; gap: 8px; font-family: var(--cond); font-size: 17px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .etapes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .etape { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .etape .carre { border: 2px solid #fff; }
+  .etape.active .carre { background: var(--encre); border-color: var(--encre); color: #fff; }
+  .etape.faite .carre { background: #fff; border-color: #fff; color: var(--rouge); }
+  .etape.avenir { opacity: .6; }
+  .etape.faite { opacity: .8; }
+  .etape .txt { font-family: var(--cond); font-size: 15px; font-weight: 800; line-height: 1; text-transform: uppercase; min-width: 0; }
+  .etape .txt span { display: block; font-weight: 600; color: #FFE3E7; margin-top: 2px; text-transform: none; }
+  .fini { background: var(--encre); padding: 8px 12px; display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; font-family: var(--cond); font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+
+  /* ---------- Contenu ---------- */
+  .contenu { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .vide { background: #fff; padding: 22px 18px; text-align: center; color: var(--gris); font-weight: 600; line-height: 1.45; }
+  .teaser { background: #fff; color: var(--encre); display: flex; align-items: center; gap: 14px; padding: 14px; border: 0; border-left: 4px solid var(--rouge); width: 100%; text-align: left; }
+  .teaser .q { width: 40px; height: 40px; flex: none; background: var(--encre); color: #fff; font-family: var(--cond); font-size: 24px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .teaser b { display: block; font-family: var(--cond); font-size: 20px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+  .teaser .t span { font-size: 13.5px; color: var(--gris); }
+  .teaser .fl { margin-left: auto; flex: none; color: var(--rouge); display: flex; }
+  .rotation { display: flex; align-items: stretch; gap: 6px; }
+  .rotation .info { flex: 1 1 auto; background: var(--encre); color: #fff; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .rotation .info small { font-family: var(--cond); font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--rouge-clair); text-transform: uppercase; }
+  .rotation .info b { font-family: var(--cond); font-size: 20px; font-weight: 800; }
+  .rotation .chrono { background: var(--rouge); color: #fff; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; }
+  .rotation .chrono b { font-family: var(--cond); font-size: 40px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .rotation .chrono span { font-size: 11px; font-weight: 700; color: #FFE3E7; }
+  .match { background: #fff; display: flex; flex-direction: column; }
+  .match .haut { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px 6px; min-height: 36px; }
+  .match .haut small { font-family: var(--cond); font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--gris-clair); text-transform: uppercase; }
+  .live { display: inline-flex; align-items: center; gap: 6px; background: var(--rouge); color: #fff; padding: 3px 8px; font-family: var(--cond); font-size: 13px; font-weight: 800; letter-spacing: 1px; }
+  .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #fff; }
+  .eq { display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 0; border-top: 2px solid var(--brume); }
+  .eq .b { width: 4px; align-self: stretch; flex: none; }
+  .eq.mene .b { background: var(--rouge); }
+  .eq .n { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .eq .s { font-family: var(--cond); font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .resultats { background: #fff; display: flex; flex-direction: column; }
+  .res { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 12px 14px; border-bottom: 2px solid var(--brume); }
+  .res:last-child { border-bottom: 0; }
+  .res .n { font-size: 14.5px; font-weight: 500; color: var(--gris-clair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res .n.g { font-weight: 700; color: var(--encre); }
+  .res .n:last-child { text-align: right; }
+  .res .sc { font-family: var(--cond); font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; background: var(--brume); padding: 2px 8px; white-space: nowrap; }
+  .champion { background: var(--encre); color: #fff; padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .champion::before { content: ""; width: 6px; height: 44px; background: var(--rouge); flex: none; }
+  .champion small { display: block; font-family: var(--cond); font-size: 14px; font-weight: 700; letter-spacing: 2px; color: var(--rouge-clair); }
+  .champion b { font-family: var(--cond); font-size: 24px; font-weight: 800; }
+
+  /* ---------- Poules ---------- */
+  .segments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #fff; padding: 4px; gap: 4px; }
+  .segments button { min-height: 44px; border: 0; background: transparent; color: var(--gris); font-family: var(--cond); font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .segments button[aria-selected="true"] { background: var(--encre); color: #fff; }
+  .poule { background: #fff; display: flex; flex-direction: column; }
+  .poule-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--encre); color: #fff; }
+  .poule-tete b { font-family: var(--cond); font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .poule-tete span { font-family: var(--cond); font-size: 13px; font-weight: 800; letter-spacing: 1px; border: 2px solid currentColor; padding: 2px 8px; white-space: nowrap; text-transform: uppercase; }
+  .poule-tete.or { background: var(--or-fonce); }
+  .poule-tete.argent { background: var(--argent-fonce); }
+  .poule-tete.bronze { background: var(--bronze-fonce); }
+  .ligne-cl { display: grid; grid-template-columns: 30px minmax(0, 1fr) 28px 28px 40px; gap: 10px; align-items: center; padding: 7px 14px; border-top: 2px solid var(--brume); }
+  .ligne-cl.entete { border-top: 0; padding: 8px 14px 4px; font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--gris-clair); }
+  .ligne-cl .carre { background: var(--ligne); color: var(--gris); }
+  .ligne-cl .carre.q { background: var(--encre); color: #fff; }
+  .ligne-cl .carre.or { background: var(--or); color: var(--encre); }
+  .ligne-cl .carre.argent { background: var(--argent); color: var(--encre); }
+  .ligne-cl .carre.bronze { background: var(--bronze); color: var(--encre); }
+  .ligne-cl .nm { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ligne-cl .c { text-align: center; font-size: 14px; color: var(--gris); font-variant-numeric: tabular-nums; }
+  .ligne-cl .v { text-align: center; font-family: var(--cond); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .ligne-cl .d { text-align: right; font-size: 14px; color: var(--gris); font-variant-numeric: tabular-nums; }
+  .legende { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13.5px; font-weight: 600; color: var(--gris); }
+  .legende i { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -1px; }
+  .lien { background: none; border: 0; padding: 0; color: var(--rouge); font-weight: 700; text-decoration: underline; font-size: 14px; min-height: 44px; text-align: left; align-self: flex-start; }
+
+  /* ---------- Arbre ---------- */
+  .frise { position: relative; display: flex; flex-direction: column; gap: 18px; }
+  .frise::before { content: ""; position: absolute; left: 19px; top: 20px; bottom: 20px; width: 3px; background: var(--rouge); }
+  .tour { position: relative; display: flex; gap: 12px; }
+  .tour > .carre { width: 40px; height: 40px; font-size: 18px; color: #fff; background: var(--gris-clair); }
+  .tour.fait > .carre { background: var(--encre); }
+  .tour.encours > .carre { background: var(--rouge); }
+  .tour .corps { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .tour .titre { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 40px; }
+  .tour .titre b { font-family: var(--cond); font-size: 22px; font-weight: 800; text-transform: uppercase; }
+  .tour .titre span { font-family: var(--cond); font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--gris); text-transform: uppercase; white-space: nowrap; }
+  .tour.encours .titre span { color: var(--rouge); }
+  .sous-titre { display: flex; justify-content: space-between; gap: 8px; font-family: var(--cond); font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--gris); text-transform: uppercase; margin-top: 6px; }
+  .sous-titre b { color: var(--encre); }
+  .m-arbre { background: #fff; display: flex; flex-direction: column; }
+  .m-arbre .l { display: flex; align-items: center; gap: 10px; min-height: 38px; padding-right: 12px; border-bottom: 2px solid var(--brume); }
+  .m-arbre .l:nth-child(2) { border-bottom: 0; }
+  .m-arbre .l .b { width: 4px; align-self: stretch; flex: none; }
+  .m-arbre .l.g .b { background: var(--rouge); }
+  .m-arbre .l .seed { width: 18px; flex: none; font-family: var(--cond); font-size: 14px; font-weight: 800; color: var(--gris-clair); text-align: center; }
+  .m-arbre .l .n { flex: 1 1 auto; min-width: 0; font-size: 14.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-arbre .l.p .n, .m-arbre .l.att .n { font-weight: 500; color: var(--gris-clair); }
+  .m-arbre .l.att .n { font-style: italic; }
+  .m-arbre .l .s { font-family: var(--cond); font-size: 20px; font-weight: 800; color: var(--gris-clair); font-variant-numeric: tabular-nums; }
+  .m-arbre .l.g .s { color: var(--rouge); }
+  .m-arbre .chip { background: var(--rouge); color: #fff; font-family: var(--cond); font-size: 13px; font-weight: 800; letter-spacing: 1px; padding: 3px 12px; }
+
+  /* ---------- Classement ---------- */
+  .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: end; }
+  .marche { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .marche .nm { font-family: var(--cond); font-size: 17px; font-weight: 800; line-height: 1.05; text-align: center; overflow-wrap: anywhere; }
+  .marche .bloc-p { background: var(--encre); color: #fff; display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 2px; font-family: var(--cond); font-weight: 800; line-height: 1; }
+  .marche.p1 .nm { font-size: 19px; color: var(--rouge); }
+  .marche.p1 .bloc-p { background: var(--rouge); height: 136px; font-size: 52px; }
+  .marche.p1 .bloc-p small { font-size: 13px; letter-spacing: 1px; color: #FFE3E7; }
+  .marche.p2 .bloc-p { height: 96px; font-size: 40px; }
+  .marche.p3 .bloc-p { height: 72px; font-size: 36px; }
+  .traits-pleins { display: flex; flex-direction: column; gap: 4px; }
+  .traits-pleins::before { content: ""; height: 5px; background: var(--rouge); }
+  .traits-pleins::after { content: ""; height: 3px; width: 46%; background: var(--encre); }
+  .places { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .places > div { background: #fff; display: flex; flex-direction: column; }
+  .place { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-bottom: 2px solid var(--brume); min-height: 40px; }
+  .place .carre { width: 26px; height: 26px; font-size: 15px; background: var(--ligne); color: var(--gris); }
+  .place .carre.q { background: var(--encre); color: #fff; }
+  .place .nm { flex: 1 1 auto; min-width: 0; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .place .nm.vide { color: var(--gris-clair); font-weight: 500; }
+  .btn-noir { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; background: var(--encre); color: #fff; border: 0; padding: 0 16px; font-family: var(--cond); font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .btn-noir[aria-expanded="true"] svg { transform: rotate(90deg); }
+
+  /* ---------- Navigation du bas ---------- */
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--encre); padding-bottom: env(safe-area-inset-bottom); }
+  .nav-in { max-width: 560px; margin: 0 auto; height: var(--nav); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nav button { border: 0; border-top: 4px solid var(--encre); background: transparent; color: #9A9893; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-family: var(--cond); font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; min-width: 0; }
+  .nav button[aria-current="page"] { color: #fff; border-top-color: var(--rouge); }
+  .nav button:focus-visible, .teaser:focus-visible, .segments button:focus-visible, .btn-noir:focus-visible, .lien:focus-visible { outline: 3px solid var(--rouge); outline-offset: -3px; }
+  .btn-regles:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+
+  /* ---------- Règles ---------- */
+  dialog.regles { width: 100%; max-width: 560px; height: 100%; max-height: 100%; margin: 0 auto; padding: 0; border: 0; background: var(--brume); color: var(--encre); }
   @media (min-width: 600px) { dialog.regles { height: auto; max-height: calc(100% - 48px); margin: 24px auto; } }
   dialog.regles::backdrop { background: rgba(10, 10, 14, .6); }
-  .regles-tete { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--rouge); color: #fff; padding: 14px 16px 12px 20px; border-bottom: 4px solid var(--encre); }
-  .regles-tete h2 { margin: 0; font-family: var(--cond); font-size: 28px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-  .fermer { width: 44px; height: 44px; border: 2px solid #fff; background: transparent; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
-  .regles-corps { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-  .regle { background: #fff; padding: 16px 18px; }
-  .regle h3 { margin: 0 0 8px; font-family: var(--cond); font-size: 21px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
-  .regle h3 .n { width: 30px; height: 30px; flex: none; background: var(--rouge); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
-  .regle p, .regle li { margin: 0; font-size: 15.5px; line-height: 1.5; }
-  .regle p + p, .regle p + ul, .regle ul + p, .regle ol + p { margin-top: 8px; }
-  .regle ul, .regle ol { margin: 6px 0 0; padding-left: 20px; }
-  .regle li + li { margin-top: 4px; }
-  .regle b { font-weight: 700; }
-  .pastille-metal { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: 0; }
-  .chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
-  .chiffres div { background: var(--brume); padding: 10px 8px; text-align: center; }
-  .chiffres b { display: block; font-family: var(--cond); font-size: 28px; font-weight: 800; color: var(--rouge); line-height: 1.1; }
-  .chiffres span { font-size: 13px; font-weight: 600; color: var(--gris); }
-  .exemple { background: var(--brume); padding: 10px 12px; margin-top: 10px; font-size: 14.5px; line-height: 1.5; }
+  .r-tete { background: var(--rouge); color: #fff; padding: 16px 16px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .r-tete .haut { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .r-tete .haut small { font-family: var(--cond); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #FFE3E7; text-transform: uppercase; }
+  .fermer { width: 44px; height: 44px; flex: none; border: 2px solid #fff; background: transparent; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .fermer:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+  .r-tete h2 { margin: 0; font-family: var(--cond); font-size: 58px; font-weight: 800; line-height: .88; }
+  .r-tete h2 span { color: var(--encre); }
+  .r-tete p { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .r-frise { position: relative; padding: 28px 20px 8px; display: flex; flex-direction: column; gap: 28px; }
+  .r-frise::before { content: ""; position: absolute; left: 39px; top: 44px; bottom: 60px; width: 3px; background: var(--rouge); }
+  .r-etape { position: relative; display: flex; gap: 16px; }
+  .r-etape > .carre { width: 40px; height: 40px; font-size: 22px; background: var(--encre); color: #fff; }
+  .r-etape .corps { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .r-etape h3 { margin: 0; font-family: var(--cond); font-size: 26px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+  .r-etape p { margin: 0; font-size: 15px; line-height: 1.45; }
+  .r-poules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .r-poules div { background: #fff; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+  .r-poules b { font-family: var(--cond); font-size: 16px; font-weight: 800; color: var(--rouge); }
+  .r-poules i { height: 6px; background: #E4E1DC; }
+  .r-metal { display: flex; align-items: stretch; background: #fff; }
+  .r-metal .rg { width: 92px; flex: none; padding: 10px 12px; font-family: var(--cond); font-size: 18px; font-weight: 800; border-right: 2px solid var(--ligne); }
+  .r-metal svg { align-self: center; margin: 0 8px; color: var(--gris-clair); flex: none; }
+  .r-metal .nm { display: flex; align-items: center; gap: 10px; padding-right: 12px; font-family: var(--cond); font-size: 20px; font-weight: 800; }
+  .r-metal .nm i { width: 14px; height: 14px; flex: none; }
+  .r-arbre { background: #fff; padding: 12px; display: flex; gap: 10px; align-items: center; }
+  .r-arbre .col { display: flex; flex-direction: column; flex: 1 1 0; }
+  .r-arbre .q { display: flex; flex-direction: column; border-left: 4px solid var(--rouge); }
+  .r-arbre .q + .q { margin-top: 6px; }
+  .r-arbre .q span { font-family: var(--cond); font-size: 15px; font-weight: 800; padding: 2px 6px; background: var(--brume); }
+  .r-arbre .q span + span { margin-top: 2px; }
+  .r-arbre .d { height: 40px; background: var(--brume); border-left: 4px solid var(--encre); }
+  .r-arbre .d + .d { margin-top: 52px; }
+  .r-arbre .f { height: 40px; background: var(--rouge); }
+  .r-arbre .col small { font-family: var(--cond); font-size: 14px; font-weight: 800; text-align: center; color: var(--rouge); margin-top: 6px; }
+  .r-note { font-size: 14px; color: var(--gris); line-height: 1.45; }
+  .r-bloc { padding: 20px 20px 0; display: flex; flex-direction: column; gap: 10px; }
+  .r-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .r-tuiles div { background: var(--encre); color: #fff; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .r-tuiles div:last-child { background: var(--rouge); }
+  .r-tuiles b { font-family: var(--cond); font-size: 36px; font-weight: 800; line-height: 1; }
+  .r-tuiles span { font-size: 12px; font-weight: 600; color: #C9C7C3; }
+  .r-tuiles div:last-child span { color: #FFE3E7; }
+  .r-encart { background: #fff; padding: 12px 14px; font-size: 14px; line-height: 1.45; border-left: 4px solid var(--rouge); }
+  .r-criteres { background: #fff; display: flex; flex-direction: column; }
+  .r-critere { display: flex; gap: 14px; padding: 12px 14px; border-bottom: 2px solid var(--brume); }
+  .r-critere:last-child { border-bottom: 0; }
+  .r-critere > b { font-family: var(--cond); font-size: 30px; font-weight: 800; color: var(--rouge); width: 22px; line-height: 1; flex: none; }
+  .r-critere strong { display: block; font-family: var(--cond); font-size: 19px; font-weight: 800; }
+  .r-critere span { font-size: 13.5px; color: var(--gris); line-height: 1.4; }
+  .r-exemple { background: var(--encre); color: #fff; padding: 14px; font-size: 14px; line-height: 1.45; }
+  .r-exemple b { color: var(--rouge-clair); font-family: var(--cond); letter-spacing: 1px; }
+  .r-fin { padding: 24px 20px 32px; font-size: 14px; color: var(--gris); line-height: 1.45; }
 </style>
 </head>
 <body>
-<div class="appli">
-  <div id="demo" class="demo-banniere" hidden>Mode démo</div>
-  <header class="entete">
-    <div>
-      <h1 id="titre"></h1>
-      <p id="sousTitre"></p>
+<div id="demo" class="demo" hidden>Mode démo</div>
+<div class="site">
+  <header class="tete">
+    <div class="tete-haut">
+      <div>
+        <div class="sur" id="sur"></div>
+        <h1 id="titre"></h1>
+      </div>
+      <button class="btn-regles" id="ouvrirRegles" type="button" aria-haspopup="dialog">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="17"></line><line x1="12" y1="7" x2="12.01" y2="7"></line></svg>
+        Règles
+      </button>
     </div>
-    <button class="btn-regles" id="ouvrirRegles" type="button" aria-haspopup="dialog">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="17"></line><line x1="12" y1="7" x2="12.01" y2="7"></line></svg>
-      Règles
-    </button>
+    <div class="traits2" aria-hidden="true"></div>
+    <div id="etapes"></div>
   </header>
-  <nav class="onglets" role="tablist" aria-label="Sections">
-    <button role="tab" data-onglet="matchs" aria-selected="true">Matchs</button>
-    <button role="tab" data-onglet="poules" aria-selected="false">Poules</button>
-    <button role="tab" data-onglet="arbre" aria-selected="false">Arbre</button>
-    <button role="tab" data-onglet="classement" aria-selected="false">Classement</button>
-  </nav>
-  <main class="contenu" id="contenu" role="tabpanel" aria-live="polite"></main>
-  <p class="note" style="padding:0 16px 24px">Mise à jour automatique · en live sur <a id="lienTwitch" href="#"></a> · <a href="#regles" id="lienRegles">Règles du tournoi</a></p>
+  <main class="contenu" id="contenu" aria-live="polite"></main>
 </div>
 
-<dialog class="regles" id="regles" aria-labelledby="titreRegles">
-  <div class="regles-tete">
-    <h2 id="titreRegles">Règles du tournoi</h2>
-    <button class="fermer" id="fermerRegles" type="button" aria-label="Fermer les règles">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
-    </button>
+<nav class="nav" aria-label="Sections">
+  <div class="nav-in">
+    <button type="button" data-onglet="matchs">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><line x1="12" y1="13" x2="12" y2="9"></line><line x1="10" y1="2" x2="14" y2="2"></line></svg>Matchs</button>
+    <button type="button" data-onglet="poules">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="9" y1="6" x2="21" y2="6"></line><line x1="9" y1="12" x2="21" y2="12"></line><line x1="9" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="5" y2="6"></line><line x1="3" y1="12" x2="5" y2="12"></line><line x1="3" y1="18" x2="5" y2="18"></line></svg>Poules</button>
+    <button type="button" data-onglet="arbre">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><polyline points="3 5 9 5 9 10 3 10"></polyline><polyline points="3 14 9 14 9 19 3 19"></polyline><polyline points="9 7.5 15 7.5 15 16.5 9 16.5"></polyline><line x1="15" y1="12" x2="21" y2="12"></line></svg>Arbre</button>
+    <button type="button" data-onglet="classement">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="9" y="5" width="6" height="15"></rect><rect x="3" y="10" width="6" height="10"></rect><rect x="15" y="13" width="6" height="7"></rect></svg>Classement</button>
   </div>
-  <div class="regles-corps" id="reglesCorps"></div>
-</dialog>
+</nav>
+
+<dialog class="regles" id="regles" aria-labelledby="titreRegles"></dialog>
 
 <script src="config.js"></script>
 <script type="module">
@@ -89,104 +257,32 @@ import { CFG, $, esc, fmtChrono, nomEquipe } from "./shared/outils.js";
 import { connecter, DEMO } from "./shared/firebase.js";
 import * as T from "./shared/moteur.js";
 
+const F = CFG.format, ECART = F.ecartMin ?? 2, NB = CFG.equipes?.length || 18;
+const SVG_COCHE = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" aria-hidden="true"><polyline points="5 12 10 17 19 7"></polyline></svg>`;
+const SVG_FLECHE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 5 16 12 9 19"></polyline></svg>`;
+
+$("#sur").textContent = [CFG.date, CFG.lieu].filter(Boolean).join(" · ");
 $("#titre").textContent = CFG.nom;
-$("#sousTitre").textContent = [CFG.date, CFG.lieu].filter(Boolean).join(" · ");
-$("#lienTwitch").textContent = CFG.twitch;
-$("#lienTwitch").href = "https://" + CFG.twitch.replace(/^https?:\/\//, "");
 if (DEMO) $("#demo").hidden = false;
-
-// ---------------- Règles du tournoi ----------------
-const F = CFG.format;
-const ecart = F.ecartMin ?? 2;
-$("#reglesCorps").innerHTML = `
-  <div class="regle">
-    <h3>En bref</h3>
-    <div class="chiffres">
-      <div><b>${CFG.equipes.length}</b><span>équipes</span></div>
-      <div><b>3</b><span>phases</span></div>
-      <div><b>3</b><span>terrains</span></div>
-    </div>
-    <p style="margin-top:10px">Tout le monde joue la journée entière : brassage, puis poules de niveau, puis phase finale avec un classement complet de la 1re à la ${CFG.equipes.length}e place.</p>
-  </div>
-
-  <div class="regle">
-    <h3><span class="n">1</span>Brassage</h3>
-    <p><b>3 poules de 6</b> (A, B, C). Chaque équipe joue une fois contre toutes les autres de sa poule : 5 matchs.</p>
-    <p>À chaque rotation, une poule joue sur les 3 terrains pendant que les autres se reposent.</p>
-  </div>
-
-  <div class="regle">
-    <h3><span class="n">2</span>Poules de niveau</h3>
-    <p>Selon ton classement au brassage :</p>
-    <ul>
-      <li><span class="pastille-metal" style="background:#D9A520" aria-hidden="true"></span><b>1er et 2e</b> → poule Or</li>
-      <li><span class="pastille-metal" style="background:#A9ADB2" aria-hidden="true"></span><b>3e et 4e</b> → poule Argent</li>
-      <li><span class="pastille-metal" style="background:#B5763A" aria-hidden="true"></span><b>5e et 6e</b> → poule Bronze</li>
-    </ul>
-    <p>Encore 5 matchs, chacun contre tous, avec les mêmes règles.</p>
-  </div>
-
-  <div class="regle">
-    <h3><span class="n">3</span>Phase finale</h3>
-    <p><b>Quarts de finale</b> : les 6 équipes de la poule Or et les 2 premières de la poule Argent, classées de 1 à 8. Le 1er joue le 8e, le 2e le 7e, le 3e le 6e, le 4e le 5e.</p>
-    <p>Vainqueurs et perdants continuent : demies, puis matchs pour les places 1 à 8. Les autres équipes jouent les places 9 à ${CFG.equipes.length}, toujours contre l'équipe classée juste derrière ou devant (9e contre 10e, 11e contre 12e…).</p>
-  </div>
-
-  <div class="regle">
-    <h3>Durée des matchs</h3>
-    <ul>
-      <li><b>Poules</b> (brassage et poules de niveau) : <b>${F.dureeMatchPouleMin} minutes</b>. Le score au coup de sifflet fait foi.</li>
-      <li><b>Égalité au sifflet</b> : on joue <b>un dernier point</b>, qui désigne le vainqueur. Il n'y a jamais de match nul.</li>
-      <li><b>Phase finale</b> : en <b>${F.pointsTour} points</b>, avec ${ecart} points d'écart.</li>
-      <li><b>Finale</b> : en <b>${F.pointsFinale} points</b>, avec ${ecart} points d'écart.</li>
-    </ul>
-  </div>
-
-  <div class="regle">
-    <h3>Le classement d'une poule</h3>
-    <p>Les équipes sont départagées dans cet ordre :</p>
-    <ol>
-      <li><b>Le nombre de victoires.</b></li>
-      <li><b>La confrontation directe</b> : à égalité de victoires, l'équipe qui a gagné le match entre elles passe devant.</li>
-      <li><b>La différence de points</b> : points marqués moins points encaissés, sur tous les matchs de la poule.</li>
-      <li><b>Les points marqués</b>, en dernier recours.</li>
-    </ol>
-    <p class="exemple"><b>Exemple :</b> deux équipes finissent avec 3 victoires. La première a +9 de différence, la seconde −3, mais la seconde a gagné leur match : elle passe devant.<br><br>
-    <b>À trois ou plus</b> : on compte les victoires dans les matchs entre ces équipes uniquement. Si elles s'en sont pris une chacune, on passe à la différence de points.</p>
-  </div>
-
-  <div class="regle">
-    <h3>Suivre le tournoi</h3>
-    <p>Cette page se met à jour toute seule : matchs en cours, poules, arbre et classement final. Les matchs sont aussi commentés en direct sur <b>${esc(CFG.twitch)}</b>.</p>
-  </div>`;
-
-const dlg = $("#regles");
-function ouvrirRegles() { if (!dlg.open) dlg.showModal(); }
-$("#ouvrirRegles").addEventListener("click", ouvrirRegles);
-$("#lienRegles").addEventListener("click", (ev) => { ev.preventDefault(); ouvrirRegles(); });
-$("#fermerRegles").addEventListener("click", () => dlg.close());
-// Clic sur le fond assombri, à côté de la fenêtre (sur ordinateur)
-dlg.addEventListener("click", (ev) => {
-  const r = dlg.getBoundingClientRect();
-  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) dlg.close();
-});
-if (location.hash === "#regles") ouvrirRegles();
 
 const ONGLETS = ["matchs", "poules", "arbre", "classement"];
 let onglet = ONGLETS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "matchs";
-let phaseChoisie = null, tourChoisi = null;
-let eqs = [], ms = [], rots = [], live = {}, dernier = "";
+let phaseChoisie = null, voirClassement = false;
+let eqs = [], ms = [], rots = [], live = {}, dernier = "", dernierEtapes = "";
 const nom = (id) => nomEquipe(eqs, id);
+const nomOuAttente = (m, s) => nom(m[s]) || T.etiquetteAttente(m, s, ms);
 
 document.querySelectorAll("[data-onglet]").forEach((b) => b.addEventListener("click", () => {
   onglet = b.dataset.onglet;
   history.replaceState(null, "", "#" + onglet);
   rendre(true);
+  scrollTo({ top: 0 });
 }));
 $("#contenu").addEventListener("click", (ev) => {
-  const t = ev.target.closest("[data-tour]"), p = ev.target.closest("[data-phase]");
-  if (t) { tourChoisi = t.dataset.tour; rendre(true); }
-  if (p) { phaseChoisie = p.dataset.phase; rendre(true); }
+  if (ev.target.closest("[data-regles]")) { ouvrirRegles(); return; }
+  const p = ev.target.closest("[data-phase]");
+  if (p) { phaseChoisie = p.dataset.phase; rendre(true); return; }
+  if (ev.target.closest("[data-voir-classement]")) { voirClassement = !voirClassement; rendre(true); }
 });
 
 const api = await connecter();
@@ -199,105 +295,238 @@ api.ecouter("", (v) => {
 setInterval(() => rendre(), 1000);
 
 function rendre(force) {
-  document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.onglet === onglet)));
+  document.querySelectorAll("[data-onglet]").forEach((b) => {
+    if (b.dataset.onglet === onglet) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+  });
+  const et = etapes();
+  if (et !== dernierEtapes) { $("#etapes").innerHTML = et; dernierEtapes = et; }
   const html = { poules, arbre, classement }[onglet]?.() ?? matchs();
   if (force || html !== dernier) { $("#contenu").innerHTML = html; dernier = html; }
 }
 
-const ligne = (m, s, sc, avecSeed) => {
-  const r = T.resultat(m), id = m[s];
-  const cls = !id ? "attente" : r === s ? "gagne" : r ? "perd" : "";
-  const seed = avecSeed && m["seed" + s] ? `<span class="seed">${m["seed" + s]}</span>` : "";
-  return `<div class="ligne-eq ${cls}"><div class="barre"></div>${seed}
-    <div class="nom ellipse">${esc(id ? nom(id) : T.etiquetteAttente(m, s, ms))}</div>
-    <div class="sc">${sc ?? ""}</div></div>`;
-};
-const score = (m, s) => (m.statut === T.STATUT.TERMINE ? m["score" + s] : "");
+// ---------------- Les 3 étapes ----------------
+function etapes() {
+  if (T.phaseTerminee(ms, "finale")) {
+    return `<div class="fini">${SVG_COCHE} TOURNOI TERMINÉ · ${ms.filter((m) => m.statut === T.STATUT.TERMINE).length} MATCHS JOUÉS</div>`;
+  }
+  const courante = T.phaseCourante(ms) || "brassage";
+  const iCourante = T.PHASES.indexOf(courante);
+  const noms = ["Brassage", "Niveaux", "Finale"];
+  return `<div class="etapes">` + T.PHASES.map((p, i) => {
+    const etat = i < iCourante || (i === iCourante && T.phaseTerminee(ms, p)) ? "faite" : i === iCourante ? "active" : "avenir";
+    let prog = "";
+    if (etat === "active") {
+      const l = rots.filter((r) => r.phase === p);
+      const cur = l.findIndex((r) => r.statut === T.STATUT.ENCOURS);
+      const n = cur >= 0 ? cur + 1 : l.filter((r) => r.statut === T.STATUT.TERMINE).length;
+      prog = l.length ? `<span>${n}/${l.length}</span>` : `<span>à venir</span>`;
+    }
+    return `<div class="etape ${etat}"><span class="carre">${etat === "faite" ? SVG_COCHE : i + 1}</span><div class="txt">${noms[i]}${prog}</div></div>`;
+  }).join("") + `</div>`;
+}
 
 // ---------------- Matchs ----------------
+const TEASER = `<button class="teaser" type="button" data-regles>
+  <span class="q" aria-hidden="true">?</span>
+  <span class="t"><b>Comment ça marche ?</b><span>Les règles du tournoi en 1 minute</span></span>
+  <span class="fl">${SVG_FLECHE}</span></button>`;
+
 function matchs() {
-  if (!ms.length) return `<div class="vide">Le programme arrive bientôt.</div>`;
+  let html = TEASER;
+  if (!ms.length) return html + `<div class="vide">Le programme arrive bientôt.</div>`;
   const cur = T.rotationEnCours(rots);
-  let html = "";
   if (cur) {
-    html += `<div class="titre-section rouge"><span>En cours · ${esc(T.NOMS_PHASES[cur.phase])}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${T.texteChrono(cur, api.maintenant(), fmtChrono)}</span></div>`;
+    const l = rots.filter((r) => r.phase === cur.phase);
+    const i = l.findIndex((r) => r.id === cur.id) + 1;
+    const quoi = cur.phase === "finale" ? "Phase finale" : `${T.NOMS_PHASES[cur.phase]} · ${T.NOMS_POULES[cur.poule]}`;
+    const points = cur.mode === "points";
+    html += `<div class="rotation">
+      <div class="info"><small>En cours · ${esc(quoi)}</small><b>Rotation ${i} sur ${l.length}</b></div>
+      <div class="chrono"><b>${points ? cur.cible : T.texteChrono(cur, api.maintenant(), fmtChrono)}</b><span>${points ? "points" : "restantes"}</span></div>
+    </div>`;
     for (const m of T.matchsDeRotation(ms, cur.num)) {
       const filme = live.matchId === m.id;
       const p = filme ? live.points?.[m.id] || { A: 0, B: 0 } : null;
-      html += `<div class="carte"><div class="carte-tete ${filme ? "" : "clair"}"><span>${esc(T.nomPhase(m))}</span>${filme ? `<span class="direct">EN DIRECT SUR TWITCH</span>` : ""}</div>
-        ${ligne(m, "A", filme ? p.A || 0 : score(m, "A"))}${ligne(m, "B", filme ? p.B || 0 : score(m, "B"))}</div>`;
+      const a = filme ? p.A || 0 : "", b = filme ? p.B || 0 : "";
+      const titre = m.phase === "finale" ? m.nom : `Match ${m.num}`;
+      html += `<div class="match">
+        <div class="haut"><small>${esc(titre)}</small>${filme ? `<span class="live">EN DIRECT SUR TWITCH</span>` : ""}</div>
+        <div class="eq ${filme && a > b ? "mene" : ""}"><span class="b"></span><span class="n">${esc(nomOuAttente(m, "A"))}</span><span class="s">${a}</span></div>
+        <div class="eq ${filme && b > a ? "mene" : ""}"><span class="b"></span><span class="n">${esc(nomOuAttente(m, "B"))}</span><span class="s">${b}</span></div>
+      </div>`;
     }
   } else {
     const champ = T.vainqueurTournoi(ms);
-    html += champ
-      ? `<div class="carte"><div class="carte-tete"><span>Vainqueur du tournoi</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`
+    html += champ ? `<div class="champion"><div><small>VAINQUEUR DU TOURNOI</small><b>${esc(nom(champ))}</b></div></div>`
       : `<div class="vide">Pas de match en cours pour l'instant.</div>`;
   }
   const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE).sort((a, b) => b.rotation - a.rotation || (a.terrain || 0) - (b.terrain || 0));
   if (finis.length) {
-    html += `<div class="titre-section"><span>Terminés</span></div>`;
-    html += finis.map((m) => `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A))} <span>vs</span> ${esc(nom(m.B))}</div><div class="sc">${m.scoreA} – ${m.scoreB}</div></div>`).join("");
+    html += `<div class="label" style="margin-top:6px">Derniers résultats</div><div class="resultats">` +
+      finis.map((m) => {
+        const r = T.resultat(m);
+        return `<div class="res"><span class="n ${r === "A" ? "g" : ""}">${esc(nom(m.A))}</span><span class="sc">${m.scoreA} – ${m.scoreB}</span><span class="n ${r === "B" ? "g" : ""}">${esc(nom(m.B))}</span></div>`;
+      }).join("") + `</div>`;
   }
   return html;
 }
 
 // ---------------- Poules ----------------
+const BADGES = { OR: "→ Quarts", ARGENT: "1-2 → Quarts", BRONZE: "Places 13-18" };
 function poules() {
   const courante = T.phaseCourante(ms);
   const dispo = ["brassage", ...(ms.some((m) => m.phase === "phase2") ? ["phase2"] : [])];
   const phase = dispo.includes(phaseChoisie) ? phaseChoisie : courante === "brassage" || !courante ? "brassage" : "phase2";
   if (!T.membresPoule(ms, phase, T.POULES[phase][0], eqs).length) return `<div class="vide">Les poules arrivent bientôt.</div>`;
-  let html = dispo.length > 1 ? `<div class="pastilles">${dispo.map((p) => `<button class="pastille" type="button" data-phase="${p}" aria-pressed="${p === phase}">${T.NOMS_PHASES[p]}</button>`).join("")}</div>` : "";
+  let html = "";
+  if (dispo.length > 1) html += `<div class="segments" role="tablist" aria-label="Phase">` +
+    [["brassage", "Brassage"], ["phase2", "Poules de niveau"]].map(([p, l]) => `<button type="button" role="tab" data-phase="${p}" aria-selected="${p === phase}">${l}</button>`).join("") + `</div>`;
   html += T.POULES[phase].map((p) => {
     const cl = T.classement(ms, phase, p, eqs);
-    const classe = (rang) => phase === "brassage" ? (rang <= 2 ? "or" : rang <= 4 ? "argent" : "bronze")
-      : p === "OR" || (p === "ARGENT" && rang <= 2) ? "qualif" : "";
-    return `<div class="carte"><div class="carte-tete ${phase === "phase2" ? p.toLowerCase() : ""}"><span>${esc(T.NOMS_POULES[p])}</span></div>
-      <table class="classement"><thead><tr><th scope="col"><span class="vh">Rang</span></th><th scope="col">Équipe</th><th scope="col">J</th><th scope="col">V</th><th scope="col">±</th></tr></thead><tbody>` +
-      cl.map((l) => `<tr class="${classe(l.rang)}"><td class="rg">${l.rang}</td><td class="eq"><div class="ellipse">${esc(l.nom)}</div></td><td>${l.J}</td><td class="pts">${l.V}</td><td>${l.diff > 0 ? "+" : ""}${l.diff}</td></tr>`).join("") +
-      `</tbody></table></div>`;
+    const carre = (rang) => phase === "brassage" ? (rang <= 2 ? "or" : rang <= 4 ? "argent" : "bronze")
+      : p === "OR" || (p === "ARGENT" && rang <= 2) ? "q" : "";
+    return `<section class="poule" aria-label="${esc(T.NOMS_POULES[p])}">
+      <div class="poule-tete ${phase === "phase2" ? p.toLowerCase() : ""}"><b>${esc(T.NOMS_POULES[p])}</b>${phase === "phase2" ? `<span>${BADGES[p]}</span>` : ""}</div>
+      <div class="ligne-cl entete" aria-hidden="true"><span></span><span>ÉQUIPE</span><span style="text-align:center">J</span><span style="text-align:center">V</span><span style="text-align:right">±</span></div>
+      ${cl.map((l) => `<div class="ligne-cl"><span class="carre ${carre(l.rang)}">${l.rang}</span><span class="nm">${esc(l.nom)}</span><span class="c">${l.J}</span><span class="v">${l.V}</span><span class="d">${l.diff > 0 ? "+" : l.diff < 0 ? "−" : ""}${Math.abs(l.diff)}</span></div>`).join("")}
+    </section>`;
   }).join("");
   html += phase === "brassage"
-    ? `<p class="note">1er-2e → poule Or · 3e-4e → poule Argent · 5e-6e → poule Bronze</p>`
-    : `<p class="note">Quarts : les 6 de la poule Or + les 2 premiers de la poule Argent</p>`;
-  return html + `<p class="note">Classement : victoires, confrontation directe, différence de points, points marqués.</p>`;
+    ? `<div class="legende"><span><i style="background:var(--or)"></i>1er-2e → Or</span><span><i style="background:var(--argent)"></i>3e-4e → Argent</span><span><i style="background:var(--bronze)"></i>5e-6e → Bronze</span></div>`
+    : `<div class="legende"><span><i style="background:var(--encre)"></i>Qualifiés pour les quarts</span></div>`;
+  return html + `<button class="lien" type="button" data-regles>Comment est calculé le classement ?</button>`;
 }
 
 // ---------------- Arbre ----------------
-const TOURS = { quarts: ["Q1", "Q2", "Q3", "Q4"], demies: ["D1", "D2"], finales: ["F12", "F34"] };
-const NOMS_TOURS = { quarts: "Quarts", demies: "Demies", finales: "Finale" };
-
-function carteMatch(m, avecSeed) {
+function boite(m, seeds) {
   if (!m) return "";
-  const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours" : `À venir · ${m.cible} pts`;
-  return `<div class="titre-section ${m.statut === T.STATUT.ENCOURS ? "rouge" : ""}"><span>${esc(m.nom)}</span><span style="font-size:15px">${etat}</span></div>
-    <div class="carte">${ligne(m, "A", score(m, "A"), avecSeed)}${ligne(m, "B", score(m, "B"), avecSeed)}</div>`;
+  const r = T.resultat(m);
+  const l = (s) => {
+    const cls = !m[s] ? "att" : r === s ? "g" : r ? "p" : "";
+    return `<div class="l ${cls}"><span class="b"></span>${seeds ? `<span class="seed">${m["seed" + s] || ""}</span>` : ""}<span class="n">${esc(nomOuAttente(m, s))}</span><span class="s">${m.statut === T.STATUT.TERMINE ? m["score" + s] : ""}</span></div>`;
+  };
+  return `<div class="m-arbre">${l("A")}${l("B")}${m.statut === T.STATUT.ENCOURS ? `<div class="chip">EN COURS · ${m.cible} PTS</div>` : ""}</div>`;
 }
-
+function etatTour(liste) {
+  liste = liste.filter(Boolean);
+  if (liste.every((m) => m.statut === T.STATUT.TERMINE)) return ["fait", liste.length > 1 ? "Terminés" : "Terminé"];
+  if (liste.some((m) => m.statut === T.STATUT.ENCOURS)) return ["encours", "En cours"];
+  return ["", `À venir · ${liste[0]?.cible || ""} pts`];
+}
 function arbre() {
   const fin = ms.filter((m) => m.phase === "finale");
-  if (!fin.length) return `<div class="vide">L'arbre s'affiche à la fin de la phase 2.</div>`;
+  if (!fin.length) return `<div class="vide">L'arbre s'affiche à la fin des poules de niveau.<br>Les 6 de la poule Or et les 2 premiers de la poule Argent y entrent.</div>`;
   const get = (c) => fin.find((m) => m.code === c);
-  const enCours = Object.keys(TOURS).find((t) => TOURS[t].some((c) => get(c)?.statut !== T.STATUT.TERMINE));
-  const t = TOURS[tourChoisi] ? tourChoisi : enCours || "finales";
-  let html = `<div class="pastilles">` + Object.keys(TOURS).map((k) =>
-    `<button class="pastille" type="button" data-tour="${k}" aria-pressed="${k === t}">${NOMS_TOURS[k]}</button>`).join("") + `</div>`;
-  html += TOURS[t].map((c) => carteMatch(get(c), t === "quarts")).join("");
+  const tours = [
+    { code: "Q", nom: "Quarts", liste: ["Q1", "Q2", "Q3", "Q4"].map(get), seeds: true },
+    { code: "D", nom: "Demies", liste: ["D1", "D2"].map(get) },
+    { code: "F", nom: `Finale · ${get("F12")?.cible || ""} pts`, liste: [get("F12")], extra: get("F34") }
+  ];
+  let html = `<div class="frise">` + tours.map((t) => {
+    const [cls, txt] = etatTour(t.extra ? [...t.liste, t.extra] : t.liste);
+    return `<div class="tour ${cls}"><span class="carre">${t.code}</span><div class="corps">
+      <div class="titre"><b>${t.nom}</b><span>${txt}</span></div>
+      ${t.liste.map((m) => boite(m, t.seeds)).join("")}
+      ${t.extra ? `<div class="sous-titre"><b>Places 3-4</b><span>${etatTour([t.extra])[1]}</span></div>${boite(t.extra)}` : ""}
+    </div></div>`;
+  }).join("") + `</div>`;
   const champ = T.vainqueurTournoi(ms);
-  if (champ) html += `<div class="carte"><div class="carte-tete"><span>Vainqueur</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`;
-  return html;
+  return html + `<div class="champion" style="margin-left:52px"><div><small>VAINQUEUR</small><b>${esc(champ ? nom(champ) : "À venir")}</b></div></div>`;
 }
 
 // ---------------- Classement ----------------
+const CODES_CLASSEMENT = ["D3", "D4", "F56", "F78", "P910", "P1112", "P1314", "P1516", "P1718"];
 function classement() {
   const fin = ms.filter((m) => m.phase === "finale");
-  if (!fin.length) return `<div class="vide">Le classement final s'affiche pendant la phase finale.</div>`;
-  let html = `<div class="titre-section"><span>Classement final</span></div><div class="carte">` +
-    T.classementFinal(ms).map((x) => `<div class="place ${x.place <= 3 ? "podium" : ""}"><b>${x.place}</b><span class="ellipse ${x.id ? "" : "vide"}">${esc(x.id ? nom(x.id) : "—")}</span></div>`).join("") + `</div>`;
-  html += `<div class="titre-section"><span>Matchs de classement</span></div>`;
-  html += ["D3", "D4", "F56", "F78", "P910", "P1112", "P1314", "P1516", "P1718"].map((c) => carteMatch(fin.find((m) => m.code === c))).join("");
+  if (!fin.length) return `<div class="vide">Le classement final se remplit pendant la phase finale, au fil des matchs de classement.</div>`;
+  const places = T.classementFinal(ms);
+  const n = (p) => { const x = places.find((y) => y.place === p); return x?.id ? esc(nom(x.id)) : "—"; };
+  let html = `<div class="label">Le podium</div>
+    <div class="podium">
+      <div class="marche p2"><div class="nm">${n(2)}</div><div class="bloc-p">2</div></div>
+      <div class="marche p1"><div class="nm">${n(1)}</div><div class="bloc-p">1<small>VAINQUEUR</small></div></div>
+      <div class="marche p3"><div class="nm">${n(3)}</div><div class="bloc-p">3</div></div>
+    </div>
+    <div class="traits-pleins" aria-hidden="true"></div>
+    <div class="label" style="margin-top:6px">Classement final</div>`;
+  const reste = places.filter((x) => x.place >= 4);
+  const moitie = Math.ceil(reste.length / 2);
+  const col = (l) => `<div>${l.map((x) => `<div class="place"><span class="carre ${x.place <= 8 ? "q" : ""}">${x.place}</span><span class="nm ${x.id ? "" : "vide"}">${x.id ? esc(nom(x.id)) : "—"}</span></div>`).join("")}</div>`;
+  html += `<div class="places">${col(reste.slice(0, moitie))}${col(reste.slice(moitie))}</div>`;
+  html += `<button class="btn-noir" type="button" data-voir-classement aria-expanded="${voirClassement}">${voirClassement ? "Masquer" : "Voir"} les matchs de classement ${SVG_FLECHE}</button>`;
+  if (voirClassement) {
+    html += CODES_CLASSEMENT.map((c) => {
+      const m = fin.find((x) => x.code === c);
+      return m ? `<div class="sous-titre"><b>${esc(m.nom)}</b><span>${etatTour([m])[1]}</span></div>${boite(m)}` : "";
+    }).join("");
+  }
   return html;
 }
+
+// ---------------- Règles ----------------
+$("#regles").innerHTML = `
+  <div class="r-tete">
+    <div class="haut"><small>${esc(CFG.nom)}${CFG.date ? " · " + esc(CFG.date) : ""}</small>
+      <button class="fermer" id="fermerRegles" type="button" aria-label="Fermer les règles"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg></button></div>
+    <h2 id="titreRegles">${NB} ÉQUIPES.<br><span>1 SEULE</span><br>AU SOMMET.</h2>
+    <div class="traits2" aria-hidden="true"></div>
+    <p>Ta journée en 3 étapes. Tout le monde joue jusqu'au bout, avec un classement complet de la 1re à la ${NB}e place.</p>
+  </div>
+  <div class="r-frise">
+    <div class="r-etape"><span class="carre">1</span><div class="corps">
+      <h3>Le brassage</h3>
+      <p>3 poules de 6. Tu joues une fois contre chaque équipe de ta poule : <b>5 matchs</b>.</p>
+      <div class="r-poules" aria-hidden="true">${["A", "B", "C"].map((p) => `<div><b>POULE ${p}</b>${"<i></i>".repeat(6)}</div>`).join("")}</div>
+    </div></div>
+    <div class="r-etape"><span class="carre">2</span><div class="corps">
+      <h3>Les poules de niveau</h3>
+      <p>Ton rang au brassage décide de ta poule. Encore <b>5 matchs</b>, mêmes règles.</p>
+      ${[["1er · 2e", "Or", "var(--or)"], ["3e · 4e", "Argent", "var(--argent)"], ["5e · 6e", "Bronze", "var(--bronze)"]].map(([r, n, c]) => `<div class="r-metal">
+        <span class="rg">${r}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="4" y1="12" x2="19" y2="12"></line><polyline points="13 6 19 12 13 18"></polyline></svg>
+        <span class="nm"><i style="background:${c}"></i>${n.toUpperCase()}</span></div>`).join("")}
+    </div></div>
+    <div class="r-etape"><span class="carre">3</span><div class="corps">
+      <h3>La phase finale</h3>
+      <p>Les 6 de la poule <b>Or</b> + les 2 premiers de l'<b>Argent</b>, classés de 1 à 8. Les meilleurs ne se croisent qu'en finale.</p>
+      <div class="r-arbre" role="img" aria-label="Quarts : 1 contre 8, 4 contre 5, 2 contre 7, 3 contre 6, puis demies et finale">
+        <div class="col">${[["1", "8"], ["4", "5"], ["2", "7"], ["3", "6"]].map(([a, b]) => `<div class="q"><span>${a}</span><span>${b}</span></div>`).join("")}</div>
+        <div class="col"><div class="d"></div><div class="d"></div></div>
+        <div class="col"><div class="f"></div><small>FINALE</small></div>
+      </div>
+      <div class="r-note">Ensuite, matchs de classement : 9e contre 10e, 11e contre 12e… jusqu'à ${NB - 1}e contre ${NB}e.</div>
+    </div></div>
+  </div>
+  <div class="r-bloc">
+    <div class="label">Durée des matchs</div>
+    <div class="r-tuiles">
+      <div><b>${F.dureeMatchPouleMin}'</b><span>poules</span></div>
+      <div><b>${F.pointsTour}</b><span>pts · phase finale</span></div>
+      <div><b>${F.pointsFinale}</b><span>pts · finale</span></div>
+    </div>
+    <div class="r-encart"><b>Égalité au sifflet ?</b> On joue un dernier point. Pas de match nul. En phase finale, il faut ${ECART} points d'écart.</div>
+  </div>
+  <div class="r-bloc" style="padding-top:24px">
+    <div class="label">Qui passe devant ?</div>
+    <div class="r-criteres">
+      ${[["Les victoires", "Le plus de matchs gagnés."],
+         ["Le face-à-face", "À égalité, celle qui a gagné le match entre vous passe devant."],
+         ["La différence de points", "Points marqués moins points encaissés, sur toute la poule."],
+         ["Les points marqués", "En dernier recours."]].map(([t, x], i) => `<div class="r-critere"><b>${i + 1}</b><div><strong>${t}</strong><span>${x}</span></div></div>`).join("")}
+    </div>
+    <div class="r-exemple"><b>EXEMPLE</b><br>Deux équipes finissent à 3 victoires. La première a +9 de différence, la seconde −3, mais la seconde a gagné leur match : elle passe devant.<br><br>À trois équipes ou plus, on compte les victoires dans les matchs entre elles uniquement. Si chacune en a une, on passe à la différence de points.</div>
+  </div>
+  <div class="r-fin">Cette page se met à jour toute seule. Les matchs sont aussi commentés en direct sur <b>${esc(CFG.twitch)}</b>.</div>`;
+
+const dlg = $("#regles");
+function ouvrirRegles() { if (!dlg.open) { dlg.showModal(); dlg.scrollTop = 0; } }
+$("#ouvrirRegles").addEventListener("click", ouvrirRegles);
+$("#fermerRegles").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", (ev) => {
+  const r = dlg.getBoundingClientRect();
+  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) dlg.close();
+});
+if (location.hash === "#regles") ouvrirRegles();
 </script>
 </body>
 </html>
