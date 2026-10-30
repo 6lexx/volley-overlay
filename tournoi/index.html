@@ -9,22 +9,79 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/style.css">
+<style>
+  .onglets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .onglets button { font-size: 16px; padding: 0 2px; min-width: 0; overflow: hidden; }
+  .carte-tete.or { background: #A87E0E; }
+  .carte-tete.argent { background: #63686E; }
+  .carte-tete.bronze { background: #8E5426; }
+  table.classement tr.or td.rg { color: #A87E0E; box-shadow: inset 6px 0 0 #D9A520; }
+  table.classement tr.argent td.rg { color: var(--gris); box-shadow: inset 6px 0 0 #A9ADB2; }
+  table.classement tr.bronze td.rg { color: #8E5426; box-shadow: inset 6px 0 0 #B5763A; }
+  .seed { font-family: var(--cond); font-weight: 800; color: var(--gris-clair); width: 22px; flex: none; text-align: center; }
+  .place { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--ligne); }
+  .place b { width: 28px; font-family: var(--cond); font-size: 22px; color: var(--gris-clair); }
+  .place.podium b { color: var(--rouge); }
+  .place span { font-weight: 600; }
+  .place span.vide { color: var(--gris-clair); }
+  .entete { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .btn-regles { flex: none; min-height: 44px; padding: 0 14px; border: 2px solid #fff; background: transparent; color: #fff; font-family: var(--cond); font-size: 17px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-regles:focus-visible, .fermer:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+  dialog.regles { width: 100%; max-width: 560px; max-height: 100%; height: 100%; margin: 0 auto; padding: 0; border: 0; background: var(--brume); color: var(--encre); }
+  @media (min-width: 600px) { dialog.regles { height: auto; max-height: calc(100% - 48px); margin: 24px auto; } }
+  dialog.regles::backdrop { background: rgba(10, 10, 14, .6); }
+  .regles-tete { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--rouge); color: #fff; padding: 14px 16px 12px 20px; border-bottom: 4px solid var(--encre); }
+  .regles-tete h2 { margin: 0; font-family: var(--cond); font-size: 28px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .fermer { width: 44px; height: 44px; border: 2px solid #fff; background: transparent; color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+  .regles-corps { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .regle { background: #fff; padding: 16px 18px; }
+  .regle h3 { margin: 0 0 8px; font-family: var(--cond); font-size: 21px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+  .regle h3 .n { width: 30px; height: 30px; flex: none; background: var(--rouge); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+  .regle p, .regle li { margin: 0; font-size: 15.5px; line-height: 1.5; }
+  .regle p + p, .regle p + ul, .regle ul + p, .regle ol + p { margin-top: 8px; }
+  .regle ul, .regle ol { margin: 6px 0 0; padding-left: 20px; }
+  .regle li + li { margin-top: 4px; }
+  .regle b { font-weight: 700; }
+  .pastille-metal { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: 0; }
+  .chiffres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 4px; }
+  .chiffres div { background: var(--brume); padding: 10px 8px; text-align: center; }
+  .chiffres b { display: block; font-family: var(--cond); font-size: 28px; font-weight: 800; color: var(--rouge); line-height: 1.1; }
+  .chiffres span { font-size: 13px; font-weight: 600; color: var(--gris); }
+  .exemple { background: var(--brume); padding: 10px 12px; margin-top: 10px; font-size: 14.5px; line-height: 1.5; }
+</style>
 </head>
 <body>
 <div class="appli">
   <div id="demo" class="demo-banniere" hidden>Mode démo</div>
   <header class="entete">
-    <h1 id="titre"></h1>
-    <p id="sousTitre"></p>
+    <div>
+      <h1 id="titre"></h1>
+      <p id="sousTitre"></p>
+    </div>
+    <button class="btn-regles" id="ouvrirRegles" type="button" aria-haspopup="dialog">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="11" x2="12" y2="17"></line><line x1="12" y1="7" x2="12.01" y2="7"></line></svg>
+      Règles
+    </button>
   </header>
   <nav class="onglets" role="tablist" aria-label="Sections">
     <button role="tab" data-onglet="matchs" aria-selected="true">Matchs</button>
     <button role="tab" data-onglet="poules" aria-selected="false">Poules</button>
     <button role="tab" data-onglet="arbre" aria-selected="false">Arbre</button>
+    <button role="tab" data-onglet="classement" aria-selected="false">Classement</button>
   </nav>
   <main class="contenu" id="contenu" role="tabpanel" aria-live="polite"></main>
-  <p class="note" style="padding:0 16px 24px">Mise à jour automatique · en live sur <a id="lienTwitch" href="#"></a></p>
+  <p class="note" style="padding:0 16px 24px">Mise à jour automatique · en live sur <a id="lienTwitch" href="#"></a> · <a href="#regles" id="lienRegles">Règles du tournoi</a></p>
 </div>
+
+<dialog class="regles" id="regles" aria-labelledby="titreRegles">
+  <div class="regles-tete">
+    <h2 id="titreRegles">Règles du tournoi</h2>
+    <button class="fermer" id="fermerRegles" type="button" aria-label="Fermer les règles">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><line x1="5" y1="5" x2="19" y2="19"></line><line x1="19" y1="5" x2="5" y2="19"></line></svg>
+    </button>
+  </div>
+  <div class="regles-corps" id="reglesCorps"></div>
+</dialog>
 
 <script src="config.js"></script>
 <script type="module">
@@ -38,8 +95,86 @@ $("#lienTwitch").textContent = CFG.twitch;
 $("#lienTwitch").href = "https://" + CFG.twitch.replace(/^https?:\/\//, "");
 if (DEMO) $("#demo").hidden = false;
 
-let onglet = ["matchs", "poules", "arbre"].includes(location.hash.slice(1)) ? location.hash.slice(1) : "matchs";
-let tourChoisi = null;
+// ---------------- Règles du tournoi ----------------
+const F = CFG.format;
+const ecart = F.ecartMin ?? 2;
+$("#reglesCorps").innerHTML = `
+  <div class="regle">
+    <h3>En bref</h3>
+    <div class="chiffres">
+      <div><b>${CFG.equipes.length}</b><span>équipes</span></div>
+      <div><b>3</b><span>phases</span></div>
+      <div><b>3</b><span>terrains</span></div>
+    </div>
+    <p style="margin-top:10px">Tout le monde joue la journée entière : brassage, puis poules de niveau, puis phase finale avec un classement complet de la 1re à la ${CFG.equipes.length}e place.</p>
+  </div>
+
+  <div class="regle">
+    <h3><span class="n">1</span>Brassage</h3>
+    <p><b>3 poules de 6</b> (A, B, C). Chaque équipe joue une fois contre toutes les autres de sa poule : 5 matchs.</p>
+    <p>À chaque rotation, une poule joue sur les 3 terrains pendant que les autres se reposent.</p>
+  </div>
+
+  <div class="regle">
+    <h3><span class="n">2</span>Poules de niveau</h3>
+    <p>Selon ton classement au brassage :</p>
+    <ul>
+      <li><span class="pastille-metal" style="background:#D9A520" aria-hidden="true"></span><b>1er et 2e</b> → poule Or</li>
+      <li><span class="pastille-metal" style="background:#A9ADB2" aria-hidden="true"></span><b>3e et 4e</b> → poule Argent</li>
+      <li><span class="pastille-metal" style="background:#B5763A" aria-hidden="true"></span><b>5e et 6e</b> → poule Bronze</li>
+    </ul>
+    <p>Encore 5 matchs, chacun contre tous, avec les mêmes règles.</p>
+  </div>
+
+  <div class="regle">
+    <h3><span class="n">3</span>Phase finale</h3>
+    <p><b>Quarts de finale</b> : les 6 équipes de la poule Or et les 2 premières de la poule Argent, classées de 1 à 8. Le 1er joue le 8e, le 2e le 7e, le 3e le 6e, le 4e le 5e.</p>
+    <p>Vainqueurs et perdants continuent : demies, puis matchs pour les places 1 à 8. Les autres équipes jouent les places 9 à ${CFG.equipes.length}, toujours contre l'équipe classée juste derrière ou devant (9e contre 10e, 11e contre 12e…).</p>
+  </div>
+
+  <div class="regle">
+    <h3>Durée des matchs</h3>
+    <ul>
+      <li><b>Poules</b> (brassage et poules de niveau) : <b>${F.dureeMatchPouleMin} minutes</b>. Le score au coup de sifflet fait foi.</li>
+      <li><b>Égalité au sifflet</b> : on joue <b>un dernier point</b>, qui désigne le vainqueur. Il n'y a jamais de match nul.</li>
+      <li><b>Phase finale</b> : en <b>${F.pointsTour} points</b>, avec ${ecart} points d'écart.</li>
+      <li><b>Finale</b> : en <b>${F.pointsFinale} points</b>, avec ${ecart} points d'écart.</li>
+    </ul>
+  </div>
+
+  <div class="regle">
+    <h3>Le classement d'une poule</h3>
+    <p>Les équipes sont départagées dans cet ordre :</p>
+    <ol>
+      <li><b>Le nombre de victoires.</b></li>
+      <li><b>La confrontation directe</b> : à égalité de victoires, l'équipe qui a gagné le match entre elles passe devant.</li>
+      <li><b>La différence de points</b> : points marqués moins points encaissés, sur tous les matchs de la poule.</li>
+      <li><b>Les points marqués</b>, en dernier recours.</li>
+    </ol>
+    <p class="exemple"><b>Exemple :</b> deux équipes finissent avec 3 victoires. La première a +9 de différence, la seconde −3, mais la seconde a gagné leur match : elle passe devant.<br><br>
+    <b>À trois ou plus</b> : on compte les victoires dans les matchs entre ces équipes uniquement. Si elles s'en sont pris une chacune, on passe à la différence de points.</p>
+  </div>
+
+  <div class="regle">
+    <h3>Suivre le tournoi</h3>
+    <p>Cette page se met à jour toute seule : matchs en cours, poules, arbre et classement final. Les matchs sont aussi commentés en direct sur <b>${esc(CFG.twitch)}</b>.</p>
+  </div>`;
+
+const dlg = $("#regles");
+function ouvrirRegles() { if (!dlg.open) dlg.showModal(); }
+$("#ouvrirRegles").addEventListener("click", ouvrirRegles);
+$("#lienRegles").addEventListener("click", (ev) => { ev.preventDefault(); ouvrirRegles(); });
+$("#fermerRegles").addEventListener("click", () => dlg.close());
+// Clic sur le fond assombri, à côté de la fenêtre (sur ordinateur)
+dlg.addEventListener("click", (ev) => {
+  const r = dlg.getBoundingClientRect();
+  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) dlg.close();
+});
+if (location.hash === "#regles") ouvrirRegles();
+
+const ONGLETS = ["matchs", "poules", "arbre", "classement"];
+let onglet = ONGLETS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "matchs";
+let phaseChoisie = null, tourChoisi = null;
 let eqs = [], ms = [], rots = [], live = {}, dernier = "";
 const nom = (id) => nomEquipe(eqs, id);
 
@@ -49,8 +184,9 @@ document.querySelectorAll("[data-onglet]").forEach((b) => b.addEventListener("cl
   rendre(true);
 }));
 $("#contenu").addEventListener("click", (ev) => {
-  const b = ev.target.closest("[data-tour]");
-  if (b) { tourChoisi = Number(b.dataset.tour); rendre(true); }
+  const t = ev.target.closest("[data-tour]"), p = ev.target.closest("[data-phase]");
+  if (t) { tourChoisi = t.dataset.tour; rendre(true); }
+  if (p) { phaseChoisie = p.dataset.phase; rendre(true); }
 });
 
 const api = await connecter();
@@ -64,17 +200,19 @@ setInterval(() => rendre(), 1000);
 
 function rendre(force) {
   document.querySelectorAll("[data-onglet]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.onglet === onglet)));
-  const html = onglet === "poules" ? poules() : onglet === "arbre" ? arbre() : matchs();
+  const html = { poules, arbre, classement }[onglet]?.() ?? matchs();
   if (force || html !== dernier) { $("#contenu").innerHTML = html; dernier = html; }
 }
 
-const ligne = (m, s, sc) => {
+const ligne = (m, s, sc, avecSeed) => {
   const r = T.resultat(m), id = m[s];
-  const cls = !id ? "attente" : r === s ? "gagne" : r && r !== s && r !== "nul" ? "perd" : "";
-  return `<div class="ligne-eq ${cls}"><div class="barre"></div>
+  const cls = !id ? "attente" : r === s ? "gagne" : r ? "perd" : "";
+  const seed = avecSeed && m["seed" + s] ? `<span class="seed">${m["seed" + s]}</span>` : "";
+  return `<div class="ligne-eq ${cls}"><div class="barre"></div>${seed}
     <div class="nom ellipse">${esc(id ? nom(id) : T.etiquetteAttente(m, s, ms))}</div>
     <div class="sc">${sc ?? ""}</div></div>`;
 };
+const score = (m, s) => (m.statut === T.STATUT.TERMINE ? m["score" + s] : "");
 
 // ---------------- Matchs ----------------
 function matchs() {
@@ -82,12 +220,12 @@ function matchs() {
   const cur = T.rotationEnCours(rots);
   let html = "";
   if (cur) {
-    html += `<div class="titre-section rouge"><span>En cours · rotation ${cur.num}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${T.texteChrono(cur, api.maintenant(), fmtChrono)}</span></div>`;
+    html += `<div class="titre-section rouge"><span>En cours · ${esc(T.NOMS_PHASES[cur.phase])}</span><span class="num" style="color:var(--encre);font-size:22px;font-weight:800">${T.texteChrono(cur, api.maintenant(), fmtChrono)}</span></div>`;
     for (const m of T.matchsDeRotation(ms, cur.num)) {
       const filme = live.matchId === m.id;
       const p = filme ? live.points?.[m.id] || { A: 0, B: 0 } : null;
-      html += `<div class="carte"><div class="carte-tete ${filme ? "" : "clair"}"><span>${esc(T.nomPhase(m, ms))}</span>${filme ? `<span class="direct">EN DIRECT SUR TWITCH</span>` : ""}</div>
-        ${ligne(m, "A", filme ? p.A || 0 : m.statut === T.STATUT.TERMINE ? m.scoreA : "")}${ligne(m, "B", filme ? p.B || 0 : m.statut === T.STATUT.TERMINE ? m.scoreB : "")}</div>`;
+      html += `<div class="carte"><div class="carte-tete ${filme ? "" : "clair"}"><span>${esc(T.nomPhase(m))}</span>${filme ? `<span class="direct">EN DIRECT SUR TWITCH</span>` : ""}</div>
+        ${ligne(m, "A", filme ? p.A || 0 : score(m, "A"))}${ligne(m, "B", filme ? p.B || 0 : score(m, "B"))}</div>`;
     }
   } else {
     const champ = T.vainqueurTournoi(ms);
@@ -95,7 +233,7 @@ function matchs() {
       ? `<div class="carte"><div class="carte-tete"><span>Vainqueur du tournoi</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`
       : `<div class="vide">Pas de match en cours pour l'instant.</div>`;
   }
-  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE && !m.exempt).sort((a, b) => b.rotation - a.rotation || a.id.localeCompare(b.id));
+  const finis = ms.filter((m) => m.statut === T.STATUT.TERMINE).sort((a, b) => b.rotation - a.rotation || (a.terrain || 0) - (b.terrain || 0));
   if (finis.length) {
     html += `<div class="titre-section"><span>Terminés</span></div>`;
     html += finis.map((m) => `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A))} <span>vs</span> ${esc(nom(m.B))}</div><div class="sc">${m.scoreA} – ${m.scoreB}</div></div>`).join("");
@@ -105,48 +243,59 @@ function matchs() {
 
 // ---------------- Poules ----------------
 function poules() {
-  const ps = T.poulesDe(eqs);
-  if (!ps.length) return `<div class="vide">Les poules arrivent bientôt.</div>`;
-  const q = CFG.format.qualifiesParPoule;
-  return ps.map((p) => {
-    const cl = T.classement(eqs, ms, p, CFG);
-    return `<div class="carte"><div class="carte-tete"><span>Poule ${p}</span></div>
-      <table class="classement"><thead><tr><th scope="col"><span class="vh">Rang</span></th><th scope="col">Équipe</th><th scope="col">J</th><th scope="col">V</th><th scope="col">±</th><th scope="col">Pts</th></tr></thead><tbody>` +
-      cl.map((l) => `<tr class="${l.rang <= q ? "qualif" : ""}"><td class="rg">${l.rang}</td><td class="eq"><div class="ellipse">${esc(l.nom)}</div></td><td>${l.J}</td><td>${l.V}</td><td>${l.diff > 0 ? "+" : ""}${l.diff}</td><td class="pts">${l.points}</td></tr>`).join("") +
+  const courante = T.phaseCourante(ms);
+  const dispo = ["brassage", ...(ms.some((m) => m.phase === "phase2") ? ["phase2"] : [])];
+  const phase = dispo.includes(phaseChoisie) ? phaseChoisie : courante === "brassage" || !courante ? "brassage" : "phase2";
+  if (!T.membresPoule(ms, phase, T.POULES[phase][0], eqs).length) return `<div class="vide">Les poules arrivent bientôt.</div>`;
+  let html = dispo.length > 1 ? `<div class="pastilles">${dispo.map((p) => `<button class="pastille" type="button" data-phase="${p}" aria-pressed="${p === phase}">${T.NOMS_PHASES[p]}</button>`).join("")}</div>` : "";
+  html += T.POULES[phase].map((p) => {
+    const cl = T.classement(ms, phase, p, eqs);
+    const classe = (rang) => phase === "brassage" ? (rang <= 2 ? "or" : rang <= 4 ? "argent" : "bronze")
+      : p === "OR" || (p === "ARGENT" && rang <= 2) ? "qualif" : "";
+    return `<div class="carte"><div class="carte-tete ${phase === "phase2" ? p.toLowerCase() : ""}"><span>${esc(T.NOMS_POULES[p])}</span></div>
+      <table class="classement"><thead><tr><th scope="col"><span class="vh">Rang</span></th><th scope="col">Équipe</th><th scope="col">J</th><th scope="col">V</th><th scope="col">±</th></tr></thead><tbody>` +
+      cl.map((l) => `<tr class="${classe(l.rang)}"><td class="rg">${l.rang}</td><td class="eq"><div class="ellipse">${esc(l.nom)}</div></td><td>${l.J}</td><td class="pts">${l.V}</td><td>${l.diff > 0 ? "+" : ""}${l.diff}</td></tr>`).join("") +
       `</tbody></table></div>`;
-  }).join("") + `<p class="note">Les ${q} premiers de chaque poule vont en phase finale.</p>`;
+  }).join("");
+  html += phase === "brassage"
+    ? `<p class="note">1er-2e → poule Or · 3e-4e → poule Argent · 5e-6e → poule Bronze</p>`
+    : `<p class="note">Quarts : les 6 de la poule Or + les 2 premiers de la poule Argent</p>`;
+  return html + `<p class="note">Classement : victoires, confrontation directe, différence de points, points marqués.</p>`;
 }
 
 // ---------------- Arbre ----------------
+const TOURS = { quarts: ["Q1", "Q2", "Q3", "Q4"], demies: ["D1", "D2"], finales: ["F12", "F34"] };
+const NOMS_TOURS = { quarts: "Quarts", demies: "Demies", finales: "Finale" };
+
+function carteMatch(m, avecSeed) {
+  if (!m) return "";
+  const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours" : `À venir · ${m.cible} pts`;
+  return `<div class="titre-section ${m.statut === T.STATUT.ENCOURS ? "rouge" : ""}"><span>${esc(m.nom)}</span><span style="font-size:15px">${etat}</span></div>
+    <div class="carte">${ligne(m, "A", score(m, "A"), avecSeed)}${ligne(m, "B", score(m, "B"), avecSeed)}</div>`;
+}
+
 function arbre() {
   const fin = ms.filter((m) => m.phase === "finale");
-  if (!fin.length) return `<div class="vide">L'arbre s'affiche à la fin des poules.</div>`;
-  const N = fin[0].nbTours;
-  const enCours = [...Array(N).keys()].find((t) => fin.some((m) => m.tour === t && m.statut !== T.STATUT.TERMINE));
-  const t = tourChoisi ?? enCours ?? N - 1;
-  let html = `<div class="pastilles">` + [...Array(N).keys()].map((k) =>
-    `<button class="pastille" type="button" data-tour="${k}" aria-pressed="${k === t}">${T.nomTourPluriel(k, N)}</button>`).join("") + `</div>`;
-  const liste = fin.filter((m) => m.tour === t).sort((a, b) => a.index - b.index);
-  for (const m of liste) {
-    if (m.exempt) {
-      html += `<div class="resultat"><div class="qui ellipse">${esc(nom(m.A || m.B))} <span>· exempt, qualifié d'office</span></div></div>`;
-      continue;
-    }
-    const etat = m.statut === T.STATUT.TERMINE ? "Terminé" : m.statut === T.STATUT.ENCOURS ? "En cours · " + T.texteChrono(rots.find((r) => r.num === m.rotation), api.maintenant(), fmtChrono) : "À venir";
-    const r = T.resultat(m);
-    let suite = "";
-    if (m.suivant && r) suite = `${esc(nom(r === "A" ? m.A : m.B))} passe au tour suivant`;
-    else if (m.suivant) {
-      const s = fin.find((x) => x.id === m.suivant.id);
-      const autre = s && s[m.suivant.slot === "A" ? "B" : "A"];
-      suite = autre ? `Le gagnant affronte ${esc(nom(autre))}` : "";
-    }
-    html += `<div class="titre-section ${m.statut === T.STATUT.ENCOURS ? "rouge" : ""}"><span>${esc(T.nomPhase(m, ms))}</span><span style="font-size:15px">${etat}</span></div>
-      <div class="carte">${ligne(m, "A", m.statut === T.STATUT.TERMINE ? m.scoreA : "")}${ligne(m, "B", m.statut === T.STATUT.TERMINE ? m.scoreB : "")}</div>
-      ${suite ? `<div class="note" style="text-align:left">${suite}</div>` : ""}`;
-  }
+  if (!fin.length) return `<div class="vide">L'arbre s'affiche à la fin de la phase 2.</div>`;
+  const get = (c) => fin.find((m) => m.code === c);
+  const enCours = Object.keys(TOURS).find((t) => TOURS[t].some((c) => get(c)?.statut !== T.STATUT.TERMINE));
+  const t = TOURS[tourChoisi] ? tourChoisi : enCours || "finales";
+  let html = `<div class="pastilles">` + Object.keys(TOURS).map((k) =>
+    `<button class="pastille" type="button" data-tour="${k}" aria-pressed="${k === t}">${NOMS_TOURS[k]}</button>`).join("") + `</div>`;
+  html += TOURS[t].map((c) => carteMatch(get(c), t === "quarts")).join("");
   const champ = T.vainqueurTournoi(ms);
   if (champ) html += `<div class="carte"><div class="carte-tete"><span>Vainqueur</span></div><div class="ligne-eq gagne"><div class="barre"></div><div class="nom">${esc(nom(champ))}</div></div></div>`;
+  return html;
+}
+
+// ---------------- Classement ----------------
+function classement() {
+  const fin = ms.filter((m) => m.phase === "finale");
+  if (!fin.length) return `<div class="vide">Le classement final s'affiche pendant la phase finale.</div>`;
+  let html = `<div class="titre-section"><span>Classement final</span></div><div class="carte">` +
+    T.classementFinal(ms).map((x) => `<div class="place ${x.place <= 3 ? "podium" : ""}"><b>${x.place}</b><span class="ellipse ${x.id ? "" : "vide"}">${esc(x.id ? nom(x.id) : "—")}</span></div>`).join("") + `</div>`;
+  html += `<div class="titre-section"><span>Matchs de classement</span></div>`;
+  html += ["D3", "D4", "F56", "F78", "P910", "P1112", "P1314", "P1516", "P1718"].map((c) => carteMatch(fin.find((m) => m.code === c))).join("");
   return html;
 }
 </script>
