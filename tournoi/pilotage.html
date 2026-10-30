@@ -27,6 +27,7 @@
   .ecrans .btn[aria-pressed="true"] { background: var(--rouge); border-color: var(--rouge); }
   .ecrans .btn[aria-pressed="true"] small { color: #FFE3E7; }
   .ecrans .btn:first-child { grid-column: 1 / -1; }
+  .ecrans .btn:last-child:nth-child(even) { grid-column: 1 / -1; }
   .surEcran { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .surEcran b { font-family: var(--cond); font-size: 26px; font-weight: 800; text-transform: uppercase; }
   .cadre-apercu { position: relative; aspect-ratio: 16 / 9; background: #3A3B40; overflow: hidden; border: 2px solid var(--nuit-ligne); }
@@ -244,7 +245,7 @@ function rendreEcrans(m) {
   else aide.textContent = "Retirer un écran revient au plateau neutre (logo, heure, QR code, chaîne).";
 }
 function sousTexte(e) {
-  return { match: "score et chrono du match filmé", intermatch: "résultats et matchs à suivre", poules: "classement des poules", arbre: "phase finale", pause: "pause et à suivre" }[e] || "";
+  return { match: "score et chrono du match filmé", intermatch: "résultats et matchs à suivre", poules: "classement des poules", arbre: "quarts, demies, finale", classement: "places 1 à 18", pause: "pause et à suivre" }[e] || "";
 }
 $("#ecrans").addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-ecran]");
