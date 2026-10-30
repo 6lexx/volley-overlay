@@ -111,3 +111,43 @@ body.apercu { background: repeating-linear-gradient(115deg, #7B6A55 0 120px, #8E
 .puce .txt span { font-size: 18px; font-weight: 600; color: var(--rouge-clair); }
 .puce .tw { font-family: var(--cond); font-size: 26px; font-weight: 600; color: #DAD7D2; }
 .puce .barre { width: 3px; height: 26px; background: var(--rouge); }
+
+/* ---------- Brassage → Or / Argent / Bronze ---------- */
+.poule .rg.or .b { background: #D9A520; }
+.poule .rg.argent .b { background: #A9ADB2; }
+.poule .rg.bronze .b { background: #B5763A; }
+.poule .rg.or .r { color: #A87E0E; }
+.poule .tete.t-or { background: #A87E0E; }
+.poule .tete.t-argent { background: #63686E; }
+.poule .tete.t-bronze { background: #8E5426; }
+.poule .tete.t-or span, .poule .tete.t-argent span, .poule .tete.t-bronze span { color: rgba(255,255,255,.85); }
+.legende i.or { background: #D9A520; }
+.legende i.argent { background: #A9ADB2; }
+.legende i.bronze { background: #B5763A; }
+
+/* ---------- Arbre ---------- */
+.m .rg .seed { width: 30px; flex: none; font-family: var(--cond); font-size: 22px; font-weight: 800; color: var(--gris-clair); text-align: center; }
+.ligne-m .ph { width: 210px; font-size: 28px; }
+
+/* ---------- Classement final ---------- */
+#classement { position: absolute; left: 96px; right: 96px; top: 280px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+#classement .tete { padding: 14px 24px; font-size: 34px; }
+.cl-m { display: flex; align-items: center; gap: 14px; height: 62px; padding: 0 22px; border-bottom: 2px solid var(--ligne); font-family: var(--cond); font-size: 26px; font-weight: 700; }
+.cl-m:last-child { border-bottom: 0; }
+.cl-m .ph { width: 170px; flex: none; color: var(--rouge); font-size: 22px; font-weight: 800; text-transform: uppercase; }
+.cl-m .nm { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-m .nm:last-child { text-align: right; }
+.cl-m .nm.g { color: var(--encre); }
+.cl-m .nm.p { color: var(--gris-clair); }
+.cl-m .sc { flex: none; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cl-m .sc.vs { color: var(--gris-clair); font-weight: 600; }
+.cl-m .sc.live-t { color: #fff; background: var(--rouge); font-size: 18px; padding: 2px 8px; letter-spacing: 1px; }
+.cl-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cl-cols > div + div { border-left: 2px solid var(--ligne); }
+.cl-p { display: flex; align-items: center; gap: 14px; height: 66px; padding: 0 20px; border-bottom: 2px solid var(--ligne); font-family: var(--cond); font-size: 28px; font-weight: 700; }
+.cl-p:last-child { border-bottom: 0; }
+.cl-p .pl { width: 40px; flex: none; font-weight: 800; color: var(--gris-clair); }
+.cl-p.podium .pl { color: var(--rouge); }
+.cl-p .nm { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-p .nm.vide { color: var(--gris-clair); }
+.poule .rg .b, .poule .rg .r, .m .rg .b { flex: none; }
