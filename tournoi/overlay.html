@@ -143,8 +143,8 @@ function rendre() {
     const p = live.points?.[m.id] || { A: 0, B: 0 };
     const a = p.A || 0, b = p.B || 0;
     $("#sPhase").textContent = T.nomPhase(m, ms);
-    $("#nA").textContent = court(nomEquipe(eqs, m.A));
-    $("#nB").textContent = court(nomEquipe(eqs, m.B));
+    ecrireNom($("#nA"), court(nomEquipe(eqs, m.A)));
+    ecrireNom($("#nB"), court(nomEquipe(eqs, m.B)));
     $("#pA").textContent = a;
     $("#pB").textContent = b;
     $("#eqA").classList.toggle("mene", a >= b && a > 0);
@@ -177,6 +177,16 @@ function rendre() {
   montrer($("#tag"), avecTag && ecran === "match" && !vActive);
 }
 setInterval(rendre, 250);
+
+// Les noms en majuscules (ex. FAUTPASK'SADORT) sont plus larges : on réduit la police si besoin
+function ecrireNom(el, texte) {
+  if (el.dataset.texte === texte) return;
+  el.dataset.texte = texte;
+  el.textContent = texte;
+  let taille = 36;
+  el.style.fontSize = taille + "px";
+  while (el.scrollWidth > el.clientWidth && taille > 24) { taille -= 2; el.style.fontSize = taille + "px"; }
+}
 
 // Écran plein cadre, avec un fondu quand il change
 let ecranActuel = null, htmlActuel = "", enFondu = false;
