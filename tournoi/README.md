@@ -11,6 +11,7 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 | `orga.html` | Saisie des organisateurs : équipes, rotations, scores |
 | `pilotage.html` | Ton écran : choix de l'écran affiché, match filmé, points, victoire, bandeau |
 | `overlay.html` | **La seule source à mettre dans Streamlabs**, par-dessus la caméra |
+| `projecteur.html` | L'écran projeté au mur : poules (puis arbre), en cours, à suivre, derniers résultats, chrono |
 | `scene.html` | Scènes sur la caméra assombrie : `?vue=poules`, `arbre`, `pause`, `intermatch`, `neutre` |
 | `config.js` | Réglages du tournoi et **les 18 équipes** avec leur poule de brassage |
 | `shared/moteur.js` | La logique : brassage, phase 2, arbre, classement 1 à 18 |
@@ -131,6 +132,7 @@ Pour un autre tournoi plus tard : change `id`, et crée deux nouvelles clés.
 | `https://6lexx.github.io/volley-overlay/tournoi/` | Tout le monde (QR code) |
 | `…/tournoi/orga.html?key=CLÉ_ORGA` | Les organisateurs |
 | `…/tournoi/pilotage.html?key=CLÉ_STREAM` | Toi / ton co-commentateur |
+| `…/tournoi/projecteur.html` | Le projecteur au mur (sans clé, lecture seule) |
 | `…/tournoi/overlay.html` | Streamlabs, scène « Match » |
 | `…/tournoi/scene.html?vue=poules` | Streamlabs, scène « Poules » |
 | `…/tournoi/scene.html?vue=arbre` | Streamlabs, scène « Arbre » |
@@ -188,6 +190,30 @@ l'écran, et attends 1 à 2 minutes après le push que GitHub Pages ait publié.
 stream (avec un faux fond à la place de la caméra). Sur une tablette, il reste
 collé en haut quand tu descends vers les points. « Masquer » le coupe pour
 économiser batterie et data ; le choix est retenu sur l'appareil.
+
+---
+
+## 3 bis. Le projecteur au mur
+
+`projecteur.html` : lecture seule, pas de clé, rien à piloter. L'écran change tout seul :
+
+- **brassage et phase 2** : les 3 poules à gauche ; à droite, les matchs **en cours**,
+  **à suivre** et les **derniers résultats** ;
+- **entre deux rotations** : « À suivre » et « Ensuite », l'heure à la place du chrono ;
+- **phase finale** : le tableau quarts → demies → finale + places 3-4 ;
+- **tournoi terminé** : classement 1 à 18 et le vainqueur.
+
+Mise en place sur le PC (celui qui streame) :
+1. Branche le projecteur, puis `Windows + P` › **Étendre** (pas « Dupliquer », sinon
+   le mur affiche Streamlabs).
+2. Ouvre `projecteur.html` dans Chrome, glisse la fenêtre sur le projecteur,
+   **double-clic** pour le plein écran. La souris disparaît toute seule.
+3. La page empêche l'écran de se mettre en veille ; coupe quand même la veille
+   de Windows et les notifications (mode Ne pas déranger).
+4. Le bouton « Recharger l'overlay » du pilotage recharge aussi le projecteur.
+
+Salle très sombre : `projecteur.html?theme=sombre`. En test : `projecteur.html?demo=1`
+dans le même navigateur que `orga.html?demo=1`.
 
 ---
 
