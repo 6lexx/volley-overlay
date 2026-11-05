@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mur · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<!--
+  projecteur.html — l'écran projeté au mur du gymnase.
+  Lecture seule, aucune clé : poules (ou arbre), matchs en cours,
+  à suivre et derniers résultats, avec le chrono de la rotation.
+
+  Options d'URL :
+    ?theme=sombre   fond sombre (si la salle est très sombre)
+    ?demo=1         données de démo du navigateur
+  Double-clic n'importe où : plein écran.
+-->
+<style>
+  :root {
+    --fond: #F4F2EF; --carte: #FFFFFF; --texte: #15151A; --doux: #5C5A57; --pale: #8A8781; --filet: #E4E1DC;
+    --or: #D9A520; --or-fonce: #A87E0E; --argent: #A9ADB2; --argent-fonce: #63686E; --bronze: #B5763A; --bronze-fonce: #8E5426;
+  }
+  :root[data-theme="sombre"] {
+    --fond: #101014; --carte: #1E1E24; --texte: #FFFFFF; --doux: #C9C6C1; --pale: #8F8C87; --filet: #33333B;
+  }
+  html, body { height: 100%; background: var(--fond); overflow: hidden; cursor: none; }
+  .scene { background: var(--fond); color: var(--texte); font-family: var(--corps); }
+
+  /* ---------- Bandeau du haut ---------- */
+  #haut { position: absolute; left: 0; right: 0; top: 0; height: 150px; background: var(--rouge); color: #fff; display: flex; align-items: center; gap: 28px; padding: 0 40px; }
+  #haut .logo { width: 104px; height: 104px; border-radius: 50%; background: #fff; padding: 8px; flex: none; }
+  #haut .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #haut .titres { flex: 1 1 auto; min-width: 0; }
+  #haut .sur { font-family: var(--cond); font-size: 30px; font-weight: 700; letter-spacing: 3px; color: #FFE3E7; text-transform: uppercase; }
+  #haut h1 { margin: 2px 0 0; font-family: var(--cond); font-size: 84px; font-weight: 800; line-height: .95; letter-spacing: 1px; }
+  #chrono { flex: none; background: var(--encre); color: #fff; height: 118px; min-width: 430px; display: flex; flex-direction: column; justify-content: center; align-items: flex-end; padding: 0 30px; border-bottom: 6px solid #fff; }
+  #chrono .lbl { font-family: var(--cond); font-size: 28px; font-weight: 700; letter-spacing: 2px; color: #C9C7C3; white-space: nowrap; }
+  #chrono .val { font-family: var(--cond); font-size: 76px; font-weight: 800; line-height: .95; font-variant-numeric: tabular-nums; }
+  #chrono.fini .val { color: var(--rouge-clair); }
+
+  /* ---------- Corps ---------- */
+  #corps { position: absolute; left: 40px; right: 40px; top: 182px; bottom: 36px; display: grid; grid-template-columns: 1180px minmax(0, 1fr); gap: 36px; }
+  .titre-col { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; height: 52px; font-family: var(--cond); }
+  .titre-col b { font-size: 40px; font-weight: 800; letter-spacing: 2px; }
+  .titre-col span { font-size: 28px; font-weight: 700; color: var(--doux); letter-spacing: 1px; }
+  .message { margin-top: 240px; text-align: center; font-family: var(--cond); font-size: 60px; font-weight: 800; color: var(--doux); }
+
+  /* Poules */
+  #poules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 10px; }
+  .poule { background: var(--carte); display: flex; flex-direction: column; }
+  .poule .tete { height: 72px; background: var(--encre); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-top: 8px solid var(--rouge); }
+  .poule .tete.or { border-top-color: var(--or); } .poule .tete.argent { border-top-color: var(--argent); } .poule .tete.bronze { border-top-color: var(--bronze); }
+  .poule .tete b { font-family: var(--cond); font-size: 36px; font-weight: 800; letter-spacing: 1px; white-space: nowrap; }
+  .poule .tete span { font-family: var(--cond); font-size: 26px; font-weight: 700; color: #C9C7C3; display: flex; gap: 0; }
+  .poule .tete span { gap: 10px; } .poule .tete span i { font-style: normal; width: 50px; text-align: right; } .poule .tete span i + i { width: 58px; }
+  .rg { height: 104px; display: flex; align-items: center; gap: 10px; padding-right: 22px; border-top: 3px solid var(--filet); }
+  .poule .tete + .rg { border-top: 0; }
+  .rg .bar { width: 10px; align-self: stretch; background: transparent; flex: none; }
+  .rg.or .bar { background: var(--or); } .rg.argent .bar { background: var(--argent); } .rg.bronze .bar { background: var(--bronze); } .rg.q .bar { background: var(--rouge); }
+  .rg .r { width: 30px; flex: none; font-family: var(--cond); font-size: 40px; font-weight: 800; color: var(--pale); text-align: center; }
+  .rg .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-size: 33px; font-weight: 800; line-height: 1.02;
+           display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; }
+  .rg .v, .rg .d { width: 50px; flex: none; text-align: right; font-family: var(--cond); font-weight: 800; font-variant-numeric: tabular-nums; }
+  .rg .v { font-size: 44px; }
+  .rg .d { font-size: 28px; width: 58px; color: var(--doux); }
+  .legende { display: flex; gap: 36px; margin-top: 22px; font-size: 28px; font-weight: 600; color: var(--doux); }
+  .legende div { display: flex; align-items: center; gap: 12px; }
+  .legende i { width: 26px; height: 26px; display: inline-block; }
+
+  /* Arbre */
+  #arbre { position: relative; height: 820px; margin-top: 4px; }
+  .col-t { position: absolute; top: 0; font-family: var(--cond); font-size: 32px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+  .col-t small { font-size: 26px; font-weight: 700; color: var(--rouge); margin-left: 8px; }
+  .bm { position: absolute; background: var(--carte); display: flex; flex-direction: column; }
+  .bm .l { height: 64px; display: flex; align-items: center; gap: 12px; padding-right: 18px; }
+  .bm .l + .l { border-top: 3px solid var(--filet); }
+  .bm .l .bar { width: 10px; align-self: stretch; flex: none; }
+  .bm .l.g .bar { background: var(--rouge); }
+  .bm .l .sd { width: 30px; flex: none; font-family: var(--cond); font-size: 24px; font-weight: 700; color: var(--pale); text-align: center; }
+  .bm .l .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-size: 32px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bm .l .s { font-family: var(--cond); font-size: 36px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .bm .l.p .n, .bm .l.p .s { color: var(--pale); }
+  .bm .l.att .n { color: var(--pale); font-style: italic; font-weight: 600; font-size: 28px; }
+  .bm .chip { position: absolute; right: 0; top: -34px; background: var(--rouge); color: #fff; font-family: var(--cond); font-size: 22px; font-weight: 700; letter-spacing: 1.5px; padding: 3px 12px; }
+  .tr { position: absolute; background: var(--pale); }
+
+  /* Classement final */
+  #final { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 10px; }
+  #final .colonne { background: var(--carte); }
+  .pl { height: 86px; display: flex; align-items: center; gap: 18px; padding-right: 22px; border-top: 3px solid var(--filet); }
+  .pl:first-child { border-top: 0; }
+  .pl .bar { width: 10px; align-self: stretch; flex: none; }
+  .pl.p1 .bar { background: var(--or); } .pl.p2 .bar { background: var(--argent); } .pl.p3 .bar { background: var(--bronze); }
+  .pl .r { width: 50px; flex: none; text-align: center; font-family: var(--cond); font-size: 44px; font-weight: 800; color: var(--rouge); }
+  .pl .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-size: 38px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pl .n.vide { color: var(--pale); }
+
+  /* Colonne de droite : matchs */
+  #droite { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .blk { background: var(--carte); display: flex; flex-direction: column; }
+  .blk .tete { height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 22px; background: var(--encre); color: #fff; font-family: var(--cond); }
+  .blk.encours .tete { background: var(--rouge); }
+  .blk.resultats .tete { background: transparent; color: var(--texte); border-bottom: 4px solid var(--texte); }
+  .blk .tete b { font-size: 34px; font-weight: 800; letter-spacing: 2px; white-space: nowrap; }
+  .blk .tete span { font-size: 24px; font-weight: 700; letter-spacing: 1px; opacity: .8; white-space: nowrap; }
+  .mt { display: flex; align-items: center; gap: 16px; padding: 5px 22px 5px 0; border-top: 3px solid var(--filet); }
+  .blk .tete + .mt { border-top: 0; }
+  .mt .ph { width: 118px; flex: none; padding-left: 22px; font-family: var(--cond); font-size: 24px; font-weight: 800; line-height: 1.05; color: var(--rouge); text-transform: uppercase; }
+  .mt .eqs { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 0; }
+  .mt .eq { display: flex; align-items: baseline; gap: 12px; }
+  .mt .eq .n { flex: 1 1 auto; min-width: 0; font-family: var(--cond); font-size: 30px; font-weight: 800; line-height: 1.06; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mt .eq .s { font-family: var(--cond); font-size: 32px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .mt .eq.p .n, .mt .eq.p .s { color: var(--pale); }
+  .mt .eq.att .n { color: var(--pale); font-style: italic; font-weight: 600; font-size: 30px; }
+  .vide-b { padding: 22px; font-size: 28px; font-weight: 600; color: var(--doux); }
+  .champion { background: var(--rouge); color: #fff; padding: 30px 28px; display: flex; flex-direction: column; gap: 10px; }
+  .champion span { font-family: var(--cond); font-size: 32px; font-weight: 700; letter-spacing: 3px; color: #FFE3E7; }
+  .champion b { font-family: var(--cond); font-size: 72px; font-weight: 800; line-height: 1; }
+
+  /* Bas de page et état de connexion */
+  #horsligne { position: absolute; right: 40px; bottom: 6px; font-family: var(--cond); font-size: 22px; font-weight: 700; letter-spacing: 1px; color: var(--rouge); }
+  #aide { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--encre); color: #fff; padding: 12px 22px; font-size: 18px; font-weight: 600; transition: opacity .6s; z-index: 5; }
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+  <header id="haut">
+    <div class="logo" id="logo" hidden><img alt="Ramonville Volley" id="logoImg"></div>
+    <div class="titres"><div class="sur" id="sur"></div><h1 id="titre">TOURNOI</h1></div>
+    <div id="chrono"><div class="lbl" id="chronoLbl"></div><div class="val" id="chronoVal">--:--</div></div>
+  </header>
+  <main id="corps">
+    <section id="gauche" aria-live="off"></section>
+    <section id="droite" aria-live="off"></section>
+  </main>
+  <div id="horsligne" hidden>HORS LIGNE · reconnexion…</div>
+</div>
+<div id="aide">Double-clic pour passer en plein écran</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, param, esc, fmtChrono, monterScene, nomEquipe, surSignalRecharge } from "./shared/outils.js";
+import { connecter } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+
+if (param("theme") === "sombre") document.documentElement.dataset.theme = "sombre";
+monterScene($("#scene"));
+document.title = `Mur · ${CFG.nom}`;
+$("#sur").textContent = [CFG.nom, CFG.sousTitre].filter(Boolean).join(" · ");
+if (CFG.logo) { $("#logoImg").src = CFG.logo; $("#logo").hidden = false; }
+
+// Plein écran au double-clic, aide qui disparaît
+addEventListener("dblclick", () => {
+  if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {});
+});
+setTimeout(() => ($("#aide").style.opacity = 0), 6000);
+
+// Empêche l'écran de se mettre en veille (Chrome, Edge)
+let verrou = null;
+async function garderEveille() {
+  try { if (!verrou && document.visibilityState === "visible") { verrou = await navigator.wakeLock?.request("screen"); verrou?.addEventListener("release", () => (verrou = null)); } } catch {}
+}
+document.addEventListener("visibilitychange", garderEveille);
+garderEveille();
+
+let eqs = [], ms = [], rots = [];
+const api = await connecter();
+api.surConnexion?.((ok) => ($("#horsligne").hidden = ok));
+api.ecouter("", (v) => {
+  const d = v || {};
+  surSignalRecharge(d.live?.recharger);
+  eqs = T.listeEquipes(d); ms = T.listeMatchs(d); rots = T.listeRotations(d);
+  rendre();
+});
+setInterval(chrono, 500);
+
+const nom = (id) => nomEquipe(eqs, id);
+const nomOuAttente = (m, s) => nom(m[s]) || T.etiquetteAttente(m, s, ms);
+// Autorise la coupure après une apostrophe (FAUTPASK’ / SADORT)
+const coupe = (n) => esc(n).replace(/(’|&#39;)/g, "$1<wbr>");
+const signe = (d) => (d > 0 ? "+" : d < 0 ? "−" : "") + Math.abs(d);
+
+function infoRot(r) {
+  if (!r) return "";
+  const l = rots.filter((x) => x.phase === r.phase);
+  const i = l.findIndex((x) => x.id === r.id) + 1;
+  return `Rotation ${i}/${l.length}${r.mode === "points" ? ` · ${r.cible} pts` : ""}`;
+}
+
+// ---------------- Rendu ----------------
+let dernierG = "", dernierD = "";
+function rendre() {
+  const fini = !!T.vainqueurTournoi(ms);
+  const courante = T.phaseCourante(ms);
+  $("#titre").textContent = fini ? "TOURNOI TERMINÉ" : courante ? T.NOMS_PHASES[courante].toUpperCase() : "BIENVENUE";
+  const g = fini ? classementFinal() : courante === "finale" ? arbre() : poules();
+  const d = droite(fini);
+  if (g !== dernierG) { $("#gauche").innerHTML = g; dernierG = g; }
+  if (d !== dernierD) { $("#droite").innerHTML = d; dernierD = d; }
+  chrono();
+}
+
+function chrono() {
+  const cur = T.rotationEnCours(rots);
+  const el = $("#chrono");
+  let lbl, val;
+  if (cur) {
+    lbl = `ROTATION EN COURS`;
+    if (cur.mode === "points") val = `${cur.cible} PTS`;
+    else {
+      const reste = T.tempsRestant(cur, api.maintenant());
+      val = reste != null && reste <= 0 ? "TERMINÉ" : fmtChrono(reste);
+    }
+  } else {
+    lbl = "IL EST";
+    val = new Date(api.maintenant()).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+  el.classList.toggle("fini", val === "TERMINÉ");
+  if ($("#chronoLbl").textContent !== lbl) $("#chronoLbl").textContent = lbl;
+  if ($("#chronoVal").textContent !== val) $("#chronoVal").textContent = val;
+}
+
+// ---------- Poules ----------
+const BARRE_BRASSAGE = (rang) => (rang <= 2 ? "or" : rang <= 4 ? "argent" : "bronze");
+
+function poules() {
+  const courante = T.phaseCourante(ms);
+  const phase = courante || "brassage";
+  const liste = T.POULES[phase];
+  if (!T.membresPoule(ms, phase, liste[0], eqs).length) {
+    return `<div class="message">Les poules arrivent bientôt.</div>`;
+  }
+  const deLaPhase = ms.filter((m) => m.phase === phase);
+  const joues = deLaPhase.filter((m) => m.statut === T.STATUT.TERMINE).length;
+  const cartes = liste.map((p) => {
+    const cl = T.classement(ms, phase, p, eqs);
+    const metal = phase === "phase2" ? p.toLowerCase() : "";
+    return `<div class="poule"><div class="tete ${metal}"><b>${esc(T.NOMS_POULES[p].toUpperCase())}</b><span><i>V</i><i>±</i></span></div>` +
+      cl.map((l) => {
+        const barre = phase === "brassage" ? BARRE_BRASSAGE(l.rang) : p === "OR" || (p === "ARGENT" && l.rang <= 2) ? "q" : "";
+        return `<div class="rg ${barre}"><div class="bar"></div><div class="r">${l.rang}</div>
+          <div class="n">${coupe(l.nom)}</div><div class="v">${l.V}</div><div class="d">${signe(l.diff)}</div></div>`;
+      }).join("") + `</div>`;
+  }).join("");
+  const legende = phase === "brassage"
+    ? `<div><i style="background:var(--or)"></i>1er-2e → Poule Or</div><div><i style="background:var(--argent)"></i>3e-4e → Poule Argent</div><div><i style="background:var(--bronze)"></i>5e-6e → Poule Bronze</div>`
+    : `<div><i style="background:var(--rouge)"></i>Qualifiés en quarts : toute la poule Or + les 2 premiers de la poule Argent</div>`;
+  return `<div class="titre-col"><b>CLASSEMENT DES POULES</b><span>${joues} match${joues > 1 ? "s" : ""} joué${joues > 1 ? "s" : ""} sur ${deLaPhase.length}</span></div>
+    <div id="poules">${cartes}</div><div class="legende">${legende}</div>`;
+}
+
+// ---------- Arbre ----------
+function boite(m, x, y, w, seeds) {
+  if (!m) return "";
+  const r = T.resultat(m);
+  const ligne = (s) => {
+    const cls = !m[s] ? "att" : r === s ? "g" : r ? "p" : "";
+    const sc = m.statut === T.STATUT.TERMINE ? m["score" + s] : "";
+    const sd = seeds ? `<span class="sd">${m["seed" + s] || ""}</span>` : "";
+    return `<div class="l ${cls}"><div class="bar"></div>${sd}<div class="n">${esc(nomOuAttente(m, s))}</div><div class="s">${sc}</div></div>`;
+  };
+  const chip = m.statut === T.STATUT.ENCOURS ? `<div class="chip">EN COURS</div>` : "";
+  return `<div class="bm" style="left:${x}px;top:${y}px;width:${w}px">${chip}${ligne("A")}${ligne("B")}</div>`;
+}
+
+function arbre() {
+  const fin = ms.filter((m) => m.phase === "finale");
+  const get = (c) => fin.find((m) => m.code === c);
+  const W = 360, GAP = 50, X = [0, W + GAP, 2 * (W + GAP)], H2 = 67, HB = 2 * 64 + 3;
+  const haut = 70, H = 680;
+  const cQ = [1, 3, 5, 7].map((k) => haut + (H * k) / 8), cD = [haut + H / 4, haut + (3 * H) / 4], cF = haut + H / 2;
+  const tr = (x, y, w, h) => `<div class="tr" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`;
+  const pts = (c) => (get(c)?.cible ? `<small>${get(c).cible} pts</small>` : "");
+  let o = `<div class="titre-col"><b>TABLEAU FINAL</b><span>Le gagnant avance automatiquement</span></div><div id="arbre">`;
+  o += `<div class="col-t" style="left:${X[0]}px">Quarts${pts("Q1")}</div>`;
+  o += `<div class="col-t" style="left:${X[1]}px">Demies${pts("D1")}</div>`;
+  o += `<div class="col-t" style="left:${X[2]}px">Finale${pts("F12")}</div>`;
+  const relier = (xa, ya, yb, yc) => {
+    const xm = xa + GAP / 2;
+    return tr(xa, ya - 1, GAP / 2, 3) + tr(xa, yb - 1, GAP / 2, 3) + tr(xm - 1, ya, 3, yb - ya + 2) + tr(xm, yc - 1, GAP / 2, 3);
+  };
+  o += relier(X[0] + W, cQ[0], cQ[1], cD[0]) + relier(X[0] + W, cQ[2], cQ[3], cD[1]) + relier(X[1] + W, cD[0], cD[1], cF);
+  ["Q1", "Q2", "Q3", "Q4"].forEach((c, i) => (o += boite(get(c), X[0], cQ[i] - HB / 2, W, true)));
+  ["D1", "D2"].forEach((c, i) => (o += boite(get(c), X[1], cD[i] - HB / 2, W)));
+  o += boite(get("F12"), X[2], cF - HB / 2, W);
+  const y34 = cF + HB / 2 + 110;
+  o += `<div class="col-t" style="left:${X[2]}px;top:${y34 - 50}px">Places 3-4${pts("F34")}</div>`;
+  o += boite(get("F34"), X[2], y34, W);
+  return o + `</div>`;
+}
+
+// ---------- Classement final ----------
+function classementFinal() {
+  const places = T.classementFinal(ms);
+  const col = (de, a) => places.filter((x) => x.place >= de && x.place <= a).map((x) =>
+    `<div class="pl ${x.place <= 3 ? "p" + x.place : ""}"><div class="bar"></div><div class="r">${x.place}</div>
+      <div class="n ${x.id ? "" : "vide"}">${esc(x.id ? nom(x.id) : "—")}</div></div>`).join("");
+  return `<div class="titre-col"><b>CLASSEMENT FINAL</b><span>18 équipes</span></div>
+    <div id="final"><div class="colonne">${col(1, 9)}</div><div class="colonne">${col(10, 18)}</div></div>`;
+}
+
+// ---------- Colonne de droite ----------
+// « Places 11-12 » : coupure seulement entre les mots, jamais au tiret
+const etiquette = (t) => String(t).split(" ").map((w) => `<span style="white-space:nowrap">${esc(w)}</span>`).join(" ");
+
+function lignes(liste, avecScore) {
+  return liste.map((m) => {
+    const r = avecScore ? T.resultat(m) : null;
+    const eq = (s) => {
+      const cls = !m[s] ? "att" : r === s ? "g" : r ? "p" : "";
+      return `<div class="eq ${cls}"><span class="n">${esc(nomOuAttente(m, s))}</span>${avecScore ? `<span class="s">${m["score" + s] ?? ""}</span>` : ""}</div>`;
+    };
+    return `<div class="mt"><div class="ph">${etiquette(T.nomPhase(m))}</div><div class="eqs">${eq("A")}${eq("B")}</div></div>`;
+  }).join("");
+}
+
+function bloc(type, titre, rot, vide) {
+  const liste = rot ? T.matchsDeRotation(ms, rot.num) : [];
+  const termine = type === "resultats";
+  const contenu = liste.length ? lignes(termine ? liste.filter((m) => m.statut === T.STATUT.TERMINE) : liste, termine)
+    : `<div class="vide-b">${esc(vide)}</div>`;
+  return `<div class="blk ${type}"><div class="tete"><b>${titre}</b><span>${esc(rot ? infoRot(rot) : "")}</span></div>${contenu}</div>`;
+}
+
+function droite(fini) {
+  const cur = T.rotationEnCours(rots);
+  const avenir = rots.filter((r) => r.statut === T.STATUT.AVENIR);
+  const finies = rots.filter((r) => r.statut === T.STATUT.TERMINE);
+  const der = finies[finies.length - 1];
+  const attente = T.phaseCourante(ms) && !avenir.length && !cur
+    ? "Les prochains matchs arrivent dès que la phase suivante est lancée." : "Programme à venir.";
+  if (fini) {
+    const champ = T.vainqueurTournoi(ms);
+    return `<div class="champion"><span>VAINQUEUR DU TOURNOI</span><b>${esc(nom(champ))}</b></div>` +
+      bloc("resultats", "DERNIERS RÉSULTATS", der, "");
+  }
+  if (cur) {
+    return bloc("encours", "EN COURS", cur, "") +
+      bloc("avenir", "À SUIVRE", avenir[0], attente) +
+      bloc("resultats", "DERNIERS RÉSULTATS", der, "Les premiers résultats arrivent bientôt.");
+  }
+  return bloc("encours", "À SUIVRE", avenir[0], attente) +
+    bloc("avenir", "ENSUITE", avenir[1], attente) +
+    bloc("resultats", "DERNIERS RÉSULTATS", der, "Les premiers résultats arrivent bientôt.");
+}
+</script>
+</body>
+</html>
