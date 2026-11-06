@@ -78,7 +78,7 @@ export function nomEquipe(equipes, id) {
 // Fichiers rafraîchis dans le cache du navigateur avant de recharger,
 // pour être sûr d'avoir la dernière version poussée sur GitHub.
 const FICHIERS = ["config.js", "shared/outils.js", "shared/firebase.js", "shared/moteur.js",
-  "shared/ecrans.js", "shared/style.css", "shared/ecrans.css", "shared/qrcode.js"];
+  "shared/ecrans.js", "shared/style.css", "shared/ecrans.css", "shared/qrcode.js", "shared/chat.js"];
 
 export async function rechargerFrais() {
   await Promise.allSettled([location.href, ...FICHIERS].map((f) => fetch(f, { cache: "reload" })));
