@@ -35,7 +35,45 @@
   .tete-apercu { display: flex; align-items: center; gap: 8px; }
   .tete-apercu h2 { flex: 1 1 auto; }
   /* Sur tablette, l'aperçu reste visible quand on descend vers les points */
-  @media (min-height: 950px) { #blocApercu.ouvert { position: sticky; top: 0; z-index: 5; box-shadow: 0 8px 16px rgba(0,0,0,.45); } }
+  @media (min-height: 950px) and (max-width: 759px) { #blocApercu.ouvert { position: sticky; top: 0; z-index: 5; box-shadow: 0 8px 16px rgba(0,0,0,.45); } }
+
+  /* ---------- Chat Twitch ---------- */
+  #blocChat { gap: 8px; padding-bottom: 10px; }
+  #blocChat .tete-chat { display: flex; align-items: center; gap: 8px; }
+  #blocChat .tete-chat h2 { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; }
+  #blocChat .tete-chat h2 .point { width: 10px; height: 10px; }
+  #blocChat .tete-chat a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+  .fil { position: relative; height: 55vh; min-height: 260px; overflow-y: auto; overscroll-behavior: contain; background: var(--nuit); border: 2px solid var(--nuit-ligne); padding: 6px 0; }
+  .fil .msg { padding: 5px 12px; font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
+  .fil .msg .pseudo { font-weight: 700; }
+  .fil .msg .bdg { display: inline-block; font-family: var(--cond); font-size: 11px; font-weight: 800; letter-spacing: .5px; padding: 1px 4px; margin-right: 5px; vertical-align: 2px; background: var(--nuit-ligne); color: #fff; }
+  .fil .msg .bdg.broadcaster { background: var(--rouge); }
+  .fil .msg .bdg.moderator { background: #1F8B4C; }
+  .fil .msg .bdg.vip { background: #B4198F; }
+  .fil .msg img { height: 26px; vertical-align: -7px; margin: 0 1px; }
+  .fil .msg.action .txt { font-style: italic; }
+  .fil .msg.systeme { background: #2E1418; border-left: 4px solid var(--rouge); margin: 4px 0; }
+  .fil .msg.systeme .sys { display: block; font-size: 13px; font-weight: 700; color: #FFB3BC; }
+  .fil .vide { padding: 14px 12px; font-size: 14px; font-weight: 600; color: var(--nuit-texte); }
+  #nouveaux { position: sticky; bottom: 4px; display: block; margin: 0 auto; min-height: 36px; font-size: 15px; }
+
+  /* ---------- Tablette : on utilise toute la largeur ---------- */
+  @media (min-width: 760px) {
+    .appli.pilotage { max-width: none; display: grid; column-gap: 16px; align-items: start;
+      grid-template-columns: minmax(0, 560px) minmax(300px, 1fr);
+      grid-template-areas: "apercu chat" "ecrans chat" "match chat" "bandeau chat"; grid-template-rows: auto auto auto 1fr; }
+    #blocChat { grid-area: chat; position: sticky; top: 12px; height: calc(100dvh - 24px); }
+    .fil { height: auto; flex: 1 1 auto; }
+  }
+  @media (min-width: 1100px) {
+    .appli.pilotage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(320px, 1fr);
+      grid-template-areas: "apercu match chat" "ecrans match chat" "bandeau match chat"; grid-template-rows: auto auto 1fr; }
+  }
+  @media (min-width: 760px) {
+    #blocApercu { grid-area: apercu; } #blocEcrans { grid-area: ecrans; } #colMatch { grid-area: match; } #blocBandeau { grid-area: bandeau; }
+    #blocApercu.ouvert { position: static; box-shadow: none; }
+  }
+  #colMatch { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 </style>
 </head>
 <body class="sombre">
@@ -49,7 +87,7 @@
 </header>
 <div id="fatal" class="fatal" hidden></div>
 
-<main class="contenu appli" id="app" hidden>
+<main class="contenu appli pilotage" id="app" hidden>
   <div class="bloc" id="blocApercu">
     <div class="tete-apercu">
       <h2>Aperçu</h2>
@@ -60,12 +98,13 @@
     <div class="aide" id="aideApercu" hidden>Ce que voit le stream, avec un faux fond à la place de la caméra.</div>
   </div>
 
-  <div class="bloc">
+  <div class="bloc" id="blocEcrans">
     <div class="surEcran"><span class="etat" style="white-space:nowrap">À l'écran</span><b id="ecranActuel">Plateau</b></div>
     <div class="ecrans" id="ecrans"></div>
     <div class="aide" id="aideEcran">Retirer un écran revient au plateau neutre (logo, heure, QR code, chaîne).</div>
   </div>
 
+  <div id="colMatch">
   <div class="aide" id="aideChoix"></div>
   <div class="choix" id="choix"></div>
 
@@ -96,8 +135,9 @@
     <button class="btn petit" id="retirerVictoire" type="button" hidden>Retirer le bandeau victoire</button>
     <div class="aide" id="aideFin">À la fin du chrono : la victoire s'affiche 20 s et le score part dans la saisie des organisateurs.</div>
   </div>
+  </div>
 
-  <div class="bloc">
+  <div class="bloc" id="blocBandeau">
     <h2>Bandeau</h2>
     <div class="bandeaux">
       <button class="btn petit" type="button" data-bandeau="">Aucun</button>
@@ -106,6 +146,14 @@
     </div>
     <div class="aide">S'affiche sur les écrans Match et Plateau. Pendant un bandeau, le score est masqué.</div>
   </div>
+
+  <section class="bloc" id="blocChat" aria-label="Chat Twitch">
+    <div class="tete-chat">
+      <h2><span class="point" id="dotChat" title="Chat"></span>Chat <span class="etat" id="canalChat"></span></h2>
+      <a class="btn petit" id="ecrireChat" target="_blank" rel="noopener">Écrire</a>
+    </div>
+    <div class="fil" id="fil" aria-live="polite"><div class="vide" id="videChat">Connexion au chat…</div></div>
+  </section>
 </main>
 
 <script src="config.js"></script>
@@ -114,6 +162,7 @@ import { CFG, $, param, esc, fmtChrono, toast, doubleAppui, nomEquipe, recharger
 import { connecter, DEMO } from "./shared/firebase.js";
 import * as T from "./shared/moteur.js";
 import { ECRANS, NOMS_ECRANS } from "./shared/ecrans.js";
+import { lireChat, couleurLisible } from "./shared/chat.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
 if (DEMO) $("#demo").hidden = false;
@@ -280,6 +329,53 @@ $("#basculeApercu").addEventListener("click", () => montrerApercu($("#cadreAperc
 let ouvertAuDepart = false;
 try { ouvertAuDepart = localStorage.getItem(CLE_APERCU) === "1"; } catch {}
 montrerApercu(ouvertAuDepart);
+
+// ---------- Chat Twitch (lecture seule) ----------
+// ?chat=autrechaine pour tester sur une chaîne qui parle beaucoup.
+const MAX_MSG = 200;
+const BADGES = { broadcaster: "LIVE", moderator: "MODO", vip: "VIP", subscriber: "SUB" };
+const fil = $("#fil");
+const chaine = param("chat") || CFG.twitch || "";
+let enBas = true;
+fil.addEventListener("scroll", () => {
+  enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 40;
+  if (enBas) $("#nouveaux")?.remove();
+});
+function versLeBas() { fil.scrollTop = fil.scrollHeight; enBas = true; $("#nouveaux")?.remove(); }
+function htmlMessage(m) {
+  const badges = m.badges.filter((b) => BADGES[b]).map((b) => `<span class="bdg ${b}">${BADGES[b]}</span>`).join("");
+  const txt = m.morceaux.map((x) => x.emote
+    ? `<img alt="${esc(x.texte)}" title="${esc(x.texte)}" src="https://static-cdn.jtvnw.net/emoticons/v2/${encodeURIComponent(x.emote)}/default/dark/1.0">`
+    : esc(x.texte)).join("");
+  const sys = m.systeme ? `<span class="sys">${esc(m.systeme)}</span>` : "";
+  const corps = m.morceaux.length ? `${badges}<span class="pseudo" style="color:${couleurLisible(m.couleur, m.nom)}">${esc(m.nom)}</span>${m.action ? " " : " : "}<span class="txt">${txt}</span>` : "";
+  return `<div class="msg${m.action ? " action" : ""}${m.systeme ? " systeme" : ""}" data-id="${esc(m.id)}" data-u="${esc(m.utilisateurId)}">${sys}${corps}</div>`;
+}
+const chat = lireChat(chaine, {
+  etat: (e) => {
+    $("#dotChat").classList.toggle("on", e === "ok");
+    const v = $("#videChat");
+    if (v) v.textContent = e === "ok" ? "Connecté. Les messages du chat s'afficheront ici." : e === "coupe" ? "Chat coupé, reconnexion…" : "Connexion au chat…";
+  },
+  message: (m) => {
+    $("#videChat")?.remove();
+    fil.insertAdjacentHTML("beforeend", htmlMessage(m));
+    const msgs = fil.querySelectorAll(".msg");
+    for (let i = 0; i < msgs.length - MAX_MSG; i++) msgs[i].remove();
+    if (enBas) versLeBas();
+    else if (!$("#nouveaux")) {
+      fil.insertAdjacentHTML("beforeend", `<button class="btn petit" id="nouveaux" type="button">Nouveaux messages ↓</button>`);
+      $("#nouveaux").addEventListener("click", versLeBas);
+    } else fil.appendChild($("#nouveaux"));
+  },
+  supprimer: ({ id, utilisateur }) => {
+    fil.querySelectorAll(".msg").forEach((el) => { if ((id && el.dataset.id === id) || (utilisateur && el.dataset.u === utilisateur)) el.remove(); });
+  },
+  vider: () => fil.querySelectorAll(".msg").forEach((el) => el.remove()),
+});
+$("#canalChat").textContent = chat.canal;
+$("#ecrireChat").href = `https://www.twitch.tv/popout/${chat.canal}/chat`;
+if (!chat.canal) { $("#videChat").textContent = "Aucune chaîne Twitch dans config.js."; }
 
 // ---------- Recharger l'overlay à distance ----------
 // L'overlay du stream, l'aperçu et cette page se rechargent avec la dernière version.
