@@ -9,8 +9,9 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 |---|---|
 | `index.html` | Site public : matchs, poules, arbre, classement final (QR code) |
 | `orga.html` | Saisie des organisateurs : équipes, rotations, scores |
-| `pilotage.html` | Ton écran : choix de l'écran affiché, match filmé, points, victoire, bandeau |
+| `pilotage.html` | Ton écran : choix de l'écran affiché, match filmé, points, victoire, bandeau, chat Twitch |
 | `overlay.html` | **La seule source à mettre dans Streamlabs**, par-dessus la caméra |
+| `recap.html` | Le récap de fin de tournoi d'une équipe en images story (3 styles), à partager ou enregistrer |
 | `projecteur.html` | L'écran projeté au mur : poules (puis arbre), en cours, à suivre, derniers résultats, chrono |
 | `scene.html` | Scènes sur la caméra assombrie : `?vue=poules`, `arbre`, `pause`, `intermatch`, `neutre` |
 | `config.js` | Réglages du tournoi et **les 18 équipes** avec leur poule de brassage |
@@ -20,6 +21,8 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 | `shared/style.css` | La DA du tournoi |
 | `shared/ecrans.js` | Le contenu des écrans : poules, arbre, classement, pause, inter-match, plateau |
 | `shared/ecrans.css` | Leur mise en page |
+| `shared/recap.js` | Stats d'une équipe et dessin des images du récap (1080 × 1920) |
+| `shared/chat.js` | Lecture du chat Twitch (anonyme, lecture seule) affiché dans le pilotage |
 | `shared/qrcode.js` | Bibliothèque QR code (MIT, Kazuhiko Arase) |
 | `regles-firebase-a-ajouter.json` | Le bloc à ajouter aux règles Firebase |
 
@@ -214,6 +217,25 @@ Mise en place sur le PC (celui qui streame) :
 
 Salle très sombre : `projecteur.html?theme=sombre`. En test : `projecteur.html?demo=1`
 dans le même navigateur que `orga.html?demo=1`.
+
+---
+
+## 3 ter. Le récap en story (fin de tournoi)
+
+`recap.html`, accessible depuis le site : bandeau rouge « Ton récap en story » en haut
+de l'onglet Classement (et de l'onglet Matchs une fois le tournoi fini).
+
+- Le joueur choisit son équipe dans la liste (pas de vérification, c'est voulu) et un
+  style : **L'affiche**, **La carte** ou **Wrapped** (3 images à poster à la suite).
+- Le récap d'une équipe se débloque dès que sa **place finale** est connue : les
+  équipes classées 9 à 18 l'ont avant la fin du tournoi.
+- Chiffres : matchs joués, victoires, points marqués et encaissés, ratio, plus belle
+  victoire, match le plus serré, parcours (brassage, poule de niveau, tête de série,
+  matchs de la phase finale), place finale, et « un point toutes les X secondes »
+  (calculé sur les matchs au temps).
+- Les images sont dessinées dans le téléphone (rien n'est envoyé). Sur iPhone et
+  Android, « Partager en story » ouvre le partage natif (Instagram, galerie…).
+- En test : `recap.html?demo=1` après avoir simulé un tournoi dans `orga.html?demo=1`.
 
 ---
 
