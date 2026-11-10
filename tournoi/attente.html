@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Attente · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<!--
+  attente.html — écran d'attente avant le début du tournoi (stream et projecteur).
+  Source navigateur 1920 × 1080 dans Streamlabs, ou plein écran sur le mur.
+
+  Options d'URL :
+    ?debut=09:30   compte à rebours jusqu'au coup d'envoi (sinon : l'heure)
+  Double-clic : plein écran.
+-->
+<style>
+  :root { --fond: #121216; --fond2: #1C1C22; --blanc: #FFFFFF; --pale: #B9B6B1; --rose: #FF8A99; }
+  html, body { height: 100%; background: var(--fond); overflow: hidden; cursor: none; }
+  .scene { background: var(--fond); color: var(--blanc); font-family: var(--corps); }
+
+  /* ---------- Fond : rayures qui glissent + ballon fantôme qui tourne ---------- */
+  .rayures { position: absolute; inset: -200px; background: repeating-linear-gradient(115deg, rgba(255,255,255,.028) 0 2px, transparent 2px 46px); animation: glisse 40s linear infinite; }
+  @keyframes glisse { to { transform: translateX(92px); } }
+  .pan { position: absolute; left: -260px; top: -80px; width: 1180px; height: 1300px; background: linear-gradient(180deg, rgba(211,18,31,.22), rgba(211,18,31,0) 75%); transform: skewX(-12deg); }
+  .ballon { position: absolute; right: -230px; bottom: -330px; width: 900px; height: 900px; opacity: .07; animation: tourne 120s linear infinite; }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+
+  /* ---------- En-tête ---------- */
+  .tete { position: absolute; left: 120px; top: 84px; display: flex; align-items: center; gap: 24px; }
+  .logo { width: 96px; height: 96px; border-radius: 50%; background: #fff; padding: 8px; flex: none; }
+  .logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .tete .sur { font-family: var(--cond); font-size: 34px; font-weight: 800; letter-spacing: 3px; }
+  .tete .sous { font-family: var(--cond); font-size: 26px; font-weight: 700; letter-spacing: 3px; color: var(--rose); }
+
+  /* ---------- Titre ---------- */
+  .titre { position: absolute; margin: 0; left: 120px; top: 236px; font-family: var(--cond); font-weight: 800; font-size: 156px; line-height: .9; letter-spacing: 1px; }
+  .titre .l { display: block; overflow: hidden; padding-bottom: 6px; }
+  .titre .l span { display: block; transform: translateY(105%); animation: monte .9s cubic-bezier(.2,.8,.2,1) forwards; }
+  .titre .l:nth-child(2) span { animation-delay: .12s; }
+  .titre .l:nth-child(3) span { animation-delay: .24s; color: var(--rouge); }
+  @keyframes monte { to { transform: none; } }
+  .traits { position: absolute; left: 120px; top: 690px; display: flex; flex-direction: column; gap: 10px; }
+  .traits i { display: block; height: 14px; width: 440px; background: #fff; transform-origin: left; transform: scaleX(0); animation: trace 1s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+  .traits i + i { height: 7px; width: 200px; background: var(--rouge); animation-delay: .7s; }
+  @keyframes trace { to { transform: scaleX(1); } }
+
+  /* ---------- Infos : compte à rebours, date, QR ---------- */
+  .infos { position: absolute; left: 120px; top: 770px; display: flex; align-items: stretch; gap: 22px; opacity: 0; animation: apparait .8s .9s forwards; }
+  @keyframes apparait { to { opacity: 1; } }
+  .chrono { background: var(--rouge); padding: 18px 30px; display: flex; flex-direction: column; justify-content: center; min-width: 330px; }
+  .chrono .lbl { font-family: var(--cond); font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #FFE3E7; white-space: nowrap; }
+  .chrono .val { font-family: var(--cond); font-size: 84px; font-weight: 800; line-height: .95; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .quand { background: var(--fond2); padding: 18px 30px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .quand b { font-family: var(--cond); font-size: 44px; font-weight: 800; line-height: 1; }
+  .quand span { font-size: 26px; font-weight: 600; color: var(--pale); }
+  .qr { background: var(--fond2); padding: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .qr .code { width: 124px; height: 124px; background: #fff; padding: 7px; flex: none; }
+  .qr .code svg { width: 100%; height: 100%; display: block; }
+  .qr b { font-family: var(--cond); font-size: 20px; font-weight: 800; letter-spacing: 1.5px; }
+  .chrono.long .val { font-size: 62px; }
+
+  /* ---------- Partenaires ---------- */
+  .partenaires { position: absolute; right: 120px; top: 110px; width: 560px; display: flex; flex-direction: column; gap: 18px; opacity: 0; animation: apparait .8s .4s forwards; }
+  .partenaires .lbl { font-family: var(--cond); font-size: 30px; font-weight: 800; letter-spacing: 4px; display: flex; align-items: center; gap: 14px; }
+  .partenaires .lbl::before { content: ""; width: 18px; height: 18px; background: var(--rouge); }
+  .carte { position: relative; height: 480px; background: #fff; overflow: hidden; }
+  /* Le logo sortant s'efface d'abord, puis le suivant arrive : jamais deux logos mêlés */
+  .carte img { position: absolute; inset: 56px; width: calc(100% - 112px); height: calc(100% - 112px); object-fit: contain; opacity: 0; transform: scale(.96); transition: opacity .35s ease, transform .35s ease; }
+  .carte img.on { opacity: 1; transform: none; transition: opacity .7s .4s ease, transform 1.4s .4s cubic-bezier(.2,.8,.2,1); }
+  .nom { height: 44px; font-family: var(--cond); font-size: 38px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nom span { display: inline-block; animation: apparaitNom .7s ease; }
+  @keyframes apparaitNom { from { opacity: 0; transform: translateY(12px); } }
+  .avance { height: 6px; background: rgba(255,255,255,.14); }
+  .avance i { display: block; height: 100%; width: 100%; background: var(--rouge); transform-origin: left; transform: scaleX(0); }
+  .avance i.go { animation: remplit var(--duree, 6s) linear forwards; }
+  @keyframes remplit { to { transform: scaleX(1); } }
+  .vignettes { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+  .vignettes div { aspect-ratio: 1; background: #fff; padding: 10px; opacity: .45; outline: 0 solid var(--rouge); transition: opacity .5s, outline-width .3s; }
+  .vignettes div.on { opacity: 1; outline-width: 5px; outline-offset: 4px; }
+  .vignettes img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  /* ---------- Bandeau défilant ---------- */
+  .bandeau { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; background: #0B0B0E; display: flex; align-items: stretch; border-top: 4px solid var(--rouge); }
+  .bandeau .tag { flex: none; background: var(--rouge); display: flex; align-items: center; padding: 0 34px 0 120px; font-family: var(--cond); font-size: 30px; font-weight: 800; letter-spacing: 3px; position: relative; z-index: 1; }
+  .defile { flex: 1 1 auto; overflow: hidden; display: flex; align-items: center; }
+  .piste { display: flex; flex: none; white-space: nowrap; animation: defile var(--defile, 70s) linear infinite; }
+  .piste span { font-family: var(--cond); font-size: 32px; font-weight: 700; letter-spacing: 1px; display: inline-flex; align-items: center; }
+  .piste span::after { content: ""; width: 12px; height: 12px; background: var(--rouge); margin: 0 34px; }
+  @keyframes defile { to { transform: translateX(-50%); } }
+
+  #aide { position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%); background: #000; color: #fff; padding: 10px 18px; font-size: 16px; font-weight: 600; transition: opacity .6s; z-index: 5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rayures, .ballon, .piste { animation: none; }
+    .titre .l span, .traits i, .infos, .partenaires { animation-duration: 1ms; animation-delay: 0s; }
+    .carte img { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+  <div class="rayures" aria-hidden="true"></div>
+  <div class="pan" aria-hidden="true"></div>
+  <svg class="ballon" viewBox="0 0 200 200" aria-hidden="true" fill="none" stroke="#fff" stroke-width="5">
+    <circle cx="100" cy="100" r="94"></circle>
+    <path d="M100 6 C 70 50, 70 150, 100 194"></path>
+    <path d="M100 6 C 140 40, 170 90, 190 120"></path>
+    <path d="M10 70 C 60 80, 120 120, 150 180"></path>
+    <path d="M14 140 C 50 110, 100 96, 192 84"></path>
+  </svg>
+
+  <header class="tete">
+    <div class="logo" id="logo" hidden><img id="logoImg" alt="Ramonville Volley"></div>
+    <div><div class="sur" id="sur">TOURNOI</div><div class="sous" id="sous"></div></div>
+  </header>
+
+  <h1 class="titre"><span class="l"><span>LE TOURNOI</span></span><span class="l"><span>COMMENCE</span></span><span class="l"><span>BIENTÔT !</span></span></h1>
+  <div class="traits" aria-hidden="true"><i></i><i></i></div>
+
+  <div class="infos">
+    <div class="chrono"><div class="lbl" id="chronoLbl">IL EST</div><div class="val" id="chronoVal">--:--</div></div>
+    <div class="quand"><b id="jour"></b><span id="lieu"></span></div>
+    <div class="qr"><div class="code" id="qr"></div><b>LE TOURNOI EN DIRECT</b></div>
+  </div>
+
+  <aside class="partenaires" aria-label="Partenaires du tournoi">
+    <div class="lbl">MERCI À NOS PARTENAIRES</div>
+    <div class="carte" id="carte"></div>
+    <div class="nom" id="nom"></div>
+    <div class="avance"><i id="avance"></i></div>
+    <div class="vignettes" id="vignettes"></div>
+  </aside>
+
+  <footer class="bandeau">
+    <div class="tag">BIENTÔT EN DIRECT</div>
+    <div class="defile"><div class="piste" id="piste"></div></div>
+  </footer>
+</div>
+<div id="aide">Double-clic pour passer en plein écran</div>
+
+<script src="config.js"></script>
+<script src="shared/qrcode.js"></script>
+<script type="module">
+import { CFG, $, param, esc, monterScene, qrSvg } from "./shared/outils.js";
+
+// Les partenaires de l'événement (fichiers dans tournoi/sponsors/)
+const PARTENAIRES = [
+  { nom: "Intermarché Ramonville", img: "sponsors/intermarche.png" },
+  { nom: "Joma", img: "sponsors/joma.png" },
+  { nom: "Intersport Clubs & Collectivités", img: "sponsors/intersport.png" },
+  { nom: "Ville de Ramonville Saint-Agne", img: "sponsors/ramonville-saint-agne.png" },
+  { nom: "Pharmacie Lafayette", img: "sponsors/pharmacie-lafayette.png" },
+  { nom: "On Padel", img: "sponsors/on-padel.png" },
+];
+const DUREE = 6000;
+
+monterScene($("#scene"));
+document.title = `Attente · ${CFG.nom}`;
+$("#sur").textContent = (CFG.nom || "Tournoi").toUpperCase();
+$("#sous").textContent = [CFG.sousTitre, "18 ÉQUIPES"].filter(Boolean).join(" · ").toUpperCase();
+if (CFG.logo) { $("#logoImg").src = CFG.logo; $("#logo").hidden = false; }
+$("#qr").innerHTML = qrSvg(CFG.siteUrl || location.href.replace(/attente\.html.*$/, ""));
+
+// Date en toutes lettres : « Mercredi 11 novembre »
+const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(CFG.date || "");
+const jour = m ? new Date(+m[3], +m[2] - 1, +m[1]) : null;
+const jourTxt = jour ? jour.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) : (CFG.date || "");
+$("#jour").textContent = jourTxt.charAt(0).toUpperCase() + jourTxt.slice(1);
+$("#lieu").textContent = CFG.lieu || "";
+
+// ---------- Compte à rebours (?debut=09:30) ou heure ----------
+const debut = /^(\d{1,2})[:hH](\d{2})$/.exec(param("debut") || "");
+function chrono() {
+  const now = new Date();
+  let lbl, val;
+  if (debut) {
+    const cible = new Date(now); cible.setHours(+debut[1], +debut[2], 0, 0);
+    const reste = Math.round((cible - now) / 1000);
+    const hh = `${+debut[1]}H${debut[2]}`;
+    if (reste > 0) {
+      lbl = `COUP D'ENVOI À ${hh} · DANS`;
+      const h = Math.floor(reste / 3600), mi = Math.floor((reste % 3600) / 60), s = reste % 60;
+      val = h ? `${h} h ${String(mi).padStart(2, "0")} min` : `${String(mi).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    } else { lbl = `COUP D'ENVOI ${hh}`; val = "C'EST PARTI !"; }
+  } else {
+    lbl = "IL EST";
+    val = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+  $("#chronoVal").parentElement.classList.toggle("long", val.length > 8);
+  if ($("#chronoLbl").textContent !== lbl) $("#chronoLbl").textContent = lbl;
+  if ($("#chronoVal").textContent !== val) $("#chronoVal").textContent = val;
+}
+chrono(); setInterval(chrono, 250);
+
+// ---------- Partenaires : un à la fois, en fondu ----------
+$("#carte").innerHTML = PARTENAIRES.map((p, i) => `<img src="${p.img}" alt="${esc(p.nom)}" data-i="${i}">`).join("");
+$("#vignettes").innerHTML = PARTENAIRES.map((p, i) => `<div data-i="${i}"><img src="${p.img}" alt=""></div>`).join("");
+document.documentElement.style.setProperty("--duree", DUREE + "ms");
+let i = -1;
+function suivant() {
+  i = (i + 1) % PARTENAIRES.length;
+  document.querySelectorAll("#carte img, #vignettes div").forEach((el) => el.classList.toggle("on", +el.dataset.i === i));
+  $("#nom").innerHTML = `<span>${esc(PARTENAIRES[i].nom)}</span>`;
+  const a = $("#avance"); a.classList.remove("go"); void a.offsetWidth; a.classList.add("go");
+}
+suivant(); setInterval(suivant, DUREE);
+
+// ---------- Bandeau défilant (contenu doublé pour une boucle sans à-coup) ----------
+const morceaux = [
+  jour ? `${$("#jour").textContent} ${m[3]}` : CFG.date,
+  CFG.lieu,
+  "18 équipes · 4 contre 4",
+  "Brassage · Poules de niveau · Phase finale",
+  "Classement et arbre en direct sur le site du tournoi",
+  CFG.twitch ? `En direct sur ${CFG.twitch}` : "",
+  "Merci à nos partenaires : " + PARTENAIRES.map((p) => p.nom).join(" · "),
+].filter(Boolean);
+const une = morceaux.map((t) => `<span>${esc(t)}</span>`).join("");
+$("#piste").innerHTML = une + une;
+
+// Plein écran au double-clic (projecteur)
+addEventListener("dblclick", () => {
+  if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen?.().catch(() => {});
+});
+setTimeout(() => ($("#aide").style.opacity = 0), 5000);
+</script>
+</body>
+</html>
