@@ -21,6 +21,7 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 | `shared/style.css` | La DA du tournoi |
 | `shared/ecrans.js` | Le contenu des écrans : poules, arbre, classement, pause, inter-match, plateau |
 | `shared/ecrans.css` | Leur mise en page |
+| `shared/simulation.js` | Faux tournoi pour les tests (démo et tournoi de test uniquement) |
 | `shared/recap.js` | Stats d'une équipe et dessin des images du récap (1080 × 1920) |
 | `shared/chat.js` | Lecture du chat Twitch (anonyme, lecture seule) affiché dans le pilotage |
 | `shared/qrcode.js` | Bibliothèque QR code (MIT, Kazuhiko Arase) |
@@ -73,6 +74,14 @@ Les onglets d'un **même navigateur** se synchronisent entre eux.
 
 Pour refaire une simulation : orga › Zone sensible › **« Recommencer (garder les
 équipes) »**. Pas besoin de recharger les équipes.
+
+**Faux tournoi complet en un clic** : chez l'orga (démo ou test), le bloc
+**« Simulation : remplir avec un faux tournoi »** remplit tous les matchs jusqu'à
+l'étape choisie : milieu du brassage, fin du brassage, milieu de la phase 2,
+quarts, demies, finale ou tournoi terminé. Chaque étape repart de zéro (équipes
+gardées) ; les équipes de meilleur niveau gagnent plus souvent. « Rotation
+suivante » termine la rotation en cours avec des scores au hasard et lance la
+suivante. Ce bloc n'apparaît jamais sur le vrai tournoi.
 
 **Simulation en vrai Firebase** : ajoute `&t=test` à tous les liens (orga,
 pilotage, overlay, site) et crée les clés `tournoi_test_orga` et

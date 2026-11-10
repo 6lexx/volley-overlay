@@ -44,6 +44,17 @@
 
 <main class="contenu appli" id="app" hidden>
 
+  <!-- ============ Simulation (démo / tournoi de test uniquement) ============ -->
+  <details class="bloc simu" id="blocSimu" hidden>
+    <summary>Simulation : remplir avec un faux tournoi</summary>
+    <div class="aide" id="simuAide"></div>
+    <label class="aide" for="simuEtape" style="margin:0">Aller directement à :</label>
+    <select id="simuEtape" class="champ"></select>
+    <div class="aide" id="simuEtapeAide"></div>
+    <button class="btn rouge large" id="simuAller" type="button">Remplir jusqu'à cette étape</button>
+    <button class="btn plein" id="simuRotation" type="button">Rotation suivante (scores au hasard)</button>
+  </details>
+
   <!-- ============ Avant le tournoi ============ -->
   <section id="prep" hidden style="display:flex;flex-direction:column;gap:12px">
     <div class="bloc" id="blocCharger">
@@ -94,6 +105,7 @@
 import { CFG, $, param, esc, fmtChrono, toast, doubleAppui, nomEquipe } from "./shared/outils.js";
 import { connecter, DEMO, TID } from "./shared/firebase.js";
 import * as T from "./shared/moteur.js";
+import { simuler, ETAPES } from "./shared/simulation.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
 $("#sousTitre").textContent = `${CFG.nom} · saisie des résultats`;
@@ -125,6 +137,27 @@ const nom = (id) => nomEquipe(eqs, id);
 const pos = (poule, p) => T.POULES.brassage.includes(poule) ? poule + T.LETTRES_POS[p] : `${T.COURTS_POULES[poule]} ${T.LETTRES_POS[p]}`;
 
 api.ecouter("", (v) => { data = v || {}; rendre(); }, (e) => fatal("Lecture refusée (" + esc(e.code) + ")."));
+
+// ---------- Simulation : faux tournoi pour tester tous les écrans ----------
+if (SIMU) {
+  $("#blocSimu").hidden = false;
+  const reel = !DEMO && TID === CFG.id;
+  $("#simuAide").innerHTML = (DEMO ? "Mode démo : tout reste dans ce navigateur." : `Tournoi <b>${esc(TID)}</b> sur Firebase : tous les écrans connectés à <code>&amp;t=${esc(TID)}</code> se mettent à jour.`) +
+    (reel ? ` <b style="color:var(--rouge-clair)">Attention : c'est le VRAI tournoi.</b>` : "") +
+    " Les scores sont inventés ; les équipes de meilleur niveau gagnent plus souvent.";
+  $("#simuEtape").innerHTML = ETAPES.filter((e) => e.id !== "rotation").map((e) => `<option value="${e.id}">${esc(e.nom)}</option>`).join("");
+  const majAide = () => ($("#simuEtapeAide").textContent = ETAPES.find((e) => e.id === $("#simuEtape").value).aide + ". Repart de zéro (équipes gardées).");
+  $("#simuEtape").addEventListener("change", majAide); majAide();
+  const remplir = (cible) => {
+    const r = simuler(data, cible, CFG, api.maintenant());
+    Object.keys(brouillons).forEach((k) => delete brouillons[k]);
+    sigRot = sigCorr = sigEq = sigPrep = "";
+    return envoyer({ equipes: r.equipes, matchs: r.matchs, rotations: r.rotations },
+      cible === "rotation" ? "Rotation simulée" : `Faux tournoi rempli : ${ETAPES.find((e) => e.id === cible).nom}`);
+  };
+  doubleAppui($("#simuAller"), reel ? "VRAI tournoi ! Appuie encore" : "Appuie encore : résultats remplacés", () => remplir($("#simuEtape").value));
+  $("#simuRotation").addEventListener("click", () => remplir("rotation"));
+}
 
 function rendre() {
   eqs = T.listeEquipes(data); ms = T.listeMatchs(data); rots = T.listeRotations(data);

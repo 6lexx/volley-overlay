@@ -196,9 +196,13 @@ function candidats() {
 
 function rendre() {
   const { rot, liste } = candidats();
+  const rotNom = rot ? (() => {
+    const l = rots.filter((x) => x.phase === rot.phase);
+    return `${T.NOMS_PHASES[rot.phase]} · rotation ${l.findIndex((x) => x.id === rot.id) + 1}/${l.length}`;
+  })() : "";
   $("#aideChoix").textContent = !rot ? "Aucun match en cours ou à venir."
-    : rot.statut === T.STATUT.ENCOURS ? `Rotation ${rot.num} en cours · touche le match que tu filmes`
-    : `Rotation ${rot.num} pas encore lancée · tu peux déjà choisir ton match`;
+    : rot.statut === T.STATUT.ENCOURS ? `${rotNom} en cours · touche le match que tu filmes`
+    : `${rotNom} pas encore lancée · tu peux déjà choisir ton match`;
   $("#choix").innerHTML = liste.map((m) => `<button type="button" data-choix="${m.id}" aria-pressed="${live.matchId === m.id}">
       <small>${esc(T.nomPhase(m, ms).toUpperCase())}</small>${esc(nom(m.A))} <span style="opacity:.6">vs</span> ${esc(nom(m.B))}</button>`).join("");
 

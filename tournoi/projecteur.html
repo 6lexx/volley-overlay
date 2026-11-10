@@ -331,8 +331,11 @@ function droite(fini) {
   const avenir = rots.filter((r) => r.statut === T.STATUT.AVENIR);
   const finies = rots.filter((r) => r.statut === T.STATUT.TERMINE);
   const der = finies[finies.length - 1];
-  const attente = T.phaseCourante(ms) && !avenir.length && !cur
-    ? "Les prochains matchs arrivent dès que la phase suivante est lancée." : "Programme à venir.";
+  const ph = T.phaseCourante(ms);
+  const attente = !ph || cur || avenir.length ? "Programme à venir."
+    : ph === "brassage" ? "Brassage terminé ! Les poules Or, Argent et Bronze arrivent dans quelques minutes."
+    : ph === "phase2" ? "Poules de niveau terminées ! Le tableau final arrive dans quelques minutes."
+    : "Les derniers matchs arrivent.";
   if (fini) {
     const champ = T.vainqueurTournoi(ms);
     return `<div class="champion"><span>VAINQUEUR DU TOURNOI</span><b>${esc(nom(champ))}</b></div>` +
@@ -342,6 +345,13 @@ function droite(fini) {
     return bloc("encours", "EN COURS", cur, "") +
       bloc("avenir", "À SUIVRE", avenir[0], attente) +
       bloc("resultats", "DERNIERS RÉSULTATS", der, "Les premiers résultats arrivent bientôt.");
+  }
+  if (!avenir.length) {
+    // Entre deux phases : un seul message d'attente, et les deux dernières rotations jouées
+    const avant = finies[finies.length - 2];
+    return bloc("encours", "À SUIVRE", null, attente) +
+      bloc("resultats", "DERNIERS RÉSULTATS", der, "Les premiers résultats arrivent bientôt.") +
+      (avant ? bloc("resultats", "JUSTE AVANT", avant, "") : "");
   }
   return bloc("encours", "À SUIVRE", avenir[0], attente) +
     bloc("avenir", "ENSUITE", avenir[1], attente) +
