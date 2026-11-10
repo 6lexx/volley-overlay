@@ -11,6 +11,7 @@ Tout le tournoi vit dans ce dossier `tournoi/`. Les fichiers de ton équipe
 | `orga.html` | Saisie des organisateurs : équipes, rotations, scores |
 | `pilotage.html` | Ton écran : choix de l'écran affiché, match filmé, points, victoire, bandeau, chat Twitch |
 | `overlay.html` | **La seule source à mettre dans Streamlabs**, par-dessus la caméra |
+| `attente.html` | Écran d'attente animé avant le début (titre, compte à rebours, partenaires, QR) |
 | `recap.html` | Le récap de fin de tournoi d'une équipe en images story (3 styles), à partager ou enregistrer |
 | `projecteur.html` | L'écran projeté au mur : poules (puis arbre), en cours, à suivre, derniers résultats, chrono |
 | `scene.html` | Scènes sur la caméra assombrie : `?vue=poules`, `arbre`, `pause`, `intermatch`, `neutre` |
@@ -245,6 +246,20 @@ de l'onglet Classement (et de l'onglet Matchs une fois le tournoi fini).
 - Les images sont dessinées dans le téléphone (rien n'est envoyé). Sur iPhone et
   Android, « Partager en story » ouvre le partage natif (Instagram, galerie…).
 - En test : `recap.html?demo=1` après avoir simulé un tournoi dans `orga.html?demo=1`.
+
+---
+
+## 3 quater. L'écran d'attente
+
+`attente.html` : « Le tournoi commence bientôt ! », animé sobrement (titre qui
+apparaît, partenaires en fondu toutes les 6 s, bandeau qui défile). Fond opaque :
+la caméra n'est pas visible.
+
+- Streamlabs : une scène « Attente » avec une source navigateur 1920 × 1080 sur
+  `…/tournoi/attente.html?debut=09:30` (heure du coup d'envoi : compte à rebours,
+  puis « C'est parti ! »). Sans `debut`, l'écran affiche l'heure.
+- Projecteur : la même page, double-clic pour le plein écran.
+- Partenaires : logos dans `tournoi/sponsors/`, liste en haut du script de la page.
 
 ---
 
