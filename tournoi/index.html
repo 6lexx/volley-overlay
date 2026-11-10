@@ -26,14 +26,14 @@
   .tete .sur { font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #FFE3E7; text-transform: uppercase; }
   .tete h1 { margin: 4px 0 0; font-family: var(--cond); font-size: 32px; font-weight: 800; line-height: .95; text-transform: uppercase; max-width: 220px; }
   .btn-regles { flex: none; min-height: 44px; padding: 0 12px; border: 2px solid #fff; background: transparent; color: #fff; display: inline-flex; align-items: center; gap: 8px; font-family: var(--cond); font-size: 17px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
-  .etapes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-  .etape { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .etapes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .etape { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .etape .carre { border: 2px solid #fff; }
   .etape.active .carre { background: var(--encre); border-color: var(--encre); color: #fff; }
   .etape.faite .carre { background: #fff; border-color: #fff; color: var(--rouge); }
   .etape.avenir { opacity: .6; }
   .etape.faite { opacity: .8; }
-  .etape .txt { font-family: var(--cond); font-size: 15px; font-weight: 800; line-height: 1; text-transform: uppercase; min-width: 0; }
+  .etape .txt { font-family: var(--cond); font-size: 14px; letter-spacing: .3px; font-weight: 800; line-height: 1; text-transform: uppercase; min-width: 0; }
   .etape .txt span { display: block; font-weight: 600; color: #FFE3E7; margin-top: 2px; text-transform: none; }
   .fini { background: var(--encre); padding: 8px 12px; display: inline-flex; align-items: center; gap: 10px; align-self: flex-start; font-family: var(--cond); font-size: 16px; font-weight: 800; letter-spacing: 1px; }
 
@@ -76,7 +76,7 @@
 
   /* ---------- Poules ---------- */
   .segments { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #fff; padding: 4px; gap: 4px; }
-  .segments button { min-height: 44px; border: 0; background: transparent; color: var(--gris); font-family: var(--cond); font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .segments button { min-height: 44px; border: 0; background: transparent; color: var(--gris); font-family: var(--cond); font-size: 16px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
   .segments button[aria-selected="true"] { background: var(--encre); color: #fff; }
   .poule { background: #fff; display: flex; flex-direction: column; }
   .poule-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--encre); color: #fff; }
@@ -86,7 +86,7 @@
   .poule-tete.argent { background: var(--argent-fonce); }
   .poule-tete.bronze { background: var(--bronze-fonce); }
   .ligne-cl { display: grid; grid-template-columns: 30px minmax(0, 1fr) 28px 28px 40px; gap: 10px; align-items: center; padding: 7px 14px; border-top: 2px solid var(--brume); }
-  .ligne-cl.entete { border-top: 0; padding: 8px 14px 4px; font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--gris-clair); }
+  .ligne-cl.en-tete-cl { border-top: 0; padding: 8px 14px 4px; font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--gris-clair); }
   .ligne-cl .carre { background: var(--ligne); color: var(--gris); }
   .ligne-cl .carre.q { background: var(--encre); color: #fff; }
   .ligne-cl .carre.or { background: var(--or); color: var(--encre); }
@@ -130,7 +130,7 @@
   /* ---------- Classement ---------- */
   .podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; align-items: end; }
   .marche { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .marche .nm { font-family: var(--cond); font-size: 17px; font-weight: 800; line-height: 1.05; text-align: center; overflow-wrap: anywhere; }
+  .marche .nm { font-family: var(--cond); font-size: 17px; font-weight: 800; line-height: 1.05; text-align: center; overflow-wrap: break-word; hyphens: auto; }
   .marche .bloc-p { background: var(--encre); color: #fff; display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 2px; font-family: var(--cond); font-weight: 800; line-height: 1; }
   .marche.p1 .nm { font-size: 19px; color: var(--rouge); }
   .marche.p1 .bloc-p { background: var(--rouge); height: 136px; font-size: 52px; }
@@ -149,6 +149,12 @@
   .place .nm.vide { color: var(--gris-clair); font-weight: 500; }
   .btn-noir { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; background: var(--encre); color: #fff; border: 0; padding: 0 16px; font-family: var(--cond); font-size: 18px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
   .btn-noir[aria-expanded="true"] svg { transform: rotate(90deg); }
+  .cta-recap { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--rouge); color: #fff; text-decoration: none; }
+  .cta-recap .ic { width: 40px; height: 56px; flex: none; background: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-size: 20px; font-weight: 800; color: var(--rouge); }
+  .cta-recap b { display: block; font-family: var(--cond); font-size: 22px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+  .cta-recap span.t span { font-size: 13.5px; color: #FFE3E7; }
+  .cta-recap .fl { margin-left: auto; flex: none; display: flex; }
+  .cta-recap:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
 
   /* ---------- Navigation du bas ---------- */
   .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--encre); padding-bottom: env(safe-area-inset-bottom); }
@@ -328,17 +334,17 @@ function etapes() {
 // ---------------- Matchs ----------------
 const TEASER = `<button class="teaser" type="button" data-regles>
   <span class="q" aria-hidden="true">?</span>
-  <span class="t"><b>Comment ça marche ?</b><span>Les règles du tournoi en 1 minute</span></span>
+  <span class="t"><b>Comment ça marche&nbsp;?</b><span>Les règles du tournoi en 1 minute</span></span>
   <span class="fl">${SVG_FLECHE}</span></button>`;
 
 function matchs() {
-  let html = TEASER;
+  let html = (T.vainqueurTournoi(ms) ? ctaRecap() : "") + TEASER;
   if (!ms.length) return html + `<div class="vide">Le programme arrive bientôt.</div>`;
   const cur = T.rotationEnCours(rots);
   if (cur) {
     const l = rots.filter((r) => r.phase === cur.phase);
     const i = l.findIndex((r) => r.id === cur.id) + 1;
-    const quoi = cur.phase === "finale" ? "Phase finale" : `${T.NOMS_PHASES[cur.phase]} · ${T.NOMS_POULES[cur.poule]}`;
+    const quoi = cur.phase === "finale" ? "Phase finale" : T.NOMS_POULES[cur.poule];
     const points = cur.mode === "points";
     html += `<div class="rotation">
       <div class="info"><small>En cours · ${esc(quoi)}</small><b>Rotation ${i} sur ${l.length}</b></div>
@@ -387,14 +393,14 @@ function poules() {
       : p === "OR" || (p === "ARGENT" && rang <= 2) ? "q" : "";
     return `<section class="poule" aria-label="${esc(T.NOMS_POULES[p])}">
       <div class="poule-tete ${phase === "phase2" ? p.toLowerCase() : ""}"><b>${esc(T.NOMS_POULES[p])}</b>${phase === "phase2" ? `<span>${BADGES[p]}</span>` : ""}</div>
-      <div class="ligne-cl entete" aria-hidden="true"><span></span><span>ÉQUIPE</span><span style="text-align:center">J</span><span style="text-align:center">V</span><span style="text-align:right">±</span></div>
+      <div class="ligne-cl en-tete-cl" aria-hidden="true"><span></span><span>ÉQUIPE</span><span style="text-align:center">J</span><span style="text-align:center">V</span><span style="text-align:right">±</span></div>
       ${cl.map((l) => `<div class="ligne-cl"><span class="carre ${carre(l.rang)}">${l.rang}</span><span class="nm">${esc(l.nom)}</span><span class="c">${l.J}</span><span class="v">${l.V}</span><span class="d">${l.diff > 0 ? "+" : l.diff < 0 ? "−" : ""}${Math.abs(l.diff)}</span></div>`).join("")}
     </section>`;
   }).join("");
   html += phase === "brassage"
     ? `<div class="legende"><span><i style="background:var(--or)"></i>1er-2e → Or</span><span><i style="background:var(--argent)"></i>3e-4e → Argent</span><span><i style="background:var(--bronze)"></i>5e-6e → Bronze</span></div>`
     : `<div class="legende"><span><i style="background:var(--encre)"></i>Qualifiés pour les quarts</span></div>`;
-  return html + `<button class="lien" type="button" data-regles>Comment est calculé le classement ?</button>`;
+  return html + `<button class="lien" type="button" data-regles>Comment est calculé le classement&nbsp;?</button>`;
 }
 
 // ---------------- Arbre ----------------
@@ -420,7 +426,7 @@ function arbre() {
   const tours = [
     { code: "Q", nom: "Quarts", liste: ["Q1", "Q2", "Q3", "Q4"].map(get), seeds: true },
     { code: "D", nom: "Demies", liste: ["D1", "D2"].map(get) },
-    { code: "F", nom: `Finale · ${get("F12")?.cible || ""} pts`, liste: [get("F12")], extra: get("F34") }
+    { code: "F", nom: "Finale", liste: [get("F12")], extra: get("F34") }
   ];
   let html = `<div class="frise">` + tours.map((t) => {
     const [cls, txt] = etatTour(t.extra ? [...t.liste, t.extra] : t.liste);
@@ -434,14 +440,25 @@ function arbre() {
   return html + `<div class="champion" style="margin-left:52px"><div><small>VAINQUEUR</small><b>${esc(champ ? nom(champ) : "À venir")}</b></div></div>`;
 }
 
+// ---------------- Récap en story ----------------
+function ctaRecap() {
+  if (!T.classementFinal(ms).some((x) => x.id)) return "";
+  const fini = !!T.vainqueurTournoi(ms);
+  return `<a class="cta-recap" href="recap.html${esc(location.search)}">
+    <span class="ic" aria-hidden="true">1ER</span>
+    <span class="t"><b>Ton récap en story</b><span>${fini ? "Ta journée en images, à partager sur Insta" : "Dispo dès que ta place finale est connue"}</span></span>
+    <span class="fl">${SVG_FLECHE}</span></a>`;
+}
+
 // ---------------- Classement ----------------
 const CODES_CLASSEMENT = ["D3", "D4", "F56", "F78", "P910", "P1112", "P1314", "P1516", "P1718"];
 function classement() {
   const fin = ms.filter((m) => m.phase === "finale");
   if (!fin.length) return `<div class="vide">Le classement final se remplit pendant la phase finale, au fil des matchs de classement.</div>`;
   const places = T.classementFinal(ms);
+  const cta = ctaRecap();
   const n = (p) => { const x = places.find((y) => y.place === p); return x?.id ? esc(nom(x.id)) : "—"; };
-  let html = `<div class="label">Le podium</div>
+  let html = cta + `<div class="label">Le podium</div>
     <div class="podium">
       <div class="marche p2"><div class="nm">${n(2)}</div><div class="bloc-p">2</div></div>
       <div class="marche p1"><div class="nm">${n(1)}</div><div class="bloc-p">1<small>VAINQUEUR</small></div></div>
