@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#D3121F">
+<title>Ton récap · Tournoi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/style.css">
+<!--
+  recap.html — le récap de fin de tournoi d'une équipe, en images story 1080 × 1920.
+  Les joueurs choisissent leur équipe et un style, puis partagent ou enregistrent.
+  Tout est calculé et dessiné dans le téléphone : rien n'est envoyé nulle part.
+-->
+<style>
+  body { background: var(--brume); }
+  .site { max-width: 560px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .demo { background: #FFB020; color: var(--encre); font-weight: 700; font-size: 14px; text-align: center; padding: 6px; }
+  .tete { background: var(--rouge); color: #fff; padding: 16px 16px 16px 20px; display: flex; align-items: center; gap: 12px; }
+  .retour { width: 44px; height: 44px; flex: none; border: 2px solid #fff; color: #fff; display: flex; align-items: center; justify-content: center; }
+  .retour:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+  .tete .sur { font-family: var(--cond); font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #FFE3E7; }
+  .tete h1 { margin: 2px 0 0; font-family: var(--cond); font-size: 26px; font-weight: 800; line-height: 1; }
+  .label { font-family: var(--cond); font-size: 15px; font-weight: 700; letter-spacing: 2px; color: var(--gris); text-transform: uppercase; display: block; margin-bottom: 6px; }
+  .choix-eq { position: relative; }
+  .choix-eq select { width: 100%; height: 52px; appearance: none; -webkit-appearance: none; border: 0; border-left: 4px solid var(--rouge); border-radius: 0; background: #fff; padding: 0 44px 0 14px; font-family: var(--cond); font-size: 22px; font-weight: 800; color: var(--encre); }
+  .choix-eq select:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+  .choix-eq svg { position: absolute; right: 16px; top: 17px; pointer-events: none; }
+  .styles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .styles button { border: 3px solid transparent; background: #fff; padding: 8px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; text-align: left; font-family: var(--cond); font-size: 15px; font-weight: 800; color: var(--gris); text-transform: uppercase; }
+  .styles button[aria-checked="true"] { border-color: var(--encre); color: var(--encre); }
+  .styles button:focus-visible { outline: 3px solid var(--rouge); outline-offset: 2px; }
+  .vign { aspect-ratio: 9 / 16; display: flex; align-items: center; justify-content: center; }
+  .vign.a { background: var(--rouge); color: #fff; font-size: 40px; }
+  .vign.b { background: var(--encre); padding: 10px 8px; }
+  .vign.b i { width: 100%; height: 78%; background: #fff; border-top: 5px solid #D9A520; }
+  .vign.c { gap: 2px; align-items: stretch; }
+  .vign.c i { flex: 1 1 0; align-self: stretch; }
+  .apercu { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
+  .apercu.un { justify-content: center; }
+  .apercu figure { margin: 0; flex: none; width: 62%; scroll-snap-align: center; display: flex; flex-direction: column; gap: 6px; }
+  .apercu.trois figure { width: 58%; }
+  .apercu img { width: 100%; aspect-ratio: 9 / 16; display: block; background: #E4E1DC; box-shadow: 0 6px 18px rgba(21,21,26,.18); }
+  .apercu figcaption { display: flex; justify-content: space-between; align-items: center; font-family: var(--cond); font-size: 14px; font-weight: 800; letter-spacing: 1px; color: var(--gris); }
+  .apercu figcaption button { border: 0; background: none; color: var(--rouge); font: inherit; padding: 6px 0; }
+  .attente { aspect-ratio: 9 / 16; width: 62%; margin: 0 auto; background: #E4E1DC; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--gris); font-weight: 600; }
+  .info { background: var(--encre); color: #fff; padding: 12px 14px; display: flex; align-items: center; gap: 12px; font-size: 13.5px; line-height: 1.4; }
+  .info::before { content: ""; width: 6px; align-self: stretch; background: var(--rouge); flex: none; }
+  .gros { height: 56px; border: 0; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: var(--cond); font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #fff; text-transform: uppercase; }
+  .gros:disabled { opacity: .45; }
+  .gros:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+  #partager { background: var(--rouge); }
+  #enregistrer { background: var(--encre); }
+  .pas-pret { background: #fff; border-left: 4px solid var(--rouge); padding: 14px; font-size: 15px; line-height: 1.45; }
+</style>
+</head>
+<body>
+<div id="demo" class="demo" hidden>Mode démo</div>
+<div class="site">
+  <header class="tete">
+    <a class="retour" id="retour" href="index.html#classement" aria-label="Retour au site du tournoi">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="15 5 8 12 15 19"></polyline></svg>
+    </a>
+    <div><div class="sur" id="sur">TOURNOI</div><h1>TON RÉCAP EN STORY</h1></div>
+  </header>
+
+  <main class="contenu">
+    <div>
+      <label class="label" for="equipe">1 · Ton équipe</label>
+      <div class="choix-eq">
+        <select id="equipe"><option value="">Choisis ton équipe…</option></select>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15151A" stroke-width="3" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+    </div>
+
+    <div>
+      <span class="label" id="lblStyle">2 · Ton style</span>
+      <div class="styles" role="radiogroup" aria-labelledby="lblStyle">
+        <button type="button" role="radio" data-style="affiche"><div class="vign a" aria-hidden="true">3E</div>L'affiche</button>
+        <button type="button" role="radio" data-style="carte"><div class="vign b" aria-hidden="true"><i></i></div>La carte</button>
+        <button type="button" role="radio" data-style="wrapped"><div class="vign c" aria-hidden="true"><i style="background:#15151A"></i><i style="background:#E4E1DC"></i><i style="background:#D3121F"></i></div>Wrapped · 3</button>
+      </div>
+    </div>
+
+    <div id="zone" aria-live="polite"></div>
+
+    <div class="info" id="info">Image au format story (1080 × 1920), prête pour Instagram ou ta galerie.</div>
+    <button class="gros" id="partager" type="button" hidden disabled>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+      Partager en story</button>
+    <button class="gros" id="enregistrer" type="button" disabled>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <span id="txtEnregistrer">Enregistrer l'image</span></button>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, esc, toast } from "./shared/outils.js";
+import { connecter, DEMO } from "./shared/firebase.js";
+import * as T from "./shared/moteur.js";
+import { STYLES, statsEquipe, recapPret, dessiner, chargerPolices, chargerImage, enFichier, dateLongue } from "./shared/recap.js";
+
+if (DEMO) $("#demo").hidden = false;
+$("#sur").textContent = (CFG.nom || "TOURNOI").toUpperCase();
+$("#retour").href = "index.html" + location.search + "#classement";
+
+const CLE_EQ = "tournoi-recap-equipe", CLE_STYLE = "tournoi-recap-style";
+const lire = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+let style = STYLES[lire(CLE_STYLE)] ? lire(CLE_STYLE) : "affiche";
+let equipe = new URLSearchParams(location.search).get("equipe") || lire(CLE_EQ) || "";
+let eqs = [], ms = [], fichiers = [], urls = [], signature = "", travail = 0;
+
+const ASSETS = {
+  nomTournoi: CFG.nom || "Tournoi",
+  date: CFG.date || "",
+  dateLongue: dateLongue(CFG.date),
+  club: CFG.club || "Ramonville Volley",
+  twitch: CFG.twitch || "",
+  hashtag: CFG.hashtag || "#RMVINDOOR",
+  logo: null,
+};
+const pret = Promise.all([chargerPolices(), chargerImage(CFG.logo).then((i) => (ASSETS.logo = i))]);
+
+// Partage natif de fichiers (iPhone, Android) ?
+const peutPartager = (() => {
+  try { return !!navigator.canShare && navigator.canShare({ files: [new File([""], "t.png", { type: "image/png" })] }); } catch { return false; }
+})();
+$("#partager").hidden = !peutPartager;
+
+// ---------- Choix ----------
+function majStyles() {
+  document.querySelectorAll("[data-style]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.style === style)));
+  const n = STYLES[style].images;
+  $("#txtEnregistrer").textContent = n > 1 ? `Enregistrer les ${n} images` : "Enregistrer l'image";
+  $("#info").textContent = n > 1
+    ? `${n} images au format story (1080 × 1920), à poster à la suite dans ta story.`
+    : "Image au format story (1080 × 1920), prête pour Instagram ou ta galerie.";
+}
+document.querySelectorAll("[data-style]").forEach((b) => b.addEventListener("click", () => {
+  style = b.dataset.style; ecrire(CLE_STYLE, style); majStyles(); generer(true);
+}));
+$("#equipe").addEventListener("change", (e) => { equipe = e.target.value; ecrire(CLE_EQ, equipe); generer(true); });
+majStyles();
+
+// ---------- Données ----------
+const api = await connecter();
+api.ecouter("", (v) => {
+  const d = v || {};
+  eqs = T.listeEquipes(d); ms = T.listeMatchs(d);
+  remplirEquipes();
+  generer();
+});
+
+function remplirEquipes() {
+  const tri = [...eqs].sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+  const html = `<option value="">Choisis ton équipe…</option>` +
+    tri.map((e) => `<option value="${esc(e.id)}">${esc(e.nom)}${recapPret(ms, e.id) ? "" : " (en cours)"}</option>`).join("");
+  const sel = $("#equipe");
+  if (sel.dataset.html !== html) { sel.innerHTML = html; sel.dataset.html = html; }
+  if (equipe && !eqs.some((e) => e.id === equipe)) equipe = "";
+  sel.value = equipe;
+}
+
+// ---------- Génération des images ----------
+async function generer(force) {
+  const zone = $("#zone");
+  const boutons = [$("#partager"), $("#enregistrer")];
+  if (!equipe) {
+    zone.innerHTML = `<div class="attente">Choisis ton équipe pour voir ton récap.</div>`;
+    boutons.forEach((b) => (b.disabled = true));
+    signature = "";
+    return;
+  }
+  if (!recapPret(ms, equipe)) {
+    zone.innerHTML = `<div class="pas-pret"><b>Ton récap arrive bientôt.</b><br>Il se débloque dès que ton dernier match est joué, quand ta place au classement final est connue. Reviens sur cette page à ce moment-là !</div>`;
+    boutons.forEach((b) => (b.disabled = true));
+    signature = "";
+    return;
+  }
+  const s = statsEquipe(ms, eqs, equipe, CFG);
+  const sig = JSON.stringify([style, s.nom, s.J, s.V, s.pour, s.contre, s.place, s.brassage, s.phase2, s.finale.map((l) => [l.pour, l.contre])]);
+  if (!force && sig === signature) return;
+  signature = sig;
+  const n = ++travail;
+  if (!zone.querySelector("img")) zone.innerHTML = `<div class="attente">Création de ton récap…</div>`;
+  await pret;
+  const toiles = dessiner(style, s, ASSETS);
+  const base = `recap-${s.nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase()}`;
+  const f = await Promise.all(toiles.map((c, i) => enFichier(c, `${base}${toiles.length > 1 ? "-" + (i + 1) : ""}.png`)));
+  if (n !== travail) return;   // un choix plus récent a pris le relais
+  urls.forEach((u) => URL.revokeObjectURL(u));
+  fichiers = f;
+  urls = f.map((x) => URL.createObjectURL(x));
+  zone.innerHTML = `<div class="apercu ${f.length > 1 ? "trois" : "un"}">` + urls.map((u, i) => `<figure>
+      <img src="${u}" alt="Récap de ${esc(s.nom)}${f.length > 1 ? `, image ${i + 1} sur ${f.length}` : ""}">
+      <figcaption><span>${f.length > 1 ? `IMAGE ${i + 1}/${f.length}` : "TON RÉCAP"}</span><button type="button" data-une="${i}">Enregistrer</button></figcaption></figure>`).join("") + `</div>`;
+  boutons.forEach((b) => (b.disabled = false));
+}
+
+// ---------- Partager / enregistrer ----------
+function telecharger(fichier, url) {
+  const a = document.createElement("a");
+  a.href = url; a.download = fichier.name;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function enregistrer(liste) {
+  // Sur iPhone, le partage natif propose « Enregistrer l'image » : plus fiable qu'un téléchargement
+  if (peutPartager && /iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    try { await navigator.share({ files: liste.map((i) => fichiers[i]) }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  for (const i of liste) { telecharger(fichiers[i], urls[i]); await new Promise((r) => setTimeout(r, 400)); }
+  toast(liste.length > 1 ? "Images enregistrées" : "Image enregistrée");
+}
+$("#enregistrer").addEventListener("click", () => enregistrer(fichiers.map((_, i) => i)));
+$("#zone").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-une]");
+  if (b) enregistrer([Number(b.dataset.une)]);
+});
+$("#partager").addEventListener("click", async () => {
+  try {
+    await navigator.share({ files: fichiers, title: "Mon récap du tournoi", text: `${CFG.nom} · ${CFG.twitch || ""}`.trim() });
+  } catch (e) {
+    if (e.name !== "AbortError") toast("Partage impossible, utilise « Enregistrer »", true);
+  }
+});
+</script>
+</body>
+</html>
