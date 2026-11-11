@@ -152,6 +152,13 @@ export function composerPhase2(ms, eqs) {
 }
 
 // Têtes de série de l'arbre : 1-6 = classement de la poule Or, 7-8 = 1er et 2e de la poule Argent
+// Ordre par défaut de la phase finale (voir genererFinale)
+export function ordreFinale(ms, eqs) {
+  const ar = classement(ms, "phase2", "ARGENT", eqs).map((l) => l.id);
+  const br = classement(ms, "phase2", "BRONZE", eqs).map((l) => l.id);
+  return [...seeds(ms, eqs), ...ar.slice(2, 6), ...br.slice(0, 6)];
+}
+
 export function seeds(ms, eqs) {
   const or = classement(ms, "phase2", "OR", eqs).map((l) => l.id);
   const ar = classement(ms, "phase2", "ARGENT", eqs).map((l) => l.id);
@@ -192,10 +199,12 @@ export const GRILLE_FINALE = [
   [null, "F12", null]
 ];
 
-export function genererFinale(ms, rots, eqs, cfg) {
-  const s = seeds(ms, eqs);
-  const ar = classement(ms, "phase2", "ARGENT", eqs).map((l) => l.id);
-  const br = classement(ms, "phase2", "BRONZE", eqs).map((l) => l.id);
+// ordre (facultatif) : 18 équipes imposées par l'orga, dans cet ordre :
+//   têtes de série 1 à 8, puis Argent 3e à 6e, puis Bronze 1er à 6e
+export function genererFinale(ms, rots, eqs, cfg, ordre) {
+  const s = ordre ? ordre.slice(0, 8) : seeds(ms, eqs);
+  const ar = ordre ? [null, null, ...ordre.slice(8, 12)] : classement(ms, "phase2", "ARGENT", eqs).map((l) => l.id);
+  const br = ordre ? ordre.slice(12, 18) : classement(ms, "phase2", "BRONZE", eqs).map((l) => l.id);
   const depart = {
     Q1: [s[0], s[7]], Q2: [s[3], s[4]], Q3: [s[1], s[6]], Q4: [s[2], s[5]],
     P910: [ar[2], ar[3]], P1112: [ar[4], ar[5]],
