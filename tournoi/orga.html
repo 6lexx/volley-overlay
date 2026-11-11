@@ -45,6 +45,14 @@
 <main class="contenu appli" id="app" hidden>
 
   <!-- ============ Simulation (démo / tournoi de test uniquement) ============ -->
+  <!-- ============ Revenir avant le lancement de la rotation en cours ============ -->
+  <details class="bloc" id="blocDelancer" hidden>
+    <summary>Rotation lancée par erreur ?</summary>
+    <div class="aide" id="delancerAide"></div>
+    <button class="btn rouge large" id="delancer" type="button">Annuler le lancement de cette rotation</button>
+    <div class="aide">Les matchs repassent « à venir » et le chrono s'arrête partout. Aucun score n'est perdu (il n'y en a pas encore). Tu peux ensuite changer l'ordre des matchs, puis relancer.</div>
+  </details>
+
   <!-- ============ Échanger deux équipes dans l'arbre (matchs pas encore lancés) ============ -->
   <details class="bloc" id="blocArbre" hidden>
     <summary>Échanger deux équipes dans l'arbre</summary>
@@ -201,7 +209,31 @@ function rendre() {
   if (!lance) rendrePrep(); else rendreJeu();
   rendreArbreEchange();
   rendreOrdreMatchs();
+  rendreDelancer();
 }
+
+// ---------- Annuler le lancement de la rotation en cours ----------
+function rendreDelancer() {
+  const cur = T.rotationEnCours(rots);
+  const liste = cur ? T.matchsDeRotation(ms, cur.num) : [];
+  const ok = cur && liste.every((m) => m.statut !== T.STATUT.TERMINE);
+  $("#blocDelancer").hidden = !ok;
+  if (!ok) return;
+  const l = rots.filter((r) => r.phase === cur.phase);
+  $("#delancerAide").textContent = `${T.NOMS_PHASES[cur.phase]} · rotation ${l.findIndex((r) => r.id === cur.id) + 1}/${l.length} en cours : ` +
+    liste.map((m) => `${T.nomPhase(m)} (${nom(m.A) || "?"} – ${nom(m.B) || "?"})`).join(", ");
+}
+doubleAppui($("#delancer"), "Appuie encore pour confirmer", () => {
+  const cur = T.rotationEnCours(rots);
+  if (!cur) return;
+  const liste = T.matchsDeRotation(ms, cur.num);
+  if (liste.some((m) => m.statut === T.STATUT.TERMINE)) { toast("Un match de cette rotation est déjà validé", true); return; }
+  const u = { [`rotations/${cur.id}/statut`]: T.STATUT.AVENIR, [`rotations/${cur.id}/debut`]: null };
+  liste.forEach((m) => (u[`matchs/${m.id}/statut`] = T.STATUT.AVENIR));
+  Object.keys(brouillons).forEach((k) => delete brouillons[k]);
+  sigRot = "";
+  envoyer(u, "Lancement annulé : rotation remise à venir");
+});
 
 // ---------- Échanger deux matchs de rotation (phase finale, matchs pas encore lancés) ----------
 let choixMatch = null;
