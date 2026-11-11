@@ -45,6 +45,14 @@
 <main class="contenu appli" id="app" hidden>
 
   <!-- ============ Simulation (démo / tournoi de test uniquement) ============ -->
+  <!-- ============ Places 5 à 8 ex æquo ============ -->
+  <details class="bloc" id="bloc58" hidden>
+    <summary>Places 5 à 8 ex æquo (sans matchs)</summary>
+    <div class="aide">Supprime les demies 5-8, le match des places 5-6 et celui des places 7-8. Les 4 perdants des quarts sont classés <b>5es ex æquo</b> partout (site, mur, stream, récap). Les rotations vidées disparaissent : il ne reste que la petite finale et la finale.</div>
+    <div class="aide" id="aide58"></div>
+    <button class="btn rouge large" id="exaequo58" type="button">Classer les perdants des quarts 5es ex æquo</button>
+  </details>
+
   <!-- ============ Revenir avant le lancement de la rotation en cours ============ -->
   <details class="bloc" id="blocDelancer" hidden>
     <summary>Rotation lancée par erreur ?</summary>
@@ -210,7 +218,30 @@ function rendre() {
   rendreArbreEchange();
   rendreOrdreMatchs();
   rendreDelancer();
+  rendre58();
 }
+
+// ---------- Places 5 à 8 ex æquo ----------
+function matchs58() { return ms.filter((m) => m.phase === "finale" && T.CODES_5_8.includes(m.code)); }
+function rendre58() {
+  const l = matchs58();
+  $("#bloc58").hidden = !l.length;
+  if (!l.length) return;
+  $("#aide58").textContent = "Matchs qui seront supprimés : " + l.map((m) => `${T.nomPhase(m)}${m.statut === T.STATUT.TERMINE ? " (déjà joué)" : m.statut === T.STATUT.ENCOURS ? " (en cours)" : ""}`).join(", ");
+}
+doubleAppui($("#exaequo58"), "Appuie encore pour confirmer", () => {
+  const l = matchs58();
+  if (!l.length) return;
+  const ids = new Set(l.map((m) => m.id));
+  const u = {};
+  l.forEach((m) => (u[`matchs/${m.id}`] = null));
+  rots.filter((r) => r.phase === "finale").forEach((r) => {
+    if (!ms.some((m) => m.rotation === r.num && !ids.has(m.id))) u[`rotations/${r.id}`] = null;
+  });
+  Object.keys(brouillons).forEach((k) => delete brouillons[k]);
+  sigRot = "";
+  envoyer(u, "Perdants des quarts classés 5es ex æquo");
+});
 
 // ---------- Annuler le lancement de la rotation en cours ----------
 function rendreDelancer() {
