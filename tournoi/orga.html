@@ -48,7 +48,7 @@
   <!-- ============ Échanger deux équipes dans l'arbre (matchs pas encore lancés) ============ -->
   <details class="bloc" id="blocArbre" hidden>
     <summary>Échanger deux équipes dans l'arbre</summary>
-    <div class="aide">Seulement pour les matchs de la phase finale pas encore lancés. Touche une équipe, puis l'autre : elles échangent leur place (le numéro de tête de série reste à sa place dans l'arbre).</div>
+    <div class="aide">Pour les matchs de la phase finale pas encore terminés (à venir ou en cours). Touche une équipe, puis l'autre : elles échangent leur place (le numéro de tête de série reste à sa place dans l'arbre). Les points déjà comptés restent du même côté.</div>
     <div id="arbreEchange"></div>
   </details>
 
@@ -198,11 +198,11 @@ function rendre() {
 // ---------- Échange de deux équipes dans l'arbre ----------
 let choixArbre = null;   // "F-Q2|A"
 function rendreArbreEchange() {
-  const libres = ms.filter((m) => m.phase === "finale" && m.statut === T.STATUT.AVENIR && (m.A || m.B))
+  const libres = ms.filter((m) => m.phase === "finale" && m.statut !== T.STATUT.TERMINE && (m.A || m.B))
     .sort((a, b) => a.rotation - b.rotation || a.terrain - b.terrain);
   $("#blocArbre").hidden = !libres.length;
   if (!libres.length) { choixArbre = null; return; }
-  const html = libres.map((m) => `<div class="poule-titre">${esc(T.nomPhase(m))}</div>` +
+  const html = libres.map((m) => `<div class="poule-titre">${esc(T.nomPhase(m))}${m.statut === T.STATUT.ENCOURS ? " · en cours" : ""}</div>` +
     ["A", "B"].filter((c) => m[c]).map((c) => `<button type="button" class="case-eq" data-slot="${m.id}|${c}" aria-pressed="${choixArbre === m.id + "|" + c}">
       <span class="ps">${m["seed" + c] || ""}</span><span class="nm ellipse">${esc(nom(m[c]))}</span></button>`).join("")).join("");
   if ($("#arbreEchange").innerHTML !== html) $("#arbreEchange").innerHTML = html;
@@ -215,7 +215,7 @@ $("#arbreEchange").addEventListener("click", (ev) => {
   const [m1, c1] = choixArbre.split("|"), [m2, c2] = slot.split("|");
   choixArbre = null;
   const a = ms.find((m) => m.id === m1), d = ms.find((m) => m.id === m2);
-  if (!a || !d || a.statut !== T.STATUT.AVENIR || d.statut !== T.STATUT.AVENIR) { toast("Un des deux matchs a déjà commencé", true); rendreArbreEchange(); return; }
+  if (!a || !d || a.statut === T.STATUT.TERMINE || d.statut === T.STATUT.TERMINE) { toast("Un des deux matchs est déjà terminé", true); rendreArbreEchange(); return; }
   envoyer({ [`matchs/${m1}/${c1}`]: d[c2], [`matchs/${m2}/${c2}`]: a[c1] }, `${nom(a[c1])} ⇄ ${nom(d[c2])}`);
 });
 
