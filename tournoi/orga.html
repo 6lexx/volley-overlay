@@ -138,6 +138,25 @@ const pos = (poule, p) => T.POULES.brassage.includes(poule) ? poule + T.LETTRES_
 
 api.ecouter("", (v) => { data = v || {}; rendre(); }, (e) => fatal("Lecture refusée (" + esc(e.code) + ")."));
 
+// ---------- Phase 2 : ordre des positions A à F imposé par la feuille Excel ----------
+// Les équipes de chaque poule restent celles du brassage ; seul leur ordre change.
+// Une équipe absente de la liste garde sa place à la fin (rien ne casse).
+const ORDRE_P2 = {
+  OR: ["Rougail Saucisse", "Habibi", "Plot Plot Plot", "FAUTPASK’SADORT", "Les volley roux lent", "Les baby"],
+  ARGENT: ["Même nous même nous", "En volley vous", "Petit bebew", "Tape dans les 3 mètres j’suis pas ta mère", "Les chevaliers de l'apocalypse", "Tié un cho"],
+  BRONZE: ["Les immigrés", "Les chipies", "Gay forevee", "Belougras", "bébés gras", "BTP"],
+};
+const cleNom = (n) => String(n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+function composerP2(ms, eqs) {
+  const g = T.composerPhase2(ms, eqs);
+  for (const p of Object.keys(g)) {
+    const ordre = (ORDRE_P2[p] || []).map(cleNom);
+    const rang = (id) => { const i = ordre.indexOf(cleNom(eqs.find((e) => e.id === id)?.nom)); return i < 0 ? 99 : i; };
+    g[p] = [...g[p]].sort((a, b) => rang(a) - rang(b));
+  }
+  return g;
+}
+
 // ---------- Simulation : faux tournoi pour tester tous les écrans ----------
 if (SIMU) {
   $("#blocSimu").hidden = false;
@@ -324,7 +343,7 @@ function rendreRotation(cur, suiv) {
   }
   const phase = T.phaseCourante(ms);
   if (phase === "brassage" && T.phaseTerminee(ms, "brassage")) {
-    const g = T.composerPhase2(ms, eqs);
+    const g = composerP2(ms, eqs);
     el.innerHTML = `<div class="bloc">
         <h2>BRASSAGE TERMINÉ</h2>
         ${T.POULES.brassage.map((p) => htmlClassement("brassage", p, (r) => ` → ${r <= 2 ? "Or" : r <= 4 ? "Argent" : "Bronze"}`)).join("")}
@@ -335,7 +354,7 @@ function rendreRotation(cur, suiv) {
       </div>
       <button class="btn rouge large" id="genPhase2" type="button">Générer la phase 2</button>
       <div class="aide">Vérifie le classement avant : après, une correction du brassage ne change plus la composition.</div>`;
-    $("#genPhase2").addEventListener("click", () => ecrirePhase(T.genererPoules("phase2", T.composerPhase2(ms, eqs), rots, CFG), "Phase 2 générée : 15 rotations"));
+    $("#genPhase2").addEventListener("click", () => ecrirePhase(T.genererPoules("phase2", composerP2(ms, eqs), rots, CFG), "Phase 2 générée : 15 rotations"));
     return;
   }
   if (phase === "phase2" && T.phaseTerminee(ms, "phase2")) {
