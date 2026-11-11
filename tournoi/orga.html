@@ -52,6 +52,13 @@
     <div id="arbreEchange"></div>
   </details>
 
+  <!-- ============ Changer l'ordre des matchs de la phase finale ============ -->
+  <details class="bloc" id="blocOrdreMatchs" hidden>
+    <summary>Changer l'ordre des matchs (phase finale)</summary>
+    <div class="aide">Touche un match, puis :<br>• un autre match → ils échangent leur rotation ;<br>• le bouton « Déplacer ici » d'une rotation → le match y est ajouté.<br>Une rotation vidée est retirée automatiquement.</div>
+    <div id="ordreMatchs"></div>
+  </details>
+
   <details class="bloc simu" id="blocSimu" hidden>
     <summary>Simulation : remplir avec un faux tournoi</summary>
     <div class="aide" id="simuAide"></div>
@@ -193,7 +200,58 @@ function rendre() {
   $("#jeu").hidden = !lance;
   if (!lance) rendrePrep(); else rendreJeu();
   rendreArbreEchange();
+  rendreOrdreMatchs();
 }
+
+// ---------- Échanger deux matchs de rotation (phase finale, matchs pas encore lancés) ----------
+let choixMatch = null;
+function rendreOrdreMatchs() {
+  const fin = rots.filter((r) => r.phase === "finale");
+  const avenir = fin.filter((r) => r.statut === T.STATUT.AVENIR);
+  $("#blocOrdreMatchs").hidden = !avenir.length;
+  if (!avenir.length) { choixMatch = null; return; }
+  const libelle = (m) => `${esc(nom(m.A) || T.etiquetteAttente(m, "A", ms))} – ${esc(nom(m.B) || T.etiquetteAttente(m, "B", ms))}`;
+  const html = avenir.map((r) => {
+    const i = fin.findIndex((x) => x.id === r.id) + 1;
+    const liste = T.matchsDeRotation(ms, r.num);
+    const ici = choixMatch && !liste.some((m) => m.id === choixMatch) ? ` <button type="button" class="btn petit" data-rot="${r.num}">Déplacer ici</button>` : "";
+    return `<div class="poule-titre">Rotation ${i}/${fin.length}${r === avenir[0] ? " · la prochaine" : ""}${ici}</div>` +
+      liste.map((m) => `<button type="button" class="case-eq" data-match="${m.id}" aria-pressed="${choixMatch === m.id}">
+        <span class="ps"></span><span class="nm ellipse">${esc(T.nomPhase(m))} · ${libelle(m)}</span></button>`).join("");
+  }).join("");
+  if ($("#ordreMatchs").innerHTML !== html) $("#ordreMatchs").innerHTML = html;
+}
+// Si une rotation n'a plus de match, on la marque terminée pour qu'elle ne bloque pas la suite
+function viderSiBesoin(u, numQuitte, idPart) {
+  const restants = ms.filter((m) => m.rotation === numQuitte && m.id !== idPart);
+  const r = rots.find((x) => x.num === numQuitte);
+  if (!restants.length && r) u[`rotations/${r.id}/statut`] = T.STATUT.TERMINE;
+}
+$("#ordreMatchs").addEventListener("click", (ev) => {
+  const dep = ev.target.closest("[data-rot]");
+  if (dep && choixMatch) {
+    const m = ms.find((x) => x.id === choixMatch), num = Number(dep.dataset.rot);
+    choixMatch = null;
+    if (!m || m.statut !== T.STATUT.AVENIR) { toast("Ce match a déjà commencé", true); rendreOrdreMatchs(); return; }
+    const terrain = Math.max(0, ...ms.filter((x) => x.rotation === num).map((x) => x.terrain || 0)) + 1;
+    const u = { [`matchs/${m.id}/rotation`]: num, [`matchs/${m.id}/terrain`]: terrain };
+    viderSiBesoin(u, m.rotation, m.id);
+    envoyer(u, `${T.nomPhase(m)} déplacé`);
+    return;
+  }
+  const b = ev.target.closest("[data-match]");
+  if (!b) return;
+  const id = b.dataset.match;
+  if (!choixMatch || choixMatch === id) { choixMatch = choixMatch === id ? null : id; rendreOrdreMatchs(); return; }
+  const a = ms.find((m) => m.id === choixMatch), d = ms.find((m) => m.id === id);
+  choixMatch = null;
+  if (!a || !d || a.statut !== T.STATUT.AVENIR || d.statut !== T.STATUT.AVENIR) { toast("Un des deux matchs a déjà commencé", true); rendreOrdreMatchs(); return; }
+  if (a.rotation === d.rotation) { rendreOrdreMatchs(); return; }
+  envoyer({
+    [`matchs/${a.id}/rotation`]: d.rotation, [`matchs/${a.id}/terrain`]: d.terrain,
+    [`matchs/${d.id}/rotation`]: a.rotation, [`matchs/${d.id}/terrain`]: a.terrain,
+  }, `${T.nomPhase(a)} ⇄ ${T.nomPhase(d)}`);
+});
 
 // ---------- Échange de deux équipes dans l'arbre ----------
 let choixArbre = null;   // "F-Q2|A"
