@@ -125,6 +125,7 @@ $("#app").hidden = false;
 api.surConnexion((on) => $("#dot").classList.toggle("on", on));
 
 let data = {}, eqs = [], ms = [], rots = [];
+let ordreManuel = null, choixOrdre = null;   // ordre de la phase finale modifié à la main
 const brouillons = {};       // scores tapés mais pas encore validés
 let sigRot = "", sigCorr = "", sigEq = "", sigPrep = "", choixEchange = null;
 
@@ -358,17 +359,35 @@ function rendreRotation(cur, suiv) {
     return;
   }
   if (phase === "phase2" && T.phaseTerminee(ms, "phase2")) {
-    const s = T.seeds(ms, eqs);
+    // Ordre de la phase finale : calculé, mais l'orga peut échanger deux équipes (touche l'une puis l'autre)
+    const base = T.ordreFinale(ms, eqs);
+    if (!ordreManuel || ordreManuel.length !== base.length || !base.every((id) => ordreManuel.includes(id))) ordreManuel = null;
+    const o = ordreManuel || base;
+    const LIB = (i) => i < 8 ? `Tête de série ${i + 1}` : i < 12 ? `Argent ${i - 5}e · places 9-12` : `Bronze ${ordinal(i - 11)} · places 13-18`;
+    const ordinal = (n) => n === 1 ? "1er" : n + "e";
+    const ligne = (i) => `<button type="button" class="case-eq" data-ordre="${i}" aria-pressed="${choixOrdre === i}">
+        <span class="ps">${i < 8 ? i + 1 : ""}</span><span class="nm ellipse">${esc(nom(o[i]))}</span><span class="nv">${esc(LIB(i))}</span></button>`;
+    const q = (a, b) => `<div class="match-lect"><span class="ellipse">${a + 1}. ${esc(nom(o[a]))} – ${b + 1}. ${esc(nom(o[b]))}</span></div>`;
     el.innerHTML = `<div class="bloc">
         <h2>PHASE 2 TERMINÉE</h2>
         ${T.POULES.phase2.map((p) => htmlClassement("phase2", p)).join("")}
       </div>
-      <div class="bloc"><h2>TÊTES DE SÉRIE</h2>
-        ${s.map((id, i) => `<div class="match-lect"><span class="ellipse">${i + 1}. ${esc(nom(id))}</span><span class="ph">${i < 6 ? "Or" : "Argent"}</span></div>`).join("")}
-        <div class="aide">Quarts : 1-8, 4-5, 2-7, 3-6. Les autres jouent les places 9 à 18.</div>
+      <div class="bloc" id="blocOrdre"><h2>ORDRE DE LA PHASE FINALE</h2>
+        <div class="aide">Pour échanger deux équipes : touche l'une, puis l'autre.${ordreManuel ? ` <b>Ordre modifié à la main.</b>` : ""}</div>
+        ${o.map((_, i) => ligne(i)).join("")}
+        ${ordreManuel ? `<button class="btn petit" id="ordreReset" type="button">Revenir à l'ordre calculé</button>` : ""}
       </div>
+      <div class="bloc"><h2>QUARTS DE FINALE</h2>${q(0, 7)}${q(3, 4)}${q(1, 6)}${q(2, 5)}</div>
       <button class="btn rouge large" id="genFinale" type="button">Générer la phase finale</button>`;
-    $("#genFinale").addEventListener("click", () => ecrirePhase(T.genererFinale(ms, rots, eqs, CFG), "Phase finale générée : 7 rotations"));
+    el.querySelectorAll("[data-ordre]").forEach((b) => b.addEventListener("click", () => {
+      const i = Number(b.dataset.ordre);
+      if (choixOrdre === null) choixOrdre = i;
+      else if (choixOrdre === i) choixOrdre = null;
+      else { const n = [...o]; [n[choixOrdre], n[i]] = [n[i], n[choixOrdre]]; ordreManuel = n; choixOrdre = null; }
+      sigRot = ""; rendre();
+    }));
+    $("#ordreReset")?.addEventListener("click", () => { ordreManuel = null; choixOrdre = null; sigRot = ""; rendre(); });
+    $("#genFinale").addEventListener("click", () => ecrirePhase(T.genererFinale(ms, rots, eqs, CFG, ordreManuel || undefined), "Phase finale générée : 7 rotations"));
     return;
   }
   if (phase === "finale" && T.phaseTerminee(ms, "finale")) {
