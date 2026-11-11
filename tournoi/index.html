@@ -529,11 +529,11 @@ $("#regles").innerHTML = `
     <div class="label">Qui passe devant ?</div>
     <div class="r-criteres">
       ${[["Les victoires", "Le plus de matchs gagnés."],
-         ["Le face-à-face", "À égalité, celle qui a gagné le match entre vous passe devant."],
          ["La différence de points", "Points marqués moins points encaissés, sur toute la poule."],
+         ["Le face-à-face", "Toujours à égalité, celle qui a gagné le match entre vous passe devant."],
          ["Les points marqués", "En dernier recours."]].map(([t, x], i) => `<div class="r-critere"><b>${i + 1}</b><div><strong>${t}</strong><span>${x}</span></div></div>`).join("")}
     </div>
-    <div class="r-exemple"><b>EXEMPLE</b><br>Deux équipes finissent à 3 victoires. La première a +9 de différence, la seconde −3, mais la seconde a gagné leur match : elle passe devant.<br><br>À trois équipes ou plus, on compte les victoires dans les matchs entre elles uniquement. Si chacune en a une, on passe à la différence de points.</div>
+    <div class="r-exemple"><b>EXEMPLE</b><br>Deux équipes finissent à 3 victoires. La première a +9 de différence, la seconde −3 : la première passe devant, même si elle a perdu leur match.<br><br>Le face-à-face ne sert que si les victoires et la différence de points sont identiques.</div>
   </div>
   <div class="r-fin">Cette page se met à jour toute seule. Les matchs sont aussi commentés en direct sur <b>${esc(CFG.twitch)}</b>.</div>`;
 
