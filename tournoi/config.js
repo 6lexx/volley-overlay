@@ -30,7 +30,7 @@ window.TOURNOI_CONFIG = {
 
   // Déroulé : brassage (poules A, B, C) → phase 2 (Or, Argent, Bronze) → phase finale
   format: {
-    dureeMatchPouleMin: 10,  // brassage et phase 2 : 10 minutes, un dernier point en cas d'égalité
+    dureeMatchPouleMin: 12,  // brassage et phase 2 : 10 minutes, un dernier point en cas d'égalité
     pointsTour:   21,        // quarts, demies et matchs de classement
     pointsFinale: 25,        // finale (places 1-2)
     ecartMin:      2         // 2 points d'écart en phase finale
