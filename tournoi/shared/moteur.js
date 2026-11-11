@@ -112,8 +112,8 @@ export function perdantDe(m) { const r = resultat(m); return r ? m[r === "A" ? "
 export function egaliteInterdite() { return true; }
 
 // Classement d'une poule :
-//  1. victoires  2. confrontation directe entre les équipes à égalité
-//  3. différence de points  4. points marqués
+//  1. victoires  2. différence de points
+//  3. confrontation directe entre les équipes encore à égalité  4. points marqués
 export function classement(ms, phase, poule, eqs) {
   const ids = membresPoule(ms, phase, poule, eqs);
   const L = Object.fromEntries(ids.map((id, pos) => [id, { id, pos, nom: nomDe(eqs, id), J: 0, V: 0, D: 0, pour: 0, contre: 0 }]));
@@ -131,13 +131,13 @@ export function classement(ms, phase, poule, eqs) {
   // Victoires dans les matchs entre les équipes d'un même groupe d'égalité
   const vEntre = (id, groupe) => joues.filter((m) => groupe.has(m.A) && groupe.has(m.B) && gagnantDe(m) === id).length;
   const parV = {};
-  lignes.forEach((l) => (parV[l.V] ||= []).push(l));
+  lignes.forEach((l) => (parV[l.V + "|" + l.diff] ||= []).push(l));
   lignes.forEach((l) => {
-    const g = new Set(parV[l.V].map((x) => x.id));
+    const g = new Set(parV[l.V + "|" + l.diff].map((x) => x.id));
     l.h2h = g.size > 1 ? vEntre(l.id, g) : 0;
   });
   return lignes
-    .sort((x, y) => y.V - x.V || y.h2h - x.h2h || y.diff - x.diff || y.pour - x.pour || x.pos - y.pos)
+    .sort((x, y) => y.V - x.V || y.diff - x.diff || y.h2h - x.h2h || y.pour - x.pour || x.pos - y.pos)
     .map((l, i) => ({ ...l, rang: i + 1 }));
 }
 
