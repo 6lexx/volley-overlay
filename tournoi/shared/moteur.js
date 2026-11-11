@@ -288,13 +288,27 @@ export function majValidation(m, scoreA, scoreB, gagnantForce, ms, cfg) {
 // ---------- Classement final ----------
 
 // [{ place, id }] de 1 à 18 ; id = null tant que le match n'est pas joué
+// Codes des matchs des places 5 à 8 (supprimés si l'orga classe les perdants des quarts ex æquo)
+export const CODES_5_8 = ["D3", "D4", "F56", "F78"];
+export function places58ExAequo(ms) {
+  return ms.some((x) => x.id === "F-Q1") && !ms.some((x) => CODES_5_8.includes(x.code) && x.phase === "finale");
+}
+
 export function classementFinal(ms) {
-  const out = [];
+  let out = [];
   Object.entries(ARBRE).filter(([, d]) => d.places).forEach(([code, d]) => {
     const m = ms.find((x) => x.id === "F-" + code);
     out.push({ place: d.places[0], id: m ? gagnantDe(m) : null, code });
     out.push({ place: d.places[1], id: m ? perdantDe(m) : null, code });
   });
+  // Perdants des quarts classés 5es ex æquo (pas de matchs 5 à 8)
+  if (places58ExAequo(ms)) {
+    out = out.filter((x) => x.place < 5 || x.place > 8);
+    ["Q1", "Q2", "Q3", "Q4"].forEach((q) => {
+      const m = ms.find((x) => x.id === "F-" + q);
+      out.push({ place: 5, id: m ? perdantDe(m) : null, code: q, exaequo: true });
+    });
+  }
   return out.sort((a, b) => a.place - b.place);
 }
 
