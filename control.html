@@ -110,16 +110,17 @@
     box-shadow: inset 0 -6px 0 rgba(0, 0, 0, .28);
   }
 
-  /* ---------- Aces : sur l'écran principal ---------- */
+  /* ---------- Aces et blocks : sur l'écran principal, sous chaque équipe ---------- */
   .aces { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .ace-btn {
-    min-height: 54px; border-radius: 14px;
+    min-height: 56px; border-radius: 12px; padding: 4px 2px;
     background: var(--surface); color: var(--text);
     border: 3px solid var(--c);
-    font: 900 24px/1 var(--num); letter-spacing: .04em;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font: 900 20px/1 var(--num); letter-spacing: .04em;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   }
-  .ace-btn b { background: var(--c); color: var(--ct); min-width: 36px; padding: 5px 8px; border-radius: 8px; font-weight: 900; }
+  .ace-btn b { background: var(--c); color: var(--ct); min-width: 30px; padding: 2px 7px; border-radius: 6px; font-size: 18px; font-weight: 900; }
 
   /* ---------- Chat du stream : une ligne discrète, le détail dans un panneau ---------- */
   .chatbar {
@@ -388,8 +389,14 @@
   </main>
 
   <div class="aces" id="aceRow">
-    <button class="ace-btn" data-pos="0">ACE <span class="aname"></span> <b>0</b></button>
-    <button class="ace-btn" data-pos="1">ACE <span class="aname"></span> <b>0</b></button>
+    <div class="acts">
+      <button class="ace-btn" data-pos="0" data-kind="ace" aria-label="Ace">ACE <b>0</b></button>
+      <button class="ace-btn" data-pos="0" data-kind="block" aria-label="Monster block">BLOCK <b>0</b></button>
+    </div>
+    <div class="acts">
+      <button class="ace-btn" data-pos="1" data-kind="ace" aria-label="Ace">ACE <b>0</b></button>
+      <button class="ace-btn" data-pos="1" data-kind="block" aria-label="Monster block">BLOCK <b>0</b></button>
+    </div>
   </div>
 
   <button class="undo" id="undoBtn">↶ Annuler</button>
@@ -571,7 +578,7 @@ const EVENT_LIST = [
     { type: "teamIntro", label: "Présentation des équipes" }
   ]},
   { group: "Pendant le jeu", items: [
-    { type: "ace",     label: "Aces" },
+    { type: "ace",     label: "Aces & blocks" },
     { type: "timeout", label: "Temps mort", team: true }
   ]},
   { group: "Entre les sets", items: [
@@ -674,7 +681,8 @@ function norm(s) {
   s.score = s.score ?? { A: 0, B: 0 };
   s.sets  = s.sets  ?? { A: 0, B: 0 };
   s.aces  = s.aces  ?? { A: 0, B: 0 };
-  for (const k of ["score", "sets", "aces"]) { s[k].A ??= 0; s[k].B ??= 0; }
+  s.blocks = s.blocks ?? { A: 0, B: 0 };
+  for (const k of ["score", "sets", "aces", "blocks"]) { s[k].A ??= 0; s[k].B ??= 0; }
   s.history  = toArr(s.history);
   s.swapped  = !!s.swapped;
   s.visible  = s.visible !== false;
@@ -704,6 +712,7 @@ function newMatchState(away, firstServer) {
     score: { A: 0, B: 0 },
     sets: { A: 0, B: 0 },
     aces: { A: 0, B: 0 },
+    blocks: { A: 0, B: 0 },
     history: [],
     serving: firstServer,
     firstServer,
@@ -763,6 +772,11 @@ const ACTIONS = {
     s.aces[t]++;
     return s;
   },
+  block(s, t) {                                            // un monster block = un point + le compteur (annulable en une fois)
+    if (!ACTIONS.point(s, t)) return;
+    s.blocks[t]++;
+    return s;
+  },
   warmup(s, withPlayers) {                                 // bandeau d'échauffement (reste affiché)
     if (withPlayers === true || withPlayers === false) { s.warmup = true; s.warmupNoPlayers = !withPlayers; }
     else s.warmup = false;
@@ -771,7 +785,7 @@ const ACTIONS = {
   warmupPlayers(s) { s.warmupNoPlayers = !s.warmupNoPlayers; return s; },
   interSet(s)      { s.interSet = !s.interSet; if (s.interSet) s.timeout = null; return s; },
   timeout(s, t)    { s.timeout = s.timeout === t ? null : t; s.timeoutAt = Date.now(); if (s.timeout) s.interSet = false; return s; },
-  resetAces(s)     { s.aces = { A: 0, B: 0 }; return s; },          // annulable
+  resetAces(s)     { s.aces = { A: 0, B: 0 }; s.blocks = { A: 0, B: 0 }; return s; },   // aces et blocks, annulable
   markArchived(s, key) { s.archived = key; return s; },
   swap(s)          { s.swapped = !s.swapped; return s; },
   toggleVisible(s) { s.visible = !s.visible; return s; },
@@ -863,6 +877,10 @@ function emitFor(name, arg, s) {
     // si l'ace gagne le set, on laisse la place au volet de fin de set
     if (s.phase === "playing") emit("ace", arg, s, { manual: true, count: s.aces[arg] }).catch(() => {});
   }
+  if (name === "block") {
+    emit("point", arg, s).catch(() => {});
+    if (s.phase === "playing") emit("block", arg, s, { manual: true, count: s.blocks[arg] }).catch(() => {});
+  }
   if (name === "confirmSet") {
     const last = s.history[s.history.length - 1];
     emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s).catch(() => {});
@@ -927,8 +945,7 @@ function render() {
     b.dataset.team = t;
     b.style.setProperty("--c", teamColor(t));
     b.style.setProperty("--ct", teamText(t));
-    b.querySelector(".aname").textContent = teams[t].short;
-    b.querySelector("b").textContent = s.aces[t];
+    b.querySelector("b").textContent = (b.dataset.kind === "block" ? s.blocks : s.aces)[t];
   });
 
   const showTb = isTieBreak(s) && s.phase === "playing" && R.tieBreakSwitchAt > 0
@@ -1035,14 +1052,15 @@ function renderEvents() {
       if (item.type === "ace" && state) {          // remise à zéro, en deux appuis
         const r = document.createElement("button");
         r.className = "ev-reset";
-        r.textContent = `Remettre les aces à 0 (${state.meta.teams.A.short} ${state.aces.A} · ${state.meta.teams.B.short} ${state.aces.B})`;
+        const T = state.meta.teams;
+        r.textContent = `Remettre aces et blocks à 0 (aces ${T.A.short} ${state.aces.A} · ${T.B.short} ${state.aces.B} — blocks ${T.A.short} ${state.blocks.A} · ${T.B.short} ${state.blocks.B})`;
         r.onclick = () => {
           if (!r.classList.contains("armed")) {
             r.classList.add("armed"); r.textContent = "Appuie encore pour confirmer";
             setTimeout(() => { if (r.isConnected && r.classList.contains("armed")) renderEvents(); }, 3000);
             return;
           }
-          guarded("resetAces", async () => { await act("resetAces"); toast("Aces remis à 0 (Annuler pour revenir)"); });
+          guarded("resetAces", async () => { await act("resetAces"); toast("Aces et blocks remis à 0 (Annuler pour revenir)"); });
         };
         box.append(r);
       }
@@ -1227,6 +1245,7 @@ $("saveGo").onclick = () => guarded("archive", async () => {
     away: { name: T.B.name || "", short: T.B.short || "", color: T.B.color || "#555555" },
     history: s.history.map((h) => ({ A: h.A, B: h.B, winner: h.winner })),
     sets: { A: s.sets.A, B: s.sets.B }, aces: { A: s.aces?.A || 0, B: s.aces?.B || 0 },
+    blocks: { A: s.blocks?.A || 0, B: s.blocks?.B || 0 },
     winner: s.winner || (s.sets.A > s.sets.B ? "A" : "B"), youtube: yt, createdAt: Date.now(),
     players: snapPlayers(ROSTER.filter(isIn).map(keyOf))      // joueurs cochés dans « Joueurs présents »
   };
@@ -1396,13 +1415,14 @@ document.querySelectorAll(".team").forEach((el) => {
 });
 
 document.querySelectorAll(".ace-btn").forEach((b) => {
-  // même verrou que le +1 de l'équipe : pas de double point si on tape +1 puis ACE
+  // même verrou que le +1 de l'équipe : pas de double point si on tape +1 puis ACE / BLOCK
   b.onclick = () => guarded("p" + b.dataset.team, async () => {
     const team = b.dataset.team;
     if (state?.phase !== "playing") { toast(state?.phase === "matchEnd" ? "Match terminé" : "Valide d'abord le set"); return; }
-    await act("ace", team);
+    const kind = b.dataset.kind;                         // "ace" ou "block"
+    await act(kind, team);
     const t = state?.meta.teams[team];
-    if (t) toast(`Ace ${t.short} · +1 point · ${state.aces[team]} dans le match`);
+    if (t) toast(`${kind === "block" ? "Monster block" : "Ace"} ${t.short} · +1 point · ${(kind === "block" ? state.blocks : state.aces)[team]} dans le match`);
   });
 });
 
