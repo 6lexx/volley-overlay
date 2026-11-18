@@ -758,7 +758,11 @@ const ACTIONS = {
     if (s.score.A + s.score.B === 0) s.firstServer = s.serving;
     return s;
   },
-  ace(s, t)        { s.aces[t]++; return s; },          // compteur d'aces du match (annulable)
+  ace(s, t) {                                              // un ace = un point + le compteur (annulable en une fois)
+    if (!ACTIONS.point(s, t)) return;
+    s.aces[t]++;
+    return s;
+  },
   warmup(s, withPlayers) {                                 // bandeau d'échauffement (reste affiché)
     if (withPlayers === true || withPlayers === false) { s.warmup = true; s.warmupNoPlayers = !withPlayers; }
     else s.warmup = false;
@@ -854,7 +858,11 @@ function emit(type, team, s = state, extra = {}) {
 }
 function emitFor(name, arg, s) {
   if (name === "point") emit("point", arg, s).catch(() => {});
-  if (name === "ace")   emit("ace", arg, s, { manual: true, count: s.aces[arg] }).catch(() => {});
+  if (name === "ace") {
+    emit("point", arg, s).catch(() => {});
+    // si l'ace gagne le set, on laisse la place au volet de fin de set
+    if (s.phase === "playing") emit("ace", arg, s, { manual: true, count: s.aces[arg] }).catch(() => {});
+  }
   if (name === "confirmSet") {
     const last = s.history[s.history.length - 1];
     emit(s.phase === "matchEnd" ? "matchEnd" : "setEnd", last?.winner ?? null, s).catch(() => {});
@@ -1388,11 +1396,13 @@ document.querySelectorAll(".team").forEach((el) => {
 });
 
 document.querySelectorAll(".ace-btn").forEach((b) => {
-  b.onclick = () => guarded("ace" + b.dataset.team, async () => {
+  // même verrou que le +1 de l'équipe : pas de double point si on tape +1 puis ACE
+  b.onclick = () => guarded("p" + b.dataset.team, async () => {
     const team = b.dataset.team;
+    if (state?.phase !== "playing") { toast(state?.phase === "matchEnd" ? "Match terminé" : "Valide d'abord le set"); return; }
     await act("ace", team);
     const t = state?.meta.teams[team];
-    if (t) toast(`Ace ${t.short} · ${state.aces[team]} dans le match`);
+    if (t) toast(`Ace ${t.short} · +1 point · ${state.aces[team]} dans le match`);
   });
 });
 
