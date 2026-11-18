@@ -188,7 +188,7 @@
     background: var(--red); border-color: var(--red); color: #fff; font-size: 20px;
   }
   .tool.off { border-color: var(--warn); color: var(--warn); }
-  .tool.danger { color: #ff6b73; }
+  .tool.danger { color: #ff6b73; grid-column: 1 / -1; }
 
   /* ---------- Bandeaux ---------- */
   .banner {
@@ -396,6 +396,7 @@
 
   <nav class="tools">
     <button class="tool events" id="eventsBtn">Événements à l'écran</button>
+    <button class="tool" id="swapBtn">⇄ Inverser côtés</button>
     <button class="tool" id="serveBtn">🏐 Changer service</button>
     <button class="tool danger" id="newBtn">Nouveau match</button>
   </nav>
@@ -1398,6 +1399,7 @@ document.querySelectorAll(".ace-btn").forEach((b) => {
 $("undoBtn").onclick    = () => guarded("undo", undo);
 $("confirmSet").onclick = () => guarded("set", () => act("confirmSet"));
 $("cancelSet").onclick  = () => guarded("undo", undo);
+$("swapBtn").onclick    = () => guarded("swap", async () => { await act("swap"); toast("Côtés inversés"); });
 $("serveBtn").onclick   = () => act("toggleServe");
 $("visBtn").onclick     = () => act("toggleVisible");
 $("tbSwitch").onclick   = () => act("tbSwitch");
