@@ -1,0 +1,86 @@
+/* =============================================================
+   style.css — pages Préparation et Contrôle
+   DA « feu de camp » version match : anthracite, braise, angles nets.
+   ============================================================= */
+:root {
+  --fond: #0E0C0A;
+  --panneau: #17130F;
+  --panneau-2: #1C1813;
+  --ligne: #2B251F;
+  --ligne-2: #3A322A;
+  --texte: #F5EFE6;
+  --doux: #A89F92;
+  --braise: #F08A24;
+  --braise-clair: #FDBA74;
+  --braise-fond: #3A2410;
+  --danger: #F87171;
+  --ok: #4ADE80;
+  --cond: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --corps: "Barlow", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--corps); font-size: 16px; color: var(--texte); background: var(--fond); -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+a { color: var(--braise); }
+a:hover { color: var(--braise-clair); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cond { font-family: var(--cond); }
+.num { font-variant-numeric: tabular-nums; }
+.ellipse { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+:focus-visible { outline: 3px solid var(--braise-clair); outline-offset: 2px; }
+
+/* ---------- En-tête ---------- */
+.entete { display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--ligne); background: var(--panneau); position: sticky; top: 0; z-index: 10; }
+.entete h1 { margin: 0; font-family: var(--cond); font-size: 28px; font-weight: 800; letter-spacing: 1px; }
+.entete .sous { color: var(--doux); font-size: 14px; }
+.entete .espace { flex: 1 1 auto; }
+.point { width: 12px; height: 12px; border-radius: 50%; background: var(--danger); flex: 0 0 auto; }
+.point.on { background: var(--ok); }
+.demo { background: var(--braise-fond); color: var(--braise-clair); padding: 8px 20px; font-size: 14px; font-weight: 600; }
+.fatal { margin: 40px auto; max-width: 640px; padding: 24px; background: var(--panneau); border: 1px solid var(--danger); line-height: 1.5; }
+.fatal code { color: var(--braise-clair); }
+
+/* ---------- Blocs ---------- */
+.contenu { max-width: 1180px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+.bloc { background: var(--panneau); border: 1px solid var(--ligne); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.bloc > h2, .titre-bloc { margin: 0; font-family: var(--cond); font-size: 24px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.titre-bloc { display: flex; align-items: center; gap: 12px; }
+.titre-bloc .espace { flex: 1 1 auto; }
+.aide { color: var(--doux); font-size: 14px; line-height: 1.45; }
+.aide b { color: var(--texte); }
+.etiquette { font-family: var(--cond); font-weight: 700; font-size: 15px; letter-spacing: 1.5px; color: var(--braise); text-transform: uppercase; }
+
+/* ---------- Boutons ---------- */
+.btn { min-height: 44px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--ligne-2); background: var(--panneau-2); color: var(--texte); font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+.btn:hover { border-color: #5A4A3A; }
+.btn.plein { background: var(--braise); border-color: var(--braise); color: #16130F; font-weight: 700; }
+.btn.plein:hover { background: var(--braise-clair); }
+.btn.petit { min-height: 36px; padding: 4px 12px; font-size: 14px; }
+.btn.danger { color: var(--danger); }
+.btn.arme { background: var(--danger); border-color: var(--danger); color: #16130F; }
+.btn[aria-pressed="true"] { background: var(--braise); border-color: var(--braise); color: #16130F; font-weight: 700; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.rangee { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ---------- Formulaires ---------- */
+.champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px 16px; }
+.champ { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.champ > span { font-size: 13px; font-weight: 600; color: var(--doux); }
+.champ.large { grid-column: 1 / -1; }
+input[type="text"], input[type="date"], input[type="time"], input[type="url"], input[type="number"], select, textarea {
+  width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--ligne-2); background: var(--fond); color: var(--texte); }
+textarea { min-height: 120px; resize: vertical; line-height: 1.45; }
+input[type="color"] { width: 56px; height: 44px; padding: 2px; border-radius: 8px; border: 1px solid var(--ligne-2); background: var(--fond); }
+input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; accent-color: var(--braise); }
+.case { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+
+/* ---------- Pastille d'équipe ---------- */
+.pastille { display: inline-flex; align-items: center; justify-content: center; min-width: 64px; height: 36px; padding: 0 12px; font-family: var(--cond); font-weight: 800; font-size: 22px; letter-spacing: 1px; clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%); }
+
+/* ---------- Toast ---------- */
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; background: var(--texte); color: #16130F; padding: 12px 20px; border-radius: 8px; font-weight: 600; transition: .2s; z-index: 50; max-width: 90vw; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.erreur { background: var(--danger); }

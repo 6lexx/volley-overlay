@@ -1,0 +1,21 @@
+{
+  "_lisezmoi": "Ces deux blocs s'AJOUTENT à tes règles actuelles, au même niveau que \"secrets\", \"matches\", \"tournoiAcces\" et \"tournois\". Ne supprime rien d'autre. Retire aussi cette ligne _lisezmoi avant de publier.",
+
+  "commentaireAcces": {
+    "$uid": {
+      ".read": "auth != null && auth.uid === $uid",
+      ".write": "auth != null && auth.uid === $uid && newData.val() === root.child('secrets').child('commentaire_regie').val()"
+    }
+  },
+
+  "commentaire": {
+    "prive": {
+      ".read": "auth != null && root.child('commentaireAcces').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('commentaireAcces').child(auth.uid).exists()"
+    },
+    "live": {
+      ".read": true,
+      ".write": "auth != null && root.child('commentaireAcces').child(auth.uid).exists()"
+    }
+  }
+}

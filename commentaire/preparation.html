@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Préparation · Commentaire volley</title>
+<link rel="stylesheet" href="shared/fonts.css">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  .liste { display: flex; flex-direction: column; gap: 8px; }
+  .item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 10px; background: var(--panneau-2); border: 1px solid var(--ligne); flex-wrap: wrap; }
+  .item .infos { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .item .infos b { font-size: 17px; }
+  .item .infos small { color: var(--doux); font-size: 14px; }
+  .item.direct { border-color: var(--braise); box-shadow: inset 4px 0 0 var(--braise); }
+  .alerte { color: var(--danger); font-weight: 700; }
+  .badge-direct { font-family: var(--cond); font-weight: 800; letter-spacing: 1.5px; font-size: 14px; background: var(--braise); color: #16130F; padding: 2px 8px; }
+  .vide { color: var(--doux); font-size: 15px; padding: 6px 0; }
+
+  /* Éditeur d'équipe */
+  #editeur { border-color: var(--braise); }
+  .couleur { display: flex; align-items: center; gap: 10px; }
+  .apercu-eq { display: flex; align-items: stretch; height: 56px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.4)); }
+  .apercu-eq .n { display: flex; align-items: center; padding: 0 30px 0 16px; font-family: var(--cond); font-weight: 800; font-size: 38px; letter-spacing: 1px; clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+  .apercu-eq .p { display: flex; align-items: center; padding: 0 24px 0 26px; margin-left: -10px; background: #16130F; font-family: var(--cond); font-weight: 800; font-size: 44px; clip-path: polygon(14px 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+  .table-defile { overflow-x: auto; border: 1px solid var(--ligne); border-radius: 10px; }
+  table.joueurs { width: 100%; border-collapse: collapse; min-width: 760px; }
+  table.joueurs th { text-align: left; font-size: 13px; color: var(--doux); font-weight: 600; padding: 8px 6px; border-bottom: 1px solid var(--ligne); background: var(--panneau-2); }
+  table.joueurs td { padding: 4px 6px; border-bottom: 1px solid var(--ligne); vertical-align: middle; }
+  table.joueurs tr:last-child td { border-bottom: 0; }
+  table.joueurs td.c { text-align: center; }
+  table.joueurs input[type="text"], table.joueurs select { min-height: 40px; }
+  table.joueurs .w-num { width: 70px; }
+  .barre-editeur { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; position: sticky; bottom: 0; background: var(--panneau); padding-top: 8px; }
+
+  /* Import */
+  .trouve { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--panneau-2); border: 1px dashed var(--ligne-2); flex-wrap: wrap; }
+  .trouve .infos { flex: 1 1 240px; }
+
+  /* Matchs */
+  .presents { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 12px; }
+  .presents .case { min-height: 40px; font-size: 15px; }
+  .colonnes { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  details.detail > summary { cursor: pointer; font-weight: 700; padding: 6px 0; min-height: 44px; display: flex; align-items: center; }
+</style>
+</head>
+<body>
+<div id="demo" class="demo" hidden>Mode démo : tout reste dans ce navigateur. Ouvre controle.html?demo=1 et overlay.html?demo=1&amp;apercu=1 dans d'autres onglets.</div>
+<header class="entete">
+  <div>
+    <h1>PRÉPARATION</h1>
+    <div class="sous">Fiches d'équipe et matchs</div>
+  </div>
+  <span class="espace"></span>
+  <a class="btn" id="versControle" href="#">Contrôle du match →</a>
+  <span class="point" id="dot" title="Connexion"></span>
+</header>
+<div id="fatal" class="fatal" hidden></div>
+
+<main class="contenu" id="app" hidden>
+
+  <!-- ===== Import ===== -->
+  <section class="bloc" aria-labelledby="tImport">
+    <h2 id="tImport">Importer les réponses du formulaire</h2>
+    <div class="aide">Dans le Google Sheet des réponses, sélectionne la <b>ligne d'en-tête</b> et les lignes à importer, copie (Ctrl+C), puis colle ici. Tu peux aussi choisir l'export CSV (Fichier › Télécharger › CSV).</div>
+    <label class="champ large"><span>Lignes copiées depuis le tableau</span>
+      <textarea id="collage" placeholder="Horodateur	Nom du club	Nom de l'équipe	…"></textarea>
+    </label>
+    <div class="rangee">
+      <button class="btn plein" id="lire" type="button">Lire les réponses</button>
+      <label class="btn" for="fichier">Choisir un fichier CSV</label>
+      <input class="vh" type="file" id="fichier" accept=".csv,.tsv,.txt,text/csv">
+      <button class="btn" id="exemple" type="button" hidden>Charger deux équipes d'exemple</button>
+    </div>
+    <div class="liste" id="trouves"></div>
+  </section>
+
+  <!-- ===== Éditeur d'équipe ===== -->
+  <section class="bloc" id="editeur" hidden aria-labelledby="tEditeur">
+    <h2 id="tEditeur">Fiche d'équipe</h2>
+    <div class="aide" id="aideEditeur"></div>
+    <div class="apercu-eq" aria-hidden="true"><div class="n" id="apNom">EQ</div><div class="p">18</div></div>
+    <div class="champs">
+      <label class="champ"><span>Club (tel qu'écrit dans le formulaire)</span><input type="text" id="eClub"></label>
+      <label class="champ"><span>Nom affiché sur le stream</span><input type="text" id="eNomAffiche" placeholder="Ramonville"></label>
+      <label class="champ"><span>Abréviation (3 ou 4 lettres, sur le score)</span><input type="text" id="eCourt" maxlength="4" placeholder="RMV"></label>
+      <label class="champ"><span>Nom de l'équipe</span><input type="text" id="eEquipe" placeholder="Régionale 1 masculine"></label>
+      <label class="champ"><span>Catégorie</span><input type="text" id="eCategorie" placeholder="Seniors"></label>
+      <label class="champ"><span>Masculine / féminine / mixte</span><input type="text" id="eGenre"></label>
+      <label class="champ"><span>Niveau</span><input type="text" id="eNiveau" placeholder="Régional"></label>
+      <label class="champ"><span>Championnat ou poule</span><input type="text" id="eChampionnat"></label>
+      <div class="champ"><span id="lCouleur">Couleur du maillot</span>
+        <div class="couleur"><input type="color" id="eCouleur" aria-labelledby="lCouleur"><input type="text" id="eCouleurHex" maxlength="7" aria-label="Code couleur"></div>
+        <small class="aide" id="eCouleurTexte"></small>
+      </div>
+      <label class="champ"><span>Logo (chemin dans le dépôt, facultatif)</span><input type="text" id="eLogo" placeholder="assets/logos/ramonville.png"></label>
+      <label class="champ"><span>Coach</span><input type="text" id="eCoach"></label>
+      <div class="champ"><span>Droit à l'image</span>
+        <div class="rangee">
+          <select id="eDirect" aria-label="Diffusion en direct"><option value="">Direct : ?</option><option value="oui">Direct : oui</option><option value="non">Direct : NON</option></select>
+          <select id="eReplay" aria-label="Replay"><option value="">Replay : ?</option><option value="public">Replay public</option><option value="non-repertorie">Replay non répertorié</option><option value="aucun">Pas de replay</option></select>
+        </div>
+      </div>
+      <label class="champ large"><span>Anecdotes pour le commentaire (visibles seulement sur ta tablette)</span><textarea id="eAnecdotes"></textarea></label>
+    </div>
+
+    <div class="titre-bloc"><span class="etiquette">Joueurs</span><span class="espace"></span>
+      <label class="case" style="font-family:var(--corps);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none"><input type="checkbox" id="eFlocage"> Montrer les flocages sur les cartes joueurs</label>
+    </div>
+    <div class="aide">C = capitaine, L = libéro. Vérifie les prénoms et les noms : l'import les devine d'après les majuscules.</div>
+    <div class="table-defile">
+      <table class="joueurs">
+        <thead><tr><th scope="col">N°</th><th scope="col">Prénom</th><th scope="col">Nom</th><th scope="col">Poste</th><th scope="col">Flocage</th><th scope="col" class="c">C</th><th scope="col" class="c">L</th><th scope="col"><span class="vh">Retirer</span></th></tr></thead>
+        <tbody id="eJoueurs"></tbody>
+      </table>
+    </div>
+    <div class="rangee"><button class="btn" id="ajoutJoueur" type="button">+ Ajouter un joueur</button></div>
+
+    <div class="barre-editeur">
+      <button class="btn danger" id="supprEquipe" type="button">Supprimer l'équipe</button>
+      <span style="flex:1 1 auto"></span>
+      <button class="btn" id="annulerEdition" type="button">Fermer sans enregistrer</button>
+      <button class="btn plein" id="enregistrerEquipe" type="button">Enregistrer la fiche</button>
+    </div>
+  </section>
+
+  <!-- ===== Équipes ===== -->
+  <section class="bloc" aria-labelledby="tEquipes">
+    <div class="titre-bloc"><h2 id="tEquipes" style="margin:0;font:inherit">Équipes</h2><span class="espace"></span>
+      <button class="btn" id="nouvelleEquipe" type="button">+ Équipe à la main</button></div>
+    <div class="aide">Pour un adversaire sans formulaire : le nom, l'abréviation et la couleur suffisent pour le score.</div>
+    <div class="liste" id="equipes"></div>
+  </section>
+
+  <!-- ===== Matchs ===== -->
+  <section class="bloc" aria-labelledby="tMatchs">
+    <h2 id="tMatchs">Matchs</h2>
+    <details class="detail" id="detailNouveau">
+      <summary>+ Créer un match</summary>
+      <div class="champs" style="margin-top:10px">
+        <label class="champ"><span>Équipe de gauche (A)</span><select id="mA"></select></label>
+        <label class="champ"><span>Équipe de droite (B)</span><select id="mB"></select></label>
+        <div class="champ"><span>Club suivi (cartes joueurs, mise en avant)</span>
+          <div class="rangee"><label class="case"><input type="radio" name="mSuivi" value="A" checked> A</label><label class="case"><input type="radio" name="mSuivi" value="B"> B</label></div></div>
+        <label class="champ"><span>Compétition (sur le score)</span><input type="text" id="mCompet" placeholder="Régionale 1 masculine"></label>
+        <label class="champ"><span>Date</span><input type="date" id="mDate"></label>
+        <label class="champ"><span>Heure</span><input type="time" id="mHeure"></label>
+        <label class="champ"><span>Salle</span><input type="text" id="mSalle" placeholder="Gymnase de …"></label>
+        <label class="champ"><span>Format</span><select id="mFormat"></select></label>
+      </div>
+      <div class="rangee" style="margin-top:12px"><button class="btn plein" id="creerMatch" type="button">Créer le match</button></div>
+    </details>
+    <div class="liste" id="matchs"></div>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, $$, param, esc, id, lien, toast, doubleAppui } from "./shared/outils.js";
+import { connecter, DEMO } from "./shared/firebase.js";
+import { lireReponses, devinerCouleur, abreviation, nomCourtClub } from "./shared/import.js";
+import { texteSur } from "./shared/moteur.js";
+import { vueMatch, formatDe, joueursDuJour, dateLongue, NOMS_REPLAY } from "./shared/donnees.js";
+
+const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
+if (DEMO) { $("#demo").hidden = false; $("#exemple").hidden = false; }
+$("#versControle").href = lien("controle.html");
+
+let api;
+try {
+  api = await connecter({ regie: true, cle: param("key") });
+} catch (e) {
+  fatal(esc(e.message) + "<br><br>Lien attendu : <code>preparation.html?key=CLÉ</code><br>ou <code>preparation.html?demo=1</code> pour tester.");
+  throw e;
+}
+$("#app").hidden = false;
+api.surConnexion((on) => $("#dot").classList.toggle("on", on));
+
+let equipes = {}, matchs = {}, live = {};
+const envoyer = (u, ok) => api.maj(u).then(() => ok && toast(ok)).catch((e) => { toast("Erreur : " + (e.code || e.message), true); throw e; });
+
+api.ecouter("prive", (v) => {
+  equipes = v?.equipes || {};
+  matchs = v?.matchs || {};
+  rendreEquipes(); rendreMatchs(); rendreSelects(); rendreTrouves();
+}, (e) => fatal("Lecture refusée (" + esc(e.code) + "). As-tu ajouté les règles Firebase du dossier commentaire ?"));
+api.ecouter("live", (v) => { live = v || {}; rendreMatchs(); });
+
+const nomEq = (eid) => equipes[eid] ? `${equipes[eid].nomAffiche || equipes[eid].club} · ${equipes[eid].equipe || ""}` : "(équipe supprimée)";
+const pastille = (eq) => `<span class="pastille" style="background:${esc(eq?.couleur || "#6B6258")};color:${texteSur(eq?.couleur)}">${esc((eq?.court || "?").toUpperCase())}</span>`;
+
+// ================= Import =================
+let trouves = [];
+$("#lire").addEventListener("click", () => lire($("#collage").value));
+$("#fichier").addEventListener("change", async (ev) => {
+  const f = ev.target.files?.[0];
+  if (!f) return;
+  lire(await f.text());
+  ev.target.value = "";
+});
+function lire(texte) {
+  const { fiches, erreur } = lireReponses(texte);
+  if (erreur) { toast(erreur, true); trouves = []; rendreTrouves(); return; }
+  trouves = fiches;
+  rendreTrouves();
+  toast(`${fiches.length} réponse${fiches.length > 1 ? "s" : ""} trouvée${fiches.length > 1 ? "s" : ""}`);
+}
+const dejaImportee = (f) => Object.entries(equipes).find(([, e]) => f.source && e.source === f.source);
+function rendreTrouves() {
+  $("#trouves").innerHTML = trouves.map((f, i) => {
+    const deja = dejaImportee(f);
+    return `<div class="trouve">${pastille(f)}
+      <div class="infos"><b>${esc(f.club)} · ${esc(f.equipe)}</b><br><small class="aide">${f.joueurs.length} joueurs · ${esc([f.categorie, f.genre, f.niveau].filter(Boolean).join(" · "))}${deja ? " · <b>déjà importée</b>" : ""}${f.direct === "non" ? ' · <span class="alerte">refuse le direct</span>' : ""}</small></div>
+      <button class="btn ${deja ? "" : "plein"}" type="button" data-trouve="${i}">${deja ? "Réimporter (remplace)" : "Vérifier et enregistrer"}</button></div>`;
+  }).join("");
+}
+$("#trouves").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-trouve]");
+  if (!b) return;
+  const f = trouves[Number(b.dataset.trouve)];
+  const deja = dejaImportee(f);
+  ouvrirEditeur(deja ? deja[0] : null, { ...f }, deja ? "Réimport : la fiche existante sera remplacée par cette réponse." : "Nouvelle fiche importée : vérifie surtout la couleur, l'abréviation et les noms.");
+});
+
+// ================= Éditeur =================
+let edition = null;   // { id, fiche }
+const POSTES = ["", "Passeur", "Pointu", "Central", "Réceptionneur-attaquant", "Libéro", "Polyvalent"];
+
+function ouvrirEditeur(eid, fiche, aide = "") {
+  edition = { id: eid || id(), nouveau: !eid || !equipes[eid] };
+  const f = fiche || equipes[eid] || {};
+  $("#aideEditeur").textContent = aide || (edition.nouveau ? "Nouvelle équipe." : "Modification de la fiche.");
+  $("#eClub").value = f.club || "";
+  $("#eNomAffiche").value = f.nomAffiche || "";
+  $("#eCourt").value = f.court || "";
+  $("#eEquipe").value = f.equipe || "";
+  $("#eCategorie").value = f.categorie || "";
+  $("#eGenre").value = f.genre || "";
+  $("#eNiveau").value = f.niveau || "";
+  $("#eChampionnat").value = f.championnat || "";
+  const c = f.couleur || "#6B6258";
+  $("#eCouleur").value = c; $("#eCouleurHex").value = c;
+  $("#eCouleurTexte").textContent = f.couleurTexte ? `Réponse du formulaire : « ${f.couleurTexte} »${f.couleurDevinee === false ? " (couleur non reconnue, choisis-la)" : ""}` : "";
+  $("#eLogo").value = f.logo || "";
+  $("#eCoach").value = f.coach || "";
+  $("#eDirect").value = f.direct || "";
+  $("#eReplay").value = f.replay || "";
+  $("#eAnecdotes").value = f.anecdotes || "";
+  $("#eFlocage").checked = !!f.montrerFlocage;
+  edition.source = f.source || "";
+  edition.couleurTexte = f.couleurTexte || "";
+  $("#eJoueurs").innerHTML = "";
+  (f.joueurs || []).filter(Boolean).forEach(ajouterLigne);
+  $("#supprEquipe").hidden = edition.nouveau;
+  majApercu();
+  $("#editeur").hidden = false;
+  $("#editeur").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function ajouterLigne(j = {}) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td><input class="w-num" type="text" inputmode="numeric" data-k="num" aria-label="Numéro" value="${esc(j.num || "")}"></td>
+    <td><input type="text" data-k="prenom" aria-label="Prénom" value="${esc(j.prenom || "")}"></td>
+    <td><input type="text" data-k="nom" aria-label="Nom" value="${esc(j.nom || "")}"></td>
+    <td><select data-k="poste" aria-label="Poste">${POSTES.map((p) => `<option value="${esc(p)}"${p === (j.poste || "") ? " selected" : ""}>${esc(p || "—")}</option>`).join("")}</select></td>
+    <td><input type="text" data-k="flocage" aria-label="Flocage" value="${esc(j.flocage || "")}"></td>
+    <td class="c"><input type="radio" name="capitaine" data-k="capitaine" aria-label="Capitaine"${j.capitaine ? " checked" : ""}></td>
+    <td class="c"><input type="checkbox" data-k="libero" aria-label="Libéro"${j.libero ? " checked" : ""}></td>
+    <td><button class="btn petit danger" type="button" data-retirer aria-label="Retirer ce joueur">✕</button></td>`;
+  $("#eJoueurs").appendChild(tr);
+}
+$("#ajoutJoueur").addEventListener("click", () => { ajouterLigne({}); $("#eJoueurs tr:last-child input")?.focus(); });
+$("#eJoueurs").addEventListener("click", (ev) => { if (ev.target.closest("[data-retirer]")) ev.target.closest("tr").remove(); });
+function lireJoueursTable() {
+  return $$("#eJoueurs tr").map((tr) => {
+    const v = (k) => tr.querySelector(`[data-k="${k}"]`);
+    return {
+      num: String(v("num").value.trim().replace(/\D/g, "") || ""),
+      prenom: v("prenom").value.trim(), nom: v("nom").value.trim().toLocaleUpperCase("fr"),
+      poste: v("poste").value, flocage: v("flocage").value.trim(),
+      capitaine: v("capitaine").checked, libero: v("libero").checked || v("poste").value === "Libéro"
+    };
+  }).filter((j) => j.num || j.prenom || j.nom).sort((a, b) => Number(a.num) - Number(b.num));
+}
+function majApercu() {
+  const c = $("#eCouleur").value;
+  const n = $("#apNom");
+  n.style.background = c; n.style.color = texteSur(c);
+  n.textContent = ($("#eCourt").value || abreviation($("#eClub").value) || "EQ").toUpperCase();
+}
+$("#eCouleur").addEventListener("input", () => { $("#eCouleurHex").value = $("#eCouleur").value.toUpperCase(); majApercu(); });
+$("#eCouleurHex").addEventListener("input", () => {
+  const h = devinerCouleur($("#eCouleurHex").value);
+  if (h) { $("#eCouleur").value = h; majApercu(); }
+});
+$("#eCourt").addEventListener("input", majApercu);
+$("#eClub").addEventListener("change", () => {
+  if (!$("#eNomAffiche").value) $("#eNomAffiche").value = nomCourtClub($("#eClub").value);
+  if (!$("#eCourt").value) $("#eCourt").value = abreviation($("#eClub").value);
+  majApercu();
+});
+function fermerEditeur() { edition = null; $("#editeur").hidden = true; }
+$("#annulerEdition").addEventListener("click", fermerEditeur);
+$("#enregistrerEquipe").addEventListener("click", () => {
+  const nomAffiche = $("#eNomAffiche").value.trim() || nomCourtClub($("#eClub").value);
+  const court = ($("#eCourt").value.trim() || abreviation(nomAffiche)).toUpperCase().slice(0, 4);
+  if (!nomAffiche || !court) { toast("Il faut au moins un nom affiché et une abréviation.", true); return; }
+  const fiche = {
+    source: edition.source || "", club: $("#eClub").value.trim(), nomAffiche, court,
+    equipe: $("#eEquipe").value.trim(), categorie: $("#eCategorie").value.trim(), genre: $("#eGenre").value.trim(),
+    niveau: $("#eNiveau").value.trim(), championnat: $("#eChampionnat").value.trim(),
+    couleur: $("#eCouleur").value.toUpperCase(), couleurTexte: edition.couleurTexte || "",
+    logo: $("#eLogo").value.trim(), coach: $("#eCoach").value.trim(),
+    direct: $("#eDirect").value, replay: $("#eReplay").value,
+    anecdotes: $("#eAnecdotes").value.trim(), montrerFlocage: $("#eFlocage").checked,
+    joueurs: lireJoueursTable(), maj: api.ts()
+  };
+  const eid = edition.id;
+  envoyer({ [`prive/equipes/${eid}`]: fiche }, "Fiche enregistrée").then(fermerEditeur).catch(() => {});
+});
+doubleAppui($("#supprEquipe"), "Sûr ? Appuie encore", () => {
+  if (!edition) return;
+  const utilise = Object.values(matchs).some((m) => m.A === edition.id || m.B === edition.id);
+  if (utilise) { toast("Cette équipe est dans un match : supprime d'abord le match.", true); return; }
+  envoyer({ [`prive/equipes/${edition.id}`]: null }, "Équipe supprimée").then(fermerEditeur).catch(() => {});
+});
+$("#nouvelleEquipe").addEventListener("click", () => ouvrirEditeur(null, { joueurs: [] }, "Équipe saisie à la main."));
+
+// ================= Liste des équipes =================
+function rendreEquipes() {
+  const l = Object.entries(equipes).sort(([, a], [, b]) => (a.nomAffiche || "").localeCompare(b.nomAffiche || "") || (a.equipe || "").localeCompare(b.equipe || ""));
+  $("#equipes").innerHTML = l.length ? l.map(([eid, e]) => `<div class="item">${pastille(e)}
+    <div class="infos"><b>${esc(e.nomAffiche || e.club)} · ${esc(e.equipe || "")}</b>
+      <small>${esc([e.categorie, e.genre, e.niveau, e.championnat].filter(Boolean).join(" · ")) || "—"} · ${(e.joueurs || []).length} joueurs${e.direct === "non" ? ' · <span class="alerte">refuse le direct</span>' : ""}${e.replay ? " · " + esc(NOMS_REPLAY[e.replay] || "") : ""}</small></div>
+    <button class="btn" type="button" data-editer="${esc(eid)}">Modifier</button></div>`).join("")
+    : `<div class="vide">Aucune équipe pour l'instant : importe les réponses du formulaire ci-dessus.</div>`;
+}
+$("#equipes").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-editer]");
+  if (b) ouvrirEditeur(b.dataset.editer);
+});
+
+// ================= Création de match =================
+$("#mFormat").innerHTML = Object.entries(CFG.formats).map(([k, f]) => `<option value="${k}">${esc(f.nom)}</option>`).join("");
+function rendreSelects() {
+  const opts = `<option value="">— choisir —</option>` + Object.entries(equipes)
+    .sort(([, a], [, b]) => (a.nomAffiche || "").localeCompare(b.nomAffiche || ""))
+    .map(([eid]) => `<option value="${esc(eid)}">${esc(nomEq(eid))}</option>`).join("");
+  for (const s of ["#mA", "#mB"]) { const v = $(s).value; $(s).innerHTML = opts; $(s).value = v; }
+}
+$("#mA").addEventListener("change", () => {
+  const e = equipes[$("#mA").value];
+  if (e && !$("#mCompet").value) $("#mCompet").value = e.equipe || e.championnat || "";
+});
+$("#creerMatch").addEventListener("click", () => {
+  const A = $("#mA").value, B = $("#mB").value;
+  if (!A || !B || A === B) { toast("Choisis deux équipes différentes.", true); return; }
+  const mid = id();
+  const m = {
+    A, B, suivi: document.querySelector('input[name="mSuivi"]:checked').value,
+    competition: $("#mCompet").value.trim(), date: $("#mDate").value, heure: $("#mHeure").value,
+    salle: $("#mSalle").value.trim(), format: $("#mFormat").value, cree: api.ts()
+  };
+  envoyer({ [`prive/matchs/${mid}`]: m }, "Match créé").then(() => {
+    $("#detailNouveau").open = false;
+    for (const s of ["#mA", "#mB", "#mCompet", "#mDate", "#mHeure", "#mSalle"]) $(s).value = "";
+  }).catch(() => {});
+});
+
+// ================= Liste des matchs =================
+const ouverts = new Set();
+function rendreMatchs() {
+  const l = Object.entries(matchs).sort(([, a], [, b]) => (b.date || "").localeCompare(a.date || ""));
+  $("#matchs").innerHTML = l.length ? l.map(([mid, m]) => {
+    const eA = equipes[m.A], eB = equipes[m.B];
+    const enDirect = live.matchId === mid;
+    const refus = [eA, eB].filter((e) => e?.direct === "non").map((e) => e.nomAffiche);
+    const res = m.resultat ? ` · <b>${m.resultat.A}-${m.resultat.B}</b>` : "";
+    const presentsBloc = ["A", "B"].map((c) => {
+      const eq = c === "A" ? eA : eB;
+      const coches = (m.presents?.[c] || []).map(String);
+      const js = (eq?.joueurs || []).filter(Boolean).slice().sort((a, b) => Number(a.num) - Number(b.num));
+      return `<div><div class="etiquette" style="margin-bottom:4px">${esc(eq?.nomAffiche || "?")} ${c === m.suivi ? "· suivi" : ""}</div>
+        ${js.length ? `<div class="presents">${js.map((j) => `<label class="case"><input type="checkbox" data-present="${esc(mid)}|${c}|${esc(j.num)}"${coches.includes(String(j.num)) ? " checked" : ""}> ${esc(j.num)} · ${esc(j.prenom)} ${esc(j.nom)}</label>`).join("")}</div>` : `<div class="vide">Pas de joueurs dans la fiche.</div>`}</div>`;
+    }).join("");
+    return `<div class="item${enDirect ? " direct" : ""}" style="flex-direction:column;align-items:stretch">
+      <div class="rangee" style="gap:14px">
+        ${pastille(eA)}<span class="cond" style="font-size:20px;font-weight:700">vs</span>${pastille(eB)}
+        <div class="infos"><b>${esc(eA?.nomAffiche || "?")} – ${esc(eB?.nomAffiche || "?")}${res}</b>
+          <small>${esc([m.competition, dateLongue(m.date), m.heure, m.salle].filter(Boolean).join(" · ")) || "—"} · ${esc(formatDe(m).nom)}</small>
+          ${refus.length ? `<small class="alerte">⚠ Refus du direct : ${esc(refus.join(", "))}</small>` : ""}</div>
+        ${enDirect ? `<span class="badge-direct">EN DIRECT</span>` : ""}
+      </div>
+      <details class="detail" data-detail="${esc(mid)}"${ouverts.has(mid) ? " open" : ""}><summary>Joueurs présents (aucun coché = toute la liste)</summary>
+        <div class="colonnes">${presentsBloc}</div></details>
+      <div class="rangee">
+        ${enDirect
+          ? `<button class="btn plein" type="button" data-majdirect="${esc(mid)}">Mettre à jour l'overlay</button><a class="btn" href="${esc(lien("controle.html"))}">Ouvrir le contrôle →</a>`
+          : `<button class="btn plein" type="button" data-direct="${esc(mid)}">Mettre en direct</button>`}
+        <span style="flex:1 1 auto"></span>
+        <button class="btn petit danger" type="button" data-suppr="${esc(mid)}">Supprimer</button>
+      </div></div>`;
+  }).join("") : `<div class="vide">Aucun match. Crée-le une fois les deux équipes enregistrées.</div>`;
+
+  $$("[data-direct]").forEach((b) => {
+    const mid = b.dataset.direct;
+    const enCours = live.matchId && live.matchId !== mid && (live.points || "").length > 0 && !live.termine;
+    if (enCours) doubleAppui(b, "Un match est en cours : appuie encore", () => mettreEnDirect(mid));
+    else b.addEventListener("click", () => mettreEnDirect(mid));
+  });
+  $$("[data-suppr]").forEach((b) => doubleAppui(b, "Sûr ?", () => {
+    const mid = b.dataset.suppr;
+    const u = { [`prive/matchs/${mid}`]: null };
+    if (live.matchId === mid) u.live = null;
+    envoyer(u, "Match supprimé").catch(() => {});
+  }));
+}
+$("#matchs").addEventListener("toggle", (ev) => {
+  const d = ev.target.closest?.("[data-detail]");
+  if (d) d.open ? ouverts.add(d.dataset.detail) : ouverts.delete(d.dataset.detail);
+}, true);
+$("#matchs").addEventListener("change", (ev) => {
+  const c = ev.target.closest("[data-present]");
+  if (!c) return;
+  const [mid, cote, num] = c.dataset.present.split("|");
+  const actuels = new Set((matchs[mid]?.presents?.[cote] || []).map(String));
+  c.checked ? actuels.add(num) : actuels.delete(num);
+  envoyer({ [`prive/matchs/${mid}/presents/${cote}`]: [...actuels].sort((a, b) => a - b) }).catch(() => {});
+});
+$("#matchs").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-majdirect]");
+  if (!b) return;
+  const m = matchs[b.dataset.majdirect];
+  envoyer({ "live/match": vueMatch(m, equipes[m.A], equipes[m.B]) }, "Overlay mis à jour (le score n'a pas bougé)").catch(() => {});
+});
+
+function mettreEnDirect(mid) {
+  const m = matchs[mid];
+  if (!equipes[m.A] || !equipes[m.B]) { toast("Une des deux équipes n'existe plus.", true); return; }
+  envoyer({ live: {
+    matchId: mid, match: vueMatch(m, equipes[m.A], equipes[m.B]),
+    points: "", corrections: null, habillage: null, masque: false, termine: false, debut: api.ts()
+  } }, "Match en direct : ouvre le contrôle").catch(() => {});
+}
+
+// ================= Démo : deux équipes fictives =================
+$("#exemple").addEventListener("click", () => {
+  const ex = (club, court, couleur, equipe, noms) => ({
+    source: "exemple-" + court, club, nomAffiche: club, court, equipe, categorie: "Seniors", genre: "Mixte", niveau: "Départemental",
+    championnat: "Excellence B Mixte", couleur, coach: "Alex", direct: "oui", replay: "public", montrerFlocage: true,
+    anecdotes: "Exemple fictif pour tester l'outil.",
+    joueurs: noms.map(([num, prenom, nom, poste, flocage], i) => ({ num: String(num), prenom, nom, poste, flocage: flocage || "", capitaine: i === 1, libero: poste === "Libéro" }))
+  });
+  envoyer({
+    "prive/equipes/exA": ex("Les Braises", "BRA", "#D3121F", "Mixte 1", [[2, "Camille", "MARTIN", "Passeur"], [5, "Hugo", "BERNARD", "Central", "H. LE MUR"], [7, "Léa", "PETIT", "Réceptionneur-attaquant"], [9, "Noé", "ROBERT", "Pointu", "N. CANON"], [12, "Inès", "RICHARD", "Libéro"], [14, "Sacha", "DUBOIS", "Central"]]),
+    "prive/equipes/exB": ex("Cendres Volley", "CEN", "#1D4ED8", "Mixte 2", [[1, "Jules", "MOREAU", "Passeur"], [4, "Emma", "LAURENT", "Central"], [6, "Tom", "SIMON", "Réceptionneur-attaquant"], [8, "Lina", "MICHEL", "Pointu"], [11, "Paul", "LEFEBVRE", "Libéro"]])
+  }, "Deux équipes d'exemple ajoutées").catch(() => {});
+});
+</script>
+</body>
+</html>
