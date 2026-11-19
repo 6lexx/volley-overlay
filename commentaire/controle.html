@@ -46,8 +46,8 @@
   .milieu .btn { min-height: 52px; }
 
   /* Habillages */
-  .habillages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
-  .habillages .btn { min-height: 72px; flex-direction: column; gap: 2px; font-size: 16px; line-height: 1.15; text-align: center; }
+  .habillages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .habillages .btn { min-height: 62px; flex-direction: column; gap: 2px; font-size: 16px; line-height: 1.15; text-align: center; }
   .habillages .btn small { font-size: 12px; font-weight: 600; color: var(--doux); }
   .habillages .btn[aria-pressed="true"] small { color: #3A2410; }
   .habillages .retirer { background: var(--fond); color: var(--doux); }
@@ -95,6 +95,7 @@
     .page { grid-template-columns: 1fr; height: auto; }
     .droite { height: 70vh; }
     .habillages { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .habillages .btn { min-height: 64px; }
   }
   @media (max-width: 600px) {
     .score { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
@@ -144,8 +145,12 @@
         <button class="btn" type="button" data-hab="affiche">Affiche<small>échauffement</small></button>
         <button class="btn" type="button" data-hab="joueurs" data-eq="A" id="hJA">Effectif<small id="hJAs"></small></button>
         <button class="btn" type="button" data-hab="joueurs" data-eq="B" id="hJB">Effectif<small id="hJBs"></small></button>
+        <button class="btn" type="button" data-hab="honneur" id="hHon">Club à l'honneur<small id="hHons"></small></button>
         <button class="btn" type="button" data-hab="recap">Récap des sets<small>reste affiché</small></button>
+        <button class="btn" type="button" data-tm="A" id="tmA">Temps mort<small id="tmAs"></small></button>
+        <button class="btn" type="button" data-tm="B" id="tmB">Temps mort<small id="tmBs"></small></button>
         <button class="btn" type="button" data-hab="victoire" id="hVict">Victoire<small>fin du match</small></button>
+        <button class="btn" type="button" id="serieAuto" aria-pressed="true">Bandeau série<small id="serieAutos">auto à 5 points</small></button>
         <button class="btn retirer" type="button" data-hab="">Tout retirer<small>score seul</small></button>
       </div>
     </div>
@@ -237,6 +242,13 @@ function rendre() {
     if (e.serie.n >= 3) infos.push(`<span class="info${e.serie.n >= 5 ? " chaud" : ""}">Série : ${esc(m[e.serie.eq].court)} ${e.serie.n} points d'affilée</span>`);
     if (e.courant.tieBreak) infos.push(`<span class="info">Tie-break en ${e.courant.cible} · changement de côté à ${Math.ceil(e.courant.cible / 2)}</span>`);
   }
+  if (!e.fini) {
+    const tms = (live.tempsMorts || {})[e.courant.num] || {};
+    if (tms.A || tms.B) infos.push(`<span class="info">Temps morts : ${esc(m.A.court)} ${tms.A || 0}/2 · ${esc(m.B.court)} ${tms.B || 0}/2</span>`);
+    const tmc = live.tempsMort;
+    if (tmc && tmc.n === (live.points || "").length && api.maintenant() - (tmc.ts || 0) < CFG.affichage.tempsMortSec * 1000)
+      infos.push(`<span class="info chaud">Temps mort : bon moment pour le club à l'honneur</span>`);
+  }
   if (e.ecartMax.n >= 4) infos.push(`<span class="info">Plus gros écart : +${e.ecartMax.n} ${esc(m[e.ecartMax.eq].court)} (set ${e.ecartMax.set})</span>`);
   if (!(live.points || "").length) infos.push(`<span class="info">Le ballon indique qui sert : « Changer le service » avant le 1er point</span>`);
   $("#antiseche").innerHTML = `<span class="etiquette">Antisèche</span>` + (infos.join("") || `<span class="aide">Rien de spécial pour l'instant.</span>`);
@@ -250,6 +262,21 @@ function rendre() {
   $("#hJA").disabled = !m.A.joueurs?.length;
   $("#hJB").disabled = !m.B.joueurs?.length;
   $("#hVict").disabled = !e.fini;
+  const suivi = m.suivi || "A";
+  $("#hHons").textContent = m[suivi].court + (m[suivi].club?.presentation ? "" : " · infos à remplir");
+  // Temps morts : 2 par équipe et par set
+  const numSet = e.fini ? null : e.courant.num;
+  const tmSet = (live.tempsMorts || {})[numSet] || {};
+  const tmEnCours = live.tempsMort && live.tempsMort.n === (live.points || "").length && api.maintenant() - (live.tempsMort.ts || 0) < CFG.affichage.tempsMortSec * 1000;
+  for (const c of ["A", "B"]) {
+    const b = $("#tm" + c);
+    const on = tmEnCours && live.tempsMort.eq === c;
+    b.setAttribute("aria-pressed", String(on));
+    b.disabled = e.fini || (!on && (tmSet[c] || 0) >= 2);
+    $("#tm" + c + "s").textContent = on ? "en cours · retirer" : `${m[c].court} · ${tmSet[c] || 0}/2`;
+  }
+  $("#serieAuto").setAttribute("aria-pressed", String(!live.serieCoupee));
+  $("#serieAutos").textContent = live.serieCoupee ? "coupé" : `auto à ${CFG.affichage.serieMin} points`;
   $$("[data-hab]").forEach((b) => {
     const t = b.dataset.hab;
     const on = t ? (actif?.type === t && (t !== "joueurs" || actif.eq === b.dataset.eq)) : false;
@@ -257,7 +284,7 @@ function rendre() {
   });
   rendreInfos();
 }
-setInterval(() => { if (live.habillage?.duree) rendre(); }, 1000);
+setInterval(() => { if (live.habillage?.duree || live.tempsMort) rendre(); }, 1000);
 
 // ================= Points =================
 let dernierAppui = { A: -Infinity, B: -Infinity };
@@ -277,11 +304,19 @@ function marquer(c) {
   const e = etatDe(points);
   const u = { "live/points": points, "live/dernierPoint": api.ts() };
   const h = live.habillage;
-  if (h && ["affiche", "joueurs", "recap"].includes(h.type)) u["live/habillage"] = null;
+  if (h && ["affiche", "joueurs", "recap", "honneur"].includes(h.type)) u["live/habillage"] = null;
+  if (live.tempsMort) u["live/tempsMort"] = null;
   if (e.fini) {
     u["live/habillage"] = { type: "victoire", ts: api.ts() };
     u["live/termine"] = true;
     u[`prive/matchs/${live.matchId}/resultat`] = { A: e.gagnes.A, B: e.gagnes.B, sets: e.sets.map((s) => `${s.A}-${s.B}`) };
+    // Page publique des résultats : seulement ce qui passe déjà à l'écran
+    const pm = prive.matchs?.[live.matchId] || {};
+    const pub = (c) => ({ nom: live.match[c].nom, court: live.match[c].court, sousTitre: live.match[c].sousTitre, couleur: live.match[c].couleur, texte: live.match[c].texte });
+    u[`resultats/${live.matchId}`] = {
+      competition: live.match.competition || "", date: live.match.date || "", heure: live.match.heure || "", salle: live.match.salle || "",
+      A: pub("A"), B: pub("B"), gagnes: e.gagnes, sets: e.sets.map((s) => `${s.A}-${s.B}`), replay: pm.replay || null, fin: api.ts()
+    };
   } else if (e.dernierFinitSet) {
     u["live/habillage"] = { type: "recap", auto: true, ts: api.ts(), duree: CFG.affichage.recapSetSec * 1000 };
   }
@@ -300,7 +335,7 @@ $("#annuler").addEventListener("click", () => {
   const u = { "live/points": points, "live/corrections": Object.keys(corr).length ? corr : null, "live/termine": false };
   const h = live.habillage;
   if (h && (h.auto || h.type === "victoire")) u["live/habillage"] = null;
-  if (live.termine) u[`prive/matchs/${live.matchId}/resultat`] = null;
+  if (live.termine) { u[`prive/matchs/${live.matchId}/resultat`] = null; u[`resultats/${live.matchId}`] = null; }
   live.points = points; live.corrections = corr;
   rendre();
   envoyer(u);
@@ -325,6 +360,7 @@ $("#habillages").addEventListener("click", (ev) => {
   if (!t || b.getAttribute("aria-pressed") === "true") { envoyer({ "live/habillage": null }); return; }
   const h = { type: t, ts: api.ts() };
   if (t === "joueurs") h.eq = b.dataset.eq;
+  if (t === "honneur") h.eq = live.match.suivi || "A";
   if (t === "recap") {
     const e = etatDe();
     if (!e.sets.length) { toast("Aucun set terminé pour l'instant."); return; }
@@ -334,6 +370,23 @@ $("#habillages").addEventListener("click", (ev) => {
 });
 
 $("#masque").addEventListener("click", () => envoyer({ "live/masque": !live.masque }));
+
+// ================= Temps morts =================
+$$("[data-tm]").forEach((b) => b.addEventListener("click", () => {
+  const c = b.dataset.tm;
+  const e = etatDe();
+  if (e.fini) return;
+  const num = e.courant.num;
+  const nb = (live.tempsMorts || {})[num]?.[c] || 0;
+  if (b.getAttribute("aria-pressed") === "true") {
+    // Appui sur le temps mort en cours : on l'annule (erreur de saisie)
+    envoyer({ "live/tempsMort": null, [`live/tempsMorts/${num}/${c}`]: Math.max(0, nb - 1) || null });
+    return;
+  }
+  if (nb >= 2) { toast("Déjà 2 temps morts dans ce set."); return; }
+  envoyer({ "live/tempsMort": { eq: c, ts: api.ts(), n: (live.points || "").length }, [`live/tempsMorts/${num}/${c}`]: nb + 1 });
+}));
+$("#serieAuto").addEventListener("click", () => envoyer({ "live/serieCoupee": !live.serieCoupee || null }));
 
 // ================= Effectifs et notes =================
 function rendreInfos() {

@@ -44,6 +44,10 @@ export function vueEquipe(eq, presents) {
     couleur,
     texte: texteSur(couleur),
     logo: eq?.logo || "",
+    club: {
+      presentation: eq?.presentation || "", creneaux: eq?.creneaux || "", recrutement: eq?.recrutement || "",
+      instagram: eq?.instagram ? "@" + String(eq.instagram).replace(/^@/, "") : "", site: eq?.site || ""
+    },
     joueurs: joueursDuJour(eq, presents).map((j) => ({
       num: String(j.num), prenom: j.prenom || "", nom: j.nom || "", poste: j.poste || "",
       flocage: eq?.montrerFlocage ? (j.flocage || "") : "",

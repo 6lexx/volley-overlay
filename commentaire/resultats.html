@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0E0C0A">
+<title>Résultats et replays · silex62 volley</title>
+<link rel="stylesheet" href="shared/fonts.css">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  .entete h1 span { color: var(--braise); }
+  .filtres { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filtres .btn { border-radius: 999px; }
+  .bilan { display: flex; flex-wrap: wrap; gap: 10px; }
+  .bilan div { background: var(--panneau-2); border: 1px solid var(--ligne); border-radius: 10px; padding: 10px 16px; display: flex; flex-direction: column; min-width: 110px; }
+  .bilan b { font-family: var(--cond); font-size: 36px; font-weight: 800; line-height: 1; }
+  .bilan span { font-size: 13px; color: var(--doux); font-weight: 600; }
+  .mois { font-family: var(--cond); font-weight: 800; font-size: 22px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--doux); margin: 8px 0 -6px; }
+  .match { background: var(--panneau); border: 1px solid var(--ligne); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .match .meta { font-size: 14px; color: var(--doux); }
+  .match .meta b { color: var(--braise); font-weight: 700; }
+  .eq { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .eq .pastille { flex: 0 0 auto; min-width: 72px; }
+  .eq .nom { flex: 1 1 auto; min-width: 0; font-weight: 700; font-size: 18px; }
+  .eq .nom small { display: block; color: var(--doux); font-weight: 600; font-size: 13px; }
+  .eq .sets { font-family: var(--cond); font-weight: 800; font-size: 40px; line-height: 1; width: 40px; text-align: center; color: #8F867A; }
+  .eq.gagne .sets { color: var(--texte); }
+  .eq .detail { display: flex; gap: 6px; font-family: var(--cond); font-weight: 700; font-size: 20px; color: #8F867A; font-variant-numeric: tabular-nums; }
+  .eq .detail .g { color: var(--texte); }
+  .eq .detail span { width: 30px; text-align: center; }
+  .vide { color: var(--doux); padding: 20px 0; }
+  .pied { color: var(--doux); font-size: 14px; text-align: center; padding: 10px 0 30px; }
+  @media (max-width: 560px) { .eq .detail { display: none; } }
+</style>
+</head>
+<body>
+<header class="entete">
+  <div>
+    <h1>RÉSULTATS <span>&amp;</span> REPLAYS</h1>
+    <div class="sous">Matchs commentés en direct sur twitch.tv/<span id="chaine"></span></div>
+  </div>
+</header>
+<main class="contenu" id="app">
+  <div class="filtres" id="filtres" role="group" aria-label="Filtrer par club"></div>
+  <div class="bilan" id="bilan" hidden></div>
+  <div id="liste" style="display:flex;flex-direction:column;gap:12px"><p class="vide">Chargement…</p></div>
+  <p class="pied">Page non référencée : seuls ceux qui ont le lien la trouvent.</p>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, param, esc } from "./shared/outils.js";
+import { connecter } from "./shared/firebase.js";
+import { dateLongue } from "./shared/donnees.js";
+
+$("#chaine").textContent = CFG.twitch;
+const api = await connecter();
+let resultats = [], club = param("club") || "";
+
+api.ecouter("resultats", (v) => {
+  resultats = Object.entries(v || {}).map(([id, r]) => ({ id, ...r })).sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.fin || 0) - (a.fin || 0));
+  rendre();
+}, () => { $("#liste").innerHTML = `<p class="vide">Résultats indisponibles pour l'instant.</p>`; });
+
+const pastille = (e) => `<span class="pastille" style="background:${esc(e.couleur)};color:${esc(e.texte)}">${esc(e.court)}</span>`;
+
+function rendre() {
+  const clubs = [...new Set(resultats.flatMap((r) => [r.A?.nom, r.B?.nom]).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (club && !clubs.includes(club)) club = "";
+  $("#filtres").innerHTML = clubs.length > 1 ? [["", "Tous les clubs"], ...clubs.map((c) => [c, c])]
+    .map(([v, t]) => `<button class="btn petit" type="button" data-club="${esc(v)}" aria-pressed="${v === club}">${esc(t)}</button>`).join("") : "";
+  const liste = club ? resultats.filter((r) => r.A?.nom === club || r.B?.nom === club) : resultats;
+
+  // Bilan du club choisi
+  const bil = $("#bilan");
+  bil.hidden = !club;
+  if (club) {
+    let v = 0, d = 0, sg = 0, sp = 0;
+    for (const r of liste) {
+      const c = r.A?.nom === club ? "A" : "B", o = c === "A" ? "B" : "A";
+      (r.gagnes?.[c] > r.gagnes?.[o]) ? v++ : d++;
+      sg += r.gagnes?.[c] || 0; sp += r.gagnes?.[o] || 0;
+    }
+    bil.innerHTML = `<div><b>${liste.length}</b><span>matchs</span></div><div><b>${v}</b><span>victoires</span></div><div><b>${d}</b><span>défaites</span></div><div><b>${sg}-${sp}</b><span>sets</span></div>`;
+  }
+
+  if (!liste.length) { $("#liste").innerHTML = `<p class="vide">Aucun résultat pour l'instant.</p>`; return; }
+  let moisCourant = "";
+  $("#liste").innerHTML = liste.map((r) => {
+    const mois = r.date ? new Date(r.date + "T12:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) : "";
+    const tete = mois && mois !== moisCourant ? `<h2 class="mois">${esc(mois)}</h2>` : "";
+    moisCourant = mois || moisCourant;
+    const sets = (r.sets || []).map((x) => x.split("-").map(Number));
+    const ligne = (c, i) => {
+      const e = r[c], o = c === "A" ? "B" : "A";
+      return `<div class="eq${r.gagnes?.[c] > r.gagnes?.[o] ? " gagne" : ""}">${pastille(e)}
+        <div class="nom">${esc(e.nom)}<small>${esc(e.sousTitre || "")}</small></div>
+        <div class="detail">${sets.map((st) => `<span class="${st[i] > st[1 - i] ? "g" : ""}">${st[i]}</span>`).join("")}</div>
+        <div class="sets">${r.gagnes?.[c] ?? 0}</div></div>`;
+    };
+    return `${tete}<article class="match">
+      <div class="meta">${r.competition ? `<b>${esc(r.competition)}</b> · ` : ""}${esc([dateLongue(r.date), r.salle].filter(Boolean).join(" · "))}</div>
+      ${ligne("A", 0)}${ligne("B", 1)}
+      ${r.replay ? `<a class="btn plein" href="${esc(r.replay)}" target="_blank" rel="noopener">Voir le replay</a>` : ""}
+    </article>`;
+  }).join("");
+}
+
+$("#filtres").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-club]");
+  if (!b) return;
+  club = b.dataset.club;
+  const u = new URLSearchParams(location.search);
+  club ? u.set("club", club) : u.delete("club");
+  history.replaceState(null, "", "?" + u.toString());
+  rendre();
+});
+</script>
+</body>
+</html>

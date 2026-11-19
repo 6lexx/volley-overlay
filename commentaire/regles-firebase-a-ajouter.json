@@ -16,6 +16,10 @@
     "live": {
       ".read": true,
       ".write": "auth != null && root.child('commentaireAcces').child(auth.uid).exists()"
+    },
+    "resultats": {
+      ".read": true,
+      ".write": "auth != null && root.child('commentaireAcces').child(auth.uid).exists()"
     }
   }
 }

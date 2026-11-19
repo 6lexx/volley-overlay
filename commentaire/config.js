@@ -28,6 +28,9 @@ window.COMMENTAIRE_CONFIG = {
 
   affichage: {
     recapSetSec:     20,   // volet de fin de set, lancé tout seul
-    coteSec:         12    // rappel « changement de côté » au tie-break
+    coteSec:         12,   // rappel « changement de côté » au tie-break
+    tempsMortSec:    30,   // durée d'un temps mort
+    serieMin:         5,   // bandeau « série » à partir de N points d'affilée
+    serieSec:         8    // durée du bandeau série après chaque point
   }
 };

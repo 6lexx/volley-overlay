@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Visuels Instagram · Commentaire volley</title>
+<link rel="stylesheet" href="shared/fonts.css">
+<link rel="stylesheet" href="shared/style.css">
+<style>
+  .grille { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+  .apercu { background: var(--panneau); border: 1px solid var(--ligne); border-radius: 12px; padding: 16px; display: flex; justify-content: center; }
+  .apercu canvas { max-width: 100%; max-height: 78vh; height: auto; border-radius: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .legende { -webkit-user-select: text; user-select: text; }
+  @media (max-width: 860px) { .grille { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="demo" class="demo" hidden>Mode démo.</div>
+<header class="entete">
+  <div>
+    <h1>VISUELS INSTAGRAM</h1>
+    <div class="sous" id="sousTitre">Annonce et résultat du match</div>
+  </div>
+  <span class="espace"></span>
+  <a class="btn" id="retour" href="#">← Préparation</a>
+</header>
+<div id="fatal" class="fatal" hidden></div>
+
+<main class="contenu" id="app" hidden>
+  <div class="grille">
+    <div class="apercu"><canvas id="toile" width="1080" height="1920" role="img" aria-label="Aperçu du visuel"></canvas></div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <section class="bloc">
+        <h2>Visuel</h2>
+        <div class="choix" role="group" aria-label="Type de visuel">
+          <button class="btn" type="button" data-type="annonce" aria-pressed="true">Annonce</button>
+          <button class="btn" type="button" data-type="resultat" aria-pressed="false" id="btnResultat">Résultat</button>
+        </div>
+        <div class="choix" role="group" aria-label="Format">
+          <button class="btn" type="button" data-format="story" aria-pressed="true">Story 9:16</button>
+          <button class="btn" type="button" data-format="post" aria-pressed="false">Post 4:5</button>
+        </div>
+        <div class="aide" id="aideResultat"></div>
+        <button class="btn plein" id="partager" type="button">Partager</button>
+        <button class="btn" id="enregistrer" type="button">Enregistrer l'image</button>
+      </section>
+      <section class="bloc">
+        <h2>Texte de la publication</h2>
+        <p class="note legende aide" id="legende" style="color:var(--texte);white-space:pre-wrap;margin:0"></p>
+        <button class="btn" id="copier" type="button">Copier le texte</button>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script type="module">
+import { CFG, $, $$, param, esc, lien, toast } from "./shared/outils.js";
+import { connecter, DEMO } from "./shared/firebase.js";
+import { texteSur } from "./shared/moteur.js";
+import { dateLongue, heureCourte, formatDe } from "./shared/donnees.js";
+
+const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
+if (DEMO) $("#demo").hidden = false;
+$("#retour").href = lien("preparation.html");
+const mid = param("m");
+
+let api;
+try { api = await connecter({ regie: true, cle: param("key") }); }
+catch (e) { fatal(esc(e.message)); throw e; }
+$("#app").hidden = false;
+
+let prive = {}, type = "annonce", format = "story", enCours = 0;
+// Polices chargées avant le premier dessin
+await Promise.all(['800 100px "Barlow Condensed"', '700 100px "Barlow Condensed"', '600 40px "Barlow"'].map((f) => document.fonts.load(f)));
+
+$$("[data-type]").forEach((b) => b.addEventListener("click", () => { type = b.dataset.type; $$("[data-type]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); dessiner(); }));
+$$("[data-format]").forEach((b) => b.addEventListener("click", () => { format = b.dataset.format; $$("[data-format]").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); dessiner(); }));
+
+// ---------- Outils de dessin ----------
+const COND = '"Barlow Condensed", "Arial Narrow", sans-serif', CORPS = '"Barlow", system-ui, sans-serif';
+const BRAISE = "#F08A24", NUIT = "#16130F", FOND = "#0E0C0A", TEXTE = "#F5EFE6", DOUX = "#C9C0B3";
+const police = (ctx, poids, taille, fam = COND) => (ctx.font = `${poids} ${taille}px ${fam}`);
+function poly(ctx, pts, couleur) { ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fillStyle = couleur; ctx.fill(); }
+// Rectangle à coupes en biais, comme sur l'overlay
+function biseau(ctx, x, y, w, h, couleur, b = 22, gauchePlat = false) {
+  poly(ctx, [[gauchePlat ? x : x + b, y], [x + w, y], [x + w - b, y + h], [x, y + h]], couleur);
+}
+// Texte réduit jusqu'à tenir dans la largeur ; renvoie la taille utilisée
+function texteAjuste(ctx, txt, x, y, maxW, taille, poids = 800, min = 30, fam = COND, align = "left") {
+  let t = taille;
+  police(ctx, poids, t, fam);
+  while (ctx.measureText(txt).width > maxW && t > min) { t -= 2; police(ctx, poids, t, fam); }
+  ctx.textAlign = align; ctx.fillText(txt, x, y); ctx.textAlign = "left";
+  return t;
+}
+// Nom long sur deux lignes si besoin (coupé aux espaces ou aux tirets)
+function nomSurLignes(ctx, txt, maxW, taille, min = 60) {
+  police(ctx, 800, taille);
+  if (ctx.measureText(txt).width <= maxW) return { lignes: [txt], taille };
+  const mots = txt.split(/(?<=[-\s])/);
+  let best = null;
+  for (let i = 1; i < mots.length; i++) {
+    const l = [mots.slice(0, i).join("").trim(), mots.slice(i).join("").trim()];
+    const larg = Math.max(...l.map((x) => ctx.measureText(x).width));
+    if (!best || larg < best.larg) best = { l, larg };
+  }
+  let t = taille;
+  const lignes = best ? best.l : [txt];
+  while (t > min && Math.max(...lignes.map((x) => (police(ctx, 800, t), ctx.measureText(x).width))) > maxW) t -= 2;
+  return { lignes, taille: t };
+}
+const chargerImage = (src) => new Promise((ok) => { if (!src) return ok(null); const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+async function pastilleClub(ctx, eq, cx, cy, r) {
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r + 10, 0, Math.PI * 2); ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fillStyle = TEXTE; ctx.fill();
+  const img = await chargerImage(eq.logo);
+  if (img) { const k = Math.min((r * 1.5) / img.width, (r * 1.5) / img.height); ctx.drawImage(img, cx - (img.width * k) / 2, cy - (img.height * k) / 2, img.width * k, img.height * k); }
+  else { ctx.fillStyle = eq.couleur; ctx.textBaseline = "middle"; texteAjuste(ctx, (eq.court || "").toUpperCase(), cx, cy + 4, r * 1.5, r * 0.75, 800, 20, COND, "center"); ctx.textBaseline = "alphabetic"; }
+  ctx.restore();
+}
+
+// ---------- Les données du match ----------
+function donnees() {
+  const m = prive.matchs?.[mid];
+  if (!m) return null;
+  const eq = (id) => {
+    const f = prive.equipes?.[id] || {};
+    const couleur = f.couleur || "#6B6258";
+    return { nom: f.nomAffiche || f.club || "?", court: f.court || "?", sousTitre: f.equipe || "", couleur, texte: texteSur(couleur), logo: f.logo || "", instagram: f.instagram ? "@" + String(f.instagram).replace(/^@/, "") : "" };
+  };
+  return { m, A: eq(m.A), B: eq(m.B) };
+}
+
+// ---------- Dessin ----------
+async function dessiner() {
+  const d = donnees();
+  if (!d) { $("#sousTitre").textContent = "Match introuvable : ouvre cette page depuis la Préparation."; return; }
+  const n = ++enCours;
+  const res = d.m.resultat;
+  $("#btnResultat").disabled = !res;
+  $("#aideResultat").textContent = res ? "" : "Le visuel Résultat se débloque à la fin du match.";
+  if (type === "resultat" && !res) type = "annonce";
+  $$("[data-type]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.type === type)));
+  $("#sousTitre").textContent = `${d.A.nom} – ${d.B.nom}`;
+
+  const W = 1080, H = format === "story" ? 1920 : 1350;
+  const off = document.createElement("canvas"); off.width = W; off.height = H;
+  const ctx = off.getContext("2d");
+  ctx.fillStyle = FOND; ctx.fillRect(0, 0, W, H);
+  // Braises discrètes en fond
+  const g = ctx.createRadialGradient(W / 2, H, 50, W / 2, H, H * 0.8);
+  g.addColorStop(0, "rgba(240,138,36,.22)"); g.addColorStop(1, "rgba(240,138,36,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  if (type === "annonce") await annonce(ctx, d, W, H); else await resultat(ctx, d, W, H);
+  if (n !== enCours) return;
+  const c = $("#toile"); c.width = W; c.height = H;
+  c.getContext("2d").drawImage(off, 0, 0);
+  $("#legende").textContent = legende(d);
+}
+
+async function annonce(ctx, d, W, H) {
+  const m = d.m, story = H > 1500;
+  const y0 = story ? 300 : 150;
+  // Onglet compétition
+  if (m.competition) {
+    police(ctx, 700, 44); const w = Math.min(W - 160, ctx.measureText(m.competition.toUpperCase()).width + 120);
+    biseau(ctx, (W - w) / 2, y0 - 90, w, 76, BRAISE, 22);
+    ctx.fillStyle = NUIT; texteAjuste(ctx, m.competition.toUpperCase(), W / 2, y0 - 36, w - 80, 44, 700, 26, COND, "center");
+  }
+  // Deux bandes d'équipe en diagonale
+  const hB = story ? 470 : 360, gap = story ? 170 : 120;
+  for (const [i, eq] of [[0, d.A], [1, d.B]]) {
+    const y = y0 + i * (hB + gap);
+    poly(ctx, i === 0 ? [[0, y], [W, y], [W, y + hB - 90], [0, y + hB]] : [[0, y + 90], [W, y], [W, y + hB], [0, y + hB]], eq.couleur);
+    const r = story ? 120 : 96;
+    const cx = i === 0 ? 70 + r : W - 70 - r, cy = y + hB / 2 + (i === 0 ? -20 : 20);
+    await pastilleClub(ctx, eq, cx, cy, r);
+    ctx.fillStyle = eq.texte;
+    // A : texte à droite de la pastille ; B : texte à gauche, aligné à droite
+    const xTexte = i === 0 ? cx + r + 50 : cx - r - 50;
+    const align = i === 0 ? "left" : "right";
+    const { lignes, taille } = nomSurLignes(ctx, eq.nom.toUpperCase(), W - 2 * r - 220, story ? 130 : 104);
+    let ty = cy - (lignes.length * taille * 0.95) / 2 + taille * 0.78 - (eq.sousTitre ? 20 : 0);
+    ctx.textAlign = align;
+    let derniere = ty;
+    for (const l of lignes) { police(ctx, 800, taille); ctx.fillText(l, xTexte, ty); derniere = ty; ty += taille * 0.95; }
+    if (eq.sousTitre) { police(ctx, 600, 36, CORPS); ctx.globalAlpha = .92; ctx.fillText(eq.sousTitre, xTexte, derniere + 54); ctx.globalAlpha = 1; }
+    ctx.textAlign = "left";
+  }
+  // Losange VS
+  const vy = y0 + hB + gap / 2;
+  ctx.save(); ctx.translate(W / 2, vy); ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = BRAISE; ctx.fillRect(-78, -78, 156, 156); ctx.fillStyle = NUIT; ctx.fillRect(-68, -68, 136, 136); ctx.restore();
+  ctx.fillStyle = BRAISE; police(ctx, 800, 64); ctx.textAlign = "center"; ctx.fillText("VS", W / 2, vy + 22); ctx.textAlign = "left";
+  // Date, heure, salle
+  const yInfos = y0 + 2 * hB + gap + (story ? 110 : 70);
+  const quand = [dateLongue(m.date), heureCourte(m.heure)].filter(Boolean).join(" · ") || "[DATE · HEURE]";
+  ctx.fillStyle = TEXTE; texteAjuste(ctx, quand.toUpperCase(), W / 2, yInfos, W - 140, story ? 72 : 60, 800, 30, COND, "center");
+  if (m.salle) { ctx.fillStyle = DOUX; texteAjuste(ctx, m.salle, W / 2, yInfos + (story ? 70 : 58), W - 140, story ? 42 : 36, 600, 24, CORPS, "center"); }
+  // Bandeau Twitch
+  const yT = H - (story ? 250 : 150);
+  biseau(ctx, 90, yT, W - 180, story ? 130 : 110, BRAISE, 30);
+  ctx.fillStyle = NUIT; police(ctx, 700, story ? 34 : 30); ctx.textAlign = "center";
+  ctx.fillText("EN DIRECT ET COMMENTÉ SUR", W / 2, yT + (story ? 50 : 44));
+  police(ctx, 800, story ? 60 : 52); ctx.fillText("twitch.tv/" + CFG.twitch, W / 2, yT + (story ? 108 : 94)); ctx.textAlign = "left";
+}
+
+async function resultat(ctx, d, W, H) {
+  const m = d.m, res = m.resultat, story = H > 1500;
+  const gA = res.A > res.B, gagnant = gA ? d.A : d.B;
+  let y = story ? 340 : 130;
+  if (m.competition) { ctx.fillStyle = DOUX; texteAjuste(ctx, m.competition.toUpperCase(), W / 2, y, W - 160, 40, 700, 24, COND, "center"); y += 40; }
+  // Onglet VICTOIRE + bloc gagnant
+  biseau(ctx, 90, y, 330, 80, BRAISE, 22, true);
+  ctx.fillStyle = NUIT; police(ctx, 800, 50); ctx.fillText("VICTOIRE", 120, y + 58);
+  y += 80;
+  const hG = story ? 260 : 220;
+  biseau(ctx, 90, y, W - 180, hG, gagnant.couleur, 40, true);
+  ctx.fillStyle = gagnant.texte;
+  const { lignes, taille } = nomSurLignes(ctx, gagnant.nom.toUpperCase(), W - 330, story ? 140 : 120, 60);
+  let ty = y + hG / 2 - (lignes.length * taille * 0.95) / 2 + taille * 0.8;
+  for (const l of lignes) { police(ctx, 800, taille); ctx.fillText(l, 130, ty); ty += taille * 0.95; }
+  y += hG + (story ? 90 : 60);
+  // Score en sets
+  const sA = String(res.A), sB = String(res.B);
+  police(ctx, 800, story ? 300 : 240);
+  ctx.textAlign = "center";
+  ctx.fillStyle = gA ? TEXTE : "#8F867A"; ctx.fillText(sA, W / 2 - (story ? 190 : 160), y + (story ? 240 : 190));
+  ctx.fillStyle = "#8F867A"; police(ctx, 800, story ? 150 : 120); ctx.fillText("–", W / 2, y + (story ? 200 : 160));
+  police(ctx, 800, story ? 300 : 240);
+  ctx.fillStyle = gA ? "#8F867A" : TEXTE; ctx.fillText(sB, W / 2 + (story ? 190 : 160), y + (story ? 240 : 190));
+  y += story ? 300 : 230;
+  // Tableau des sets
+  const sets = (res.sets || []).map((x) => x.split("-").map(Number));
+  const ligneEq = (eq, idx, yy) => {
+    biseau(ctx, 90, yy, 330, 90, eq.couleur, 22, true);
+    ctx.fillStyle = eq.texte; texteAjuste(ctx, eq.court.toUpperCase(), 120, yy + 66, 260, 60, 800, 30);
+    const cw = Math.min(110, (W - 180 - 330 - 10) / Math.max(1, sets.length));
+    sets.forEach((st, i) => {
+      const x = 90 + 330 - 14 + i * (cw - 8);
+      biseau(ctx, x, yy, cw + 6, 90, NUIT, 22);
+      const gagne = st[idx] > st[1 - idx];
+      ctx.fillStyle = gagne ? TEXTE : "#8F867A"; police(ctx, 700, 54); ctx.textAlign = "center"; ctx.fillText(String(st[idx]), x + cw / 2 + 3, yy + 66); ctx.textAlign = "left";
+    });
+  };
+  ligneEq(d.A, 0, y); ligneEq(d.B, 1, y + 100);
+  y += 200 + (story ? 80 : 50);
+  const quand = [dateLongue(m.date), m.salle].filter(Boolean).join(" · ");
+  if (quand) { ctx.fillStyle = DOUX; texteAjuste(ctx, quand, W / 2, y, W - 160, 36, 600, 22, CORPS, "center"); }
+  if (m.replay) { ctx.fillStyle = BRAISE; texteAjuste(ctx, "LE MATCH EN REPLAY · LIEN EN STORY", W / 2, y + (story ? 90 : 60), W - 160, 44, 700, 26, COND, "center"); }
+  // Bandeau replay
+  const yT = H - (story ? 250 : 150);
+  biseau(ctx, 90, yT, W - 180, story ? 130 : 110, BRAISE, 30);
+  ctx.fillStyle = NUIT; police(ctx, 700, story ? 34 : 30); ctx.textAlign = "center";
+  ctx.fillText("MATCH COMMENTÉ EN DIRECT SUR", W / 2, yT + (story ? 50 : 44));
+  police(ctx, 800, story ? 60 : 52); ctx.fillText("twitch.tv/" + CFG.twitch, W / 2, yT + (story ? 108 : 94)); ctx.textAlign = "left";
+}
+
+function legende(d) {
+  const m = d.m;
+  const quand = [dateLongue(m.date), heureCourte(m.heure)].filter(Boolean).join(" à ");
+  const tags = [d.A.instagram, d.B.instagram].filter(Boolean).join(" ");
+  if (type === "annonce") {
+    return `${d.A.nom} – ${d.B.nom}${m.competition ? " · " + m.competition : ""}\n${quand ? quand + (m.salle ? ", " + m.salle : "") + "\n" : ""}\nPas dispo pour venir au gymnase ? Le match est en direct et commenté sur twitch.tv/${CFG.twitch}${tags ? "\n\n" + tags : ""}`;
+  }
+  const r = m.resultat, gA = r.A > r.B;
+  return `Victoire de ${gA ? d.A.nom : d.B.nom} ${Math.max(r.A, r.B)}-${Math.min(r.A, r.B)} face à ${gA ? d.B.nom : d.A.nom}${m.competition ? " en " + m.competition : ""} (${(r.sets || []).join(", ")}).\n${m.replay ? "\nLe match en replay : " + m.replay + "\n" : ""}\nMatch commenté en direct sur twitch.tv/${CFG.twitch}${tags ? "\n\n" + tags : ""}`;
+}
+
+api.ecouter("prive", (v) => { prive = v || {}; dessiner(); });
+
+// ---------- Partage ----------
+const nomFichier = () => `${type}-${format}-${(donnees()?.A.court || "")}-${(donnees()?.B.court || "")}.png`.toLowerCase();
+const enBlob = () => new Promise((ok) => $("#toile").toBlob(ok, "image/png"));
+$("#enregistrer").addEventListener("click", async () => {
+  const b = await enBlob();
+  const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nomFichier(); a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+$("#partager").addEventListener("click", async () => {
+  const b = await enBlob();
+  const f = new File([b], nomFichier(), { type: "image/png" });
+  if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], text: $("#legende").textContent }); } catch {} }
+  else { toast("Partage indisponible ici : l'image est enregistrée à la place."); $("#enregistrer").click(); }
+});
+$("#copier").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("#legende").textContent); toast("Texte copié"); } catch { toast("Copie impossible : sélectionne le texte à la main.", true); }
+});
+</script>
+</body>
+</html>

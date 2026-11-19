@@ -53,6 +53,7 @@
     <div class="sous">Fiches d'équipe et matchs</div>
   </div>
   <span class="espace"></span>
+  <a class="btn" id="versResultats" href="#" target="_blank" rel="noopener">Résultats publics</a>
   <a class="btn" id="versControle" href="#">Contrôle du match →</a>
   <span class="point" id="dot" title="Connexion"></span>
 </header>
@@ -103,6 +104,12 @@
         </div>
       </div>
       <label class="champ large"><span>Anecdotes pour le commentaire (visibles seulement sur ta tablette)</span><textarea id="eAnecdotes"></textarea></label>
+      <div class="champ large"><span class="etiquette">Club à l'honneur (affiché sur le stream)</span></div>
+      <label class="champ large"><span>Présentation en une ou deux phrases</span><input type="text" id="ePresentation" maxlength="140" placeholder="Club familial du sud-est toulousain, 200 licenciés, du baby-volley aux seniors."></label>
+      <label class="champ"><span>Entraînements</span><input type="text" id="eCreneaux" maxlength="70" placeholder="Mardi et jeudi 20h · Gymnase …"></label>
+      <label class="champ"><span>Recrutement</span><input type="text" id="eRecrutement" maxlength="70" placeholder="On cherche un central pour la R1"></label>
+      <label class="champ"><span>Instagram</span><input type="text" id="eInstagram" maxlength="40" placeholder="@club_volley"></label>
+      <label class="champ"><span>Site ou autre réseau</span><input type="text" id="eSite" maxlength="50" placeholder="club-volley.fr"></label>
     </div>
 
     <div class="titre-bloc"><span class="etiquette">Joueurs</span><span class="espace"></span>
@@ -166,6 +173,7 @@ import { vueMatch, vueEquipe, formatDe, numsCompo, basculerCompo, dateLongue, NO
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
 if (DEMO) { $("#demo").hidden = false; $("#exemple").hidden = false; }
 $("#versControle").href = lien("controle.html");
+$("#versResultats").href = DEMO ? "resultats.html?demo=1" : "resultats.html";
 
 let api;
 try {
@@ -220,7 +228,8 @@ $("#trouves").addEventListener("click", (ev) => {
   if (!b) return;
   const f = trouves[Number(b.dataset.trouve)];
   const deja = dejaImportee(f);
-  ouvrirEditeur(deja ? deja[0] : null, { ...f }, deja ? "Réimport : la fiche existante sera remplacée par cette réponse." : "Nouvelle fiche importée : vérifie surtout la couleur, l'abréviation et les noms.");
+  const garde = deja ? Object.fromEntries(["nomAffiche", "court", "couleur", "logo", "presentation", "creneaux", "recrutement", "instagram", "site"].filter((k) => deja[1][k]).map((k) => [k, deja[1][k]])) : {};
+  ouvrirEditeur(deja ? deja[0] : null, { ...f, ...garde }, deja ? "Réimport : joueurs et infos du formulaire remplacés ; nom affiché, abréviation, couleur, logo et infos du club gardés." : "Nouvelle fiche importée : vérifie surtout la couleur, l'abréviation et les noms.");
 });
 
 // ================= Éditeur =================
@@ -247,6 +256,11 @@ function ouvrirEditeur(eid, fiche, aide = "") {
   $("#eDirect").value = f.direct || "";
   $("#eReplay").value = f.replay || "";
   $("#eAnecdotes").value = f.anecdotes || "";
+  $("#ePresentation").value = f.presentation || "";
+  $("#eCreneaux").value = f.creneaux || "";
+  $("#eRecrutement").value = f.recrutement || "";
+  $("#eInstagram").value = f.instagram || "";
+  $("#eSite").value = f.site || "";
   $("#eFlocage").checked = !!f.montrerFlocage;
   edition.source = f.source || "";
   edition.couleurTexte = f.couleurTexte || "";
@@ -313,6 +327,8 @@ $("#enregistrerEquipe").addEventListener("click", () => {
     logo: $("#eLogo").value.trim(), coach: $("#eCoach").value.trim(),
     direct: $("#eDirect").value, replay: $("#eReplay").value,
     anecdotes: $("#eAnecdotes").value.trim(), montrerFlocage: $("#eFlocage").checked,
+    presentation: $("#ePresentation").value.trim(), creneaux: $("#eCreneaux").value.trim(),
+    recrutement: $("#eRecrutement").value.trim(), instagram: $("#eInstagram").value.trim(), site: $("#eSite").value.trim(),
     joueurs: lireJoueursTable(), maj: api.ts()
   };
   const eid = edition.id;
@@ -375,6 +391,26 @@ function compoTexte(m) {
     return `${eq?.court || "?"} ${eq ? numsCompo(eq, m.presents?.[c]).length : 0}/${n}`;
   }).join(" · ");
 }
+// Lien du replay : respecte le choix des équipes (formulaire)
+function replayBloc(mid, m, eA, eB) {
+  const refus = [eA, eB].filter((e) => e?.replay === "aucun").map((e) => e.nomAffiche);
+  if (refus.length) return `<div class="aide">Pas de replay : refusé par ${esc(refus.join(", "))}.</div>`;
+  const prive = [eA, eB].some((e) => e?.replay === "non-repertorie");
+  return `<div class="rangee"><label class="champ" style="flex:1 1 320px"><span>Lien du replay YouTube${prive ? " (à mettre en « non répertoriée » sur YouTube)" : ""}</span>
+      <input type="url" data-replay="${esc(mid)}" value="${esc(m.replay || "")}" placeholder="https://youtu.be/…"></label>
+      <button class="btn" type="button" data-replay-ok="${esc(mid)}" style="align-self:flex-end">OK</button></div>`;
+}
+$("#matchs").addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-replay-ok]");
+  if (!b) return;
+  const mid = b.dataset.replayOk;
+  const v = document.querySelector(`[data-replay="${CSS.escape(mid)}"]`).value.trim();
+  if (v && !/^https:\/\/(www\.)?(youtube\.com|youtu\.be|m\.youtube\.com|www\.twitch\.tv|twitch\.tv)\//i.test(v)) { toast("Colle un lien YouTube (ou Twitch) qui commence par https://", true); return; }
+  const u = { [`prive/matchs/${mid}/replay`]: v || null };
+  if (matchs[mid]?.resultat) u[`resultats/${mid}/replay`] = v || null;
+  envoyer(u, v ? "Replay enregistré" : "Replay retiré").catch(() => {});
+});
+
 // Enregistre la compo ; si le match est en direct, l'overlay suit tout de suite
 function ecrireCompo(mid, cote, liste) {
   const m = matchs[mid];
@@ -406,12 +442,14 @@ function rendreMatchs() {
           ${refus.length ? `<small class="alerte">⚠ Refus du direct : ${esc(refus.join(", "))}</small>` : ""}</div>
         ${enDirect ? `<span class="badge-direct">EN DIRECT</span>` : ""}
       </div>
+      ${replayBloc(mid, m, eA, eB)}
       <details class="detail" data-detail="${esc(mid)}"${ouverts.has(mid) ? " open" : ""}><summary>Composition du match (${compoTexte(m)})</summary>
         <div class="colonnes">${presentsBloc}</div></details>
       <div class="rangee">
         ${enDirect
           ? `<button class="btn plein" type="button" data-majdirect="${esc(mid)}">Mettre à jour l'overlay</button><a class="btn" href="${esc(lien("controle.html"))}">Ouvrir le contrôle →</a>`
           : `<button class="btn plein" type="button" data-direct="${esc(mid)}">Mettre en direct</button>`}
+        <a class="btn" href="${esc(lien("visuels.html", { m: mid }))}">Visuels Instagram</a>
         <span style="flex:1 1 auto"></span>
         <button class="btn petit danger" type="button" data-suppr="${esc(mid)}">Supprimer</button>
       </div></div>`;
@@ -425,7 +463,7 @@ function rendreMatchs() {
   });
   $$("[data-suppr]").forEach((b) => doubleAppui(b, "Sûr ?", () => {
     const mid = b.dataset.suppr;
-    const u = { [`prive/matchs/${mid}`]: null };
+    const u = { [`prive/matchs/${mid}`]: null, [`resultats/${mid}`]: null };
     if (live.matchId === mid) u.live = null;
     envoyer(u, "Match supprimé").catch(() => {});
   }));
@@ -461,7 +499,8 @@ function mettreEnDirect(mid) {
   if (!equipes[m.A] || !equipes[m.B]) { toast("Une des deux équipes n'existe plus.", true); return; }
   envoyer({ live: {
     matchId: mid, match: vueMatch(m, equipes[m.A], equipes[m.B]),
-    points: "", corrections: null, habillage: null, masque: false, termine: false, debut: api.ts()
+    points: "", corrections: null, habillage: null, masque: false, termine: false, debut: api.ts(),
+    tempsMort: null, tempsMorts: null, serieCoupee: null
   } }, "Match en direct : ouvre le contrôle").catch(() => {});
 }
 
@@ -471,6 +510,8 @@ $("#exemple").addEventListener("click", () => {
     source: "exemple-" + court, club, nomAffiche: club, court, equipe, categorie: "Seniors", genre: "Mixte", niveau: "Départemental",
     championnat: "Excellence B Mixte", couleur, coach: "Alex", direct: "oui", replay: "public", montrerFlocage: true,
     anecdotes: "Exemple fictif pour tester l'outil.",
+    presentation: "Club fictif pour tester l'outil, ambiance feu de camp garantie.", creneaux: "Mardi et jeudi 20h · Gymnase des Pins",
+    recrutement: "On cherche des joueuses et joueurs tous niveaux", instagram: "@" + club.toLowerCase().replace(/[^a-z]/g, ""), site: "",
     joueurs: noms.map(([num, prenom, nom, poste, flocage], i) => ({ num: String(num), prenom, nom, poste, flocage: flocage || "", capitaine: i === 1, libero: poste === "Libéro" }))
   });
   envoyer({
