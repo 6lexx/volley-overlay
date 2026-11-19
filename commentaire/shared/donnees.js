@@ -19,6 +19,21 @@ export function joueursDuJour(eq, presents) {
   return p && p.length ? tous.filter((j) => p.includes(String(j.num))) : tous;
 }
 
+// Composition du match : pas de liste = toute l'équipe ; sinon les numéros de la liste
+export function numsCompo(eq, presents) {
+  return joueursDuJour(eq, presents).map((j) => String(j.num));
+}
+// Ajoute ou retire un joueur de la compo. Renvoie la nouvelle liste (null = toute l'équipe),
+// ou undefined si on retirerait le dernier joueur.
+export function basculerCompo(eq, presents, num) {
+  const tous = (eq?.joueurs || []).filter(Boolean).map((j) => String(j.num));
+  const set = new Set(numsCompo(eq, presents));
+  set.has(String(num)) ? set.delete(String(num)) : set.add(String(num));
+  if (!set.size) return undefined;
+  if (set.size === tous.length) return null;
+  return [...set].sort((a, b) => a - b);
+}
+
 // Ce que l'overlay a besoin de connaître d'une équipe (rien de privé)
 export function vueEquipe(eq, presents) {
   const couleur = eq?.couleur || "#6B6258";

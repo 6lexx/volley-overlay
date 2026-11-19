@@ -28,7 +28,6 @@ window.COMMENTAIRE_CONFIG = {
 
   affichage: {
     recapSetSec:     20,   // volet de fin de set, lancé tout seul
-    coteSec:         12,   // rappel « changement de côté » au tie-break
-    carteJoueurSec:   6    // durée de chaque carte joueur
+    coteSec:         12    // rappel « changement de côté » au tie-break
   }
 };

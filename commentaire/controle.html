@@ -60,13 +60,19 @@
   .panneau { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 12px; }
   .effectif h3 { margin: 4px 0 6px; display: flex; align-items: center; gap: 8px; font-family: var(--cond); font-size: 20px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
   .effectif h3 i { width: 14px; height: 14px; flex: 0 0 auto; }
-  .joueur { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 2px 8px; padding: 6px 0; border-bottom: 1px solid var(--ligne); }
+  .joueur { width: 100%; display: grid; grid-template-columns: 28px 40px minmax(0, 1fr); align-items: center; gap: 2px 8px; padding: 8px 4px; min-height: 56px; border: 0; border-bottom: 1px solid var(--ligne); background: transparent; color: var(--texte); text-align: left; }
+  .joueur .coche { grid-row: 1 / span 2; width: 24px; height: 24px; border-radius: 6px; border: 2px solid var(--ligne-2); display: flex; align-items: center; justify-content: center; color: #16130F; font-weight: 800; font-size: 16px; }
+  .joueur[aria-pressed="true"] .coche { background: var(--braise); border-color: var(--braise); }
+  .joueur .n { grid-row: 1 / span 2; }
+  .tete-compo { display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; font-size: 14px; color: var(--doux); }
+  .tete-compo b { color: var(--texte); }
+  .tete-compo .espace { flex: 1 1 auto; }
   .joueur .n { font-family: var(--cond); font-weight: 800; font-size: 26px; line-height: 1; text-align: right; }
   .joueur .q { font-weight: 700; font-size: 16px; }
   .joueur .q em { font-style: normal; font-family: var(--cond); font-weight: 800; font-size: 14px; background: var(--texte); color: #16130F; padding: 0 5px; margin-left: 6px; }
-  .joueur .p { grid-column: 2; font-size: 14px; color: var(--doux); }
+  .joueur .p { grid-column: 3; font-size: 14px; color: var(--doux); }
   .joueur .p b { color: var(--braise-clair); font-weight: 600; }
-  .joueur.absent { opacity: .45; }
+  .joueur[aria-pressed="false"] .n, .joueur[aria-pressed="false"] .q, .joueur[aria-pressed="false"] .p { opacity: .4; }
   .note { white-space: pre-wrap; line-height: 1.45; font-size: 15px; margin: 0 0 14px; }
   .apercu { position: relative; aspect-ratio: 16 / 9; background: #3A3B40; overflow: hidden; border-radius: 8px; }
   .apercu iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; }
@@ -136,8 +142,8 @@
 
       <div class="habillages" id="habillages">
         <button class="btn" type="button" data-hab="affiche">Affiche<small>échauffement</small></button>
-        <button class="btn" type="button" data-hab="joueurs" data-eq="A" id="hJA">Joueurs<small id="hJAs"></small></button>
-        <button class="btn" type="button" data-hab="joueurs" data-eq="B" id="hJB">Joueurs<small id="hJBs"></small></button>
+        <button class="btn" type="button" data-hab="joueurs" data-eq="A" id="hJA">Effectif<small id="hJAs"></small></button>
+        <button class="btn" type="button" data-hab="joueurs" data-eq="B" id="hJB">Effectif<small id="hJBs"></small></button>
         <button class="btn" type="button" data-hab="recap">Récap des sets<small>reste affiché</small></button>
         <button class="btn" type="button" data-hab="victoire" id="hVict">Victoire<small>fin du match</small></button>
         <button class="btn retirer" type="button" data-hab="">Tout retirer<small>score seul</small></button>
@@ -169,7 +175,7 @@
 import { CFG, $, $$, param, esc, lien, toast, doubleAppui, rechargerFrais, garderEcranAllume } from "./shared/outils.js";
 import { connecter, DEMO } from "./shared/firebase.js";
 import { calculer, enjeu, autre } from "./shared/moteur.js";
-import { NOMS_REPLAY, triNum } from "./shared/donnees.js";
+import { NOMS_REPLAY, triNum, numsCompo, basculerCompo, vueEquipe } from "./shared/donnees.js";
 import { lireChat, couleurLisible } from "./shared/chat.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
@@ -335,17 +341,19 @@ function rendreInfos() {
   if (!m) return;
   const pm = prive.matchs?.[live.matchId];
   const eqs = { A: prive.equipes?.[pm?.A], B: prive.equipes?.[pm?.B] };
-  // Effectifs : la fiche complète, les présents en clair
+  // Effectifs : la fiche complète ; toucher un joueur l'ajoute ou le retire de la compo du match
   $("#pEffectifs").innerHTML = ["A", "B"].map((c) => {
     const fiche = eqs[c];
-    const presents = (pm?.presents?.[c] || []).map(String);
     const js = (fiche?.joueurs || m[c].joueurs || []).filter(Boolean).slice().sort(triNum);
+    const dans = new Set(fiche ? numsCompo(fiche, pm?.presents?.[c]) : js.map((j) => String(j.num)));
     return `<div class="effectif"><h3><i style="background:${esc(m[c].couleur)}"></i>${esc(m[c].nom)} <small class="aide" style="text-transform:none">${esc(m[c].sousTitre)}</small></h3>
-      ${js.map((j) => `<div class="joueur${presents.length && !presents.includes(String(j.num)) ? " absent" : ""}">
+      ${fiche && js.length ? `<div class="tete-compo"><span>Compo du match : <b>${dans.size} / ${js.length}</b></span><span class="espace"></span>${dans.size < js.length ? `<button class="btn petit" type="button" data-compo-tous="${c}">Tout le monde</button>` : ""}</div>` : ""}
+      ${js.map((j) => `<button type="button" class="joueur" ${fiche ? `data-compo="${c}|${esc(j.num)}"` : "disabled"} aria-pressed="${dans.has(String(j.num))}">
+        <span class="coche" aria-hidden="true">${dans.has(String(j.num)) ? `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#16130F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>` : ""}</span>
         <span class="n">${esc(j.num)}</span>
         <span class="q">${esc(j.prenom)} ${esc(j.nom)}${j.capitaine ? "<em>C</em>" : ""}${j.libero ? "<em>L</em>" : ""}</span>
-        <span class="p">${esc(j.poste || "—")}${j.flocage ? ` · flocage <b>${esc(j.flocage)}</b>` : ""}</span></div>`).join("") || `<p class="aide">Pas de joueurs dans la fiche.</p>`}</div>`;
-  }).join("");
+        <span class="p">${esc(j.poste || "—")}${j.flocage ? ` · flocage <b>${esc(j.flocage)}</b>` : ""}</span></button>`).join("") || `<p class="aide">Pas de joueurs dans la fiche.</p>`}</div>`;
+  }).join("") + `<p class="aide">Touche un joueur pour le retirer ou l'ajouter : l'effectif à l'écran suit tout de suite.</p>`;
   $("#pNotes").innerHTML = ["A", "B"].map((c) => {
     const f = eqs[c];
     if (!f) return "";
@@ -356,6 +364,31 @@ ${f.coach ? "Coach : " + esc(f.coach) : ""}${droit ? "\n" + esc(droit) : ""}</p>
       ${f.anecdotes ? `<p class="note">${esc(f.anecdotes)}</p>` : `<p class="aide">Pas d'anecdote.</p>`}</div>`;
   }).join("") || `<p class="aide">Les fiches de ce match ne sont plus dans la Préparation.</p>`;
 }
+
+// ================= Compo du match =================
+function ecrireCompo(c, liste) {
+  const pm = prive.matchs?.[live.matchId];
+  const fiche = prive.equipes?.[pm?.[c]];
+  if (!pm || !fiche) return;
+  // Mise à jour locale immédiate, puis la fiche du match et l'overlay
+  pm.presents = { ...(pm.presents || {}), [c]: liste };
+  rendreInfos();
+  envoyer({
+    [`prive/matchs/${live.matchId}/presents/${c}`]: liste,
+    [`live/match/${c}/joueurs`]: vueEquipe(fiche, liste).joueurs
+  });
+}
+$("#pEffectifs").addEventListener("click", (ev) => {
+  const tous = ev.target.closest("[data-compo-tous]");
+  if (tous) { ecrireCompo(tous.dataset.compoTous, null); return; }
+  const b = ev.target.closest("[data-compo]");
+  if (!b) return;
+  const [c, num] = b.dataset.compo.split("|");
+  const pm = prive.matchs?.[live.matchId];
+  const liste = basculerCompo(prive.equipes?.[pm?.[c]], pm?.presents?.[c], num);
+  if (liste === undefined) { toast("Il faut au moins un joueur dans la compo."); return; }
+  ecrireCompo(c, liste);
+});
 
 // ================= Onglets =================
 let urlApercu = "";

@@ -106,7 +106,7 @@
     </div>
 
     <div class="titre-bloc"><span class="etiquette">Joueurs</span><span class="espace"></span>
-      <label class="case" style="font-family:var(--corps);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none"><input type="checkbox" id="eFlocage"> Montrer les flocages sur les cartes joueurs</label>
+      <label class="case" style="font-family:var(--corps);font-size:15px;font-weight:600;letter-spacing:0;text-transform:none"><input type="checkbox" id="eFlocage"> Montrer les flocages dans l'effectif à l'écran</label>
     </div>
     <div class="aide">C = capitaine, L = libéro. Vérifie les prénoms et les noms : l'import les devine d'après les majuscules.</div>
     <div class="table-defile">
@@ -141,7 +141,7 @@
       <div class="champs" style="margin-top:10px">
         <label class="champ"><span>Équipe de gauche (A)</span><select id="mA"></select></label>
         <label class="champ"><span>Équipe de droite (B)</span><select id="mB"></select></label>
-        <div class="champ"><span>Club suivi (cartes joueurs, mise en avant)</span>
+        <div class="champ"><span>Club suivi (mis en avant)</span>
           <div class="rangee"><label class="case"><input type="radio" name="mSuivi" value="A" checked> A</label><label class="case"><input type="radio" name="mSuivi" value="B"> B</label></div></div>
         <label class="champ"><span>Compétition (sur le score)</span><input type="text" id="mCompet" placeholder="Régionale 1 masculine"></label>
         <label class="champ"><span>Date</span><input type="date" id="mDate"></label>
@@ -161,7 +161,7 @@ import { CFG, $, $$, param, esc, id, lien, toast, doubleAppui } from "./shared/o
 import { connecter, DEMO } from "./shared/firebase.js";
 import { lireReponses, devinerCouleur, abreviation, nomCourtClub } from "./shared/import.js";
 import { texteSur } from "./shared/moteur.js";
-import { vueMatch, formatDe, joueursDuJour, dateLongue, NOMS_REPLAY } from "./shared/donnees.js";
+import { vueMatch, vueEquipe, formatDe, numsCompo, basculerCompo, dateLongue, NOMS_REPLAY } from "./shared/donnees.js";
 
 const fatal = (msg) => { $("#app").hidden = true; const f = $("#fatal"); f.hidden = false; f.innerHTML = msg; };
 if (DEMO) { $("#demo").hidden = false; $("#exemple").hidden = false; }
@@ -368,6 +368,20 @@ $("#creerMatch").addEventListener("click", () => {
 });
 
 // ================= Liste des matchs =================
+function compoTexte(m) {
+  return ["A", "B"].map((c) => {
+    const eq = equipes[m[c]];
+    const n = (eq?.joueurs || []).filter(Boolean).length;
+    return `${eq?.court || "?"} ${eq ? numsCompo(eq, m.presents?.[c]).length : 0}/${n}`;
+  }).join(" · ");
+}
+// Enregistre la compo ; si le match est en direct, l'overlay suit tout de suite
+function ecrireCompo(mid, cote, liste) {
+  const m = matchs[mid];
+  const u = { [`prive/matchs/${mid}/presents/${cote}`]: liste };
+  if (live.matchId === mid && equipes[m[cote]]) u[`live/match/${cote}/joueurs`] = vueEquipe(equipes[m[cote]], liste).joueurs;
+  envoyer(u).catch(() => {});
+}
 const ouverts = new Set();
 function rendreMatchs() {
   const l = Object.entries(matchs).sort(([, a], [, b]) => (b.date || "").localeCompare(a.date || ""));
@@ -378,9 +392,10 @@ function rendreMatchs() {
     const res = m.resultat ? ` · <b>${m.resultat.A}-${m.resultat.B}</b>` : "";
     const presentsBloc = ["A", "B"].map((c) => {
       const eq = c === "A" ? eA : eB;
-      const coches = (m.presents?.[c] || []).map(String);
+      const coches = eq ? numsCompo(eq, m.presents?.[c]) : [];
       const js = (eq?.joueurs || []).filter(Boolean).slice().sort((a, b) => Number(a.num) - Number(b.num));
-      return `<div><div class="etiquette" style="margin-bottom:4px">${esc(eq?.nomAffiche || "?")} ${c === m.suivi ? "· suivi" : ""}</div>
+      return `<div><div class="etiquette" style="margin-bottom:4px">${esc(eq?.nomAffiche || "?")} ${c === m.suivi ? "· suivi" : ""} · ${coches.length}/${js.length}
+          ${js.length && coches.length < js.length ? `<button class="btn petit" type="button" style="margin-left:8px" data-tous="${esc(mid)}|${c}">Tout le monde</button>` : ""}</div>
         ${js.length ? `<div class="presents">${js.map((j) => `<label class="case"><input type="checkbox" data-present="${esc(mid)}|${c}|${esc(j.num)}"${coches.includes(String(j.num)) ? " checked" : ""}> ${esc(j.num)} · ${esc(j.prenom)} ${esc(j.nom)}</label>`).join("")}</div>` : `<div class="vide">Pas de joueurs dans la fiche.</div>`}</div>`;
     }).join("");
     return `<div class="item${enDirect ? " direct" : ""}" style="flex-direction:column;align-items:stretch">
@@ -391,7 +406,7 @@ function rendreMatchs() {
           ${refus.length ? `<small class="alerte">⚠ Refus du direct : ${esc(refus.join(", "))}</small>` : ""}</div>
         ${enDirect ? `<span class="badge-direct">EN DIRECT</span>` : ""}
       </div>
-      <details class="detail" data-detail="${esc(mid)}"${ouverts.has(mid) ? " open" : ""}><summary>Joueurs présents (aucun coché = toute la liste)</summary>
+      <details class="detail" data-detail="${esc(mid)}"${ouverts.has(mid) ? " open" : ""}><summary>Composition du match (${compoTexte(m)})</summary>
         <div class="colonnes">${presentsBloc}</div></details>
       <div class="rangee">
         ${enDirect
@@ -423,9 +438,16 @@ $("#matchs").addEventListener("change", (ev) => {
   const c = ev.target.closest("[data-present]");
   if (!c) return;
   const [mid, cote, num] = c.dataset.present.split("|");
-  const actuels = new Set((matchs[mid]?.presents?.[cote] || []).map(String));
-  c.checked ? actuels.add(num) : actuels.delete(num);
-  envoyer({ [`prive/matchs/${mid}/presents/${cote}`]: [...actuels].sort((a, b) => a - b) }).catch(() => {});
+  const m = matchs[mid];
+  const liste = basculerCompo(equipes[m[cote]], m.presents?.[cote], num);
+  if (liste === undefined) { c.checked = true; toast("Il faut au moins un joueur dans la compo."); return; }
+  ecrireCompo(mid, cote, liste);
+});
+$("#matchs").addEventListener("click", (ev) => {
+  const t = ev.target.closest("[data-tous]");
+  if (!t) return;
+  const [mid, cote] = t.dataset.tous.split("|");
+  ecrireCompo(mid, cote, null);
 });
 $("#matchs").addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-majdirect]");

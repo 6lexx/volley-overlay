@@ -54,28 +54,31 @@
   #score .histo div + div { margin-left: -4px; padding-left: 22px; }
   #cote { position: absolute; left: 48px; top: 296px; background: var(--braise); color: var(--encre); font-family: var(--cond); font-weight: 800; font-size: 30px; letter-spacing: 2px; padding: 8px 34px 8px 20px; --biais: 14px; filter: drop-shadow(0 6px 18px rgba(0,0,0,.4)); }
 
-  /* ---------- Carte joueur (bas gauche) ---------- */
-  #carte { position: absolute; left: 48px; bottom: 64px; display: flex; flex-direction: column; filter: drop-shadow(0 8px 22px rgba(0,0,0,.45)); }
-  #carte .tete { align-self: flex-start; font-family: var(--cond); font-weight: 700; font-size: 24px; letter-spacing: 2px; text-transform: uppercase; padding: 6px 34px 6px 20px; --biais: 14px; }
-  #carte .corps { display: flex; height: 168px; }
-  #carte .numero { width: 176px; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-weight: 800; font-size: 120px; line-height: 1; padding-right: 10px; }
-  #carte .infos { margin-left: -14px; min-width: 520px; max-width: 900px; background: var(--nuit); padding: 18px 64px 18px 40px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-  #carte .prenom { font-family: var(--cond); font-weight: 700; font-size: 40px; line-height: 1; }
-  #carte .nomj { font-family: var(--cond); font-weight: 800; font-size: 60px; line-height: .95; letter-spacing: 1px; white-space: nowrap; overflow: hidden; }
-  #carte .detail { display: flex; align-items: center; gap: 14px; font-size: 24px; font-weight: 600; color: var(--doux); margin-top: 2px; }
-  #carte .detail .poste { color: var(--braise); font-family: var(--cond); font-weight: 700; font-size: 28px; letter-spacing: 1px; text-transform: uppercase; }
-  #carte .badge { font-family: var(--cond); font-weight: 800; font-size: 24px; background: var(--texte); color: var(--encre); padding: 0 10px; line-height: 32px; }
-  #carte .floc { font-family: var(--cond); font-weight: 600; font-size: 26px; color: var(--doux); }
-  #carte .floc b { color: var(--texte); font-weight: 700; letter-spacing: 1px; }
-  #carte .progres { height: 4px; background: rgba(22,19,15,.6); }
-  #carte .progres div { height: 4px; background: var(--braise); width: 0; }
+  /* ---------- Effectif (plein écran, caméra assombrie) ---------- */
+  #effectif { position: absolute; inset: 0; }
+  #effectif .voile { position: absolute; inset: 0; background: rgba(10,8,6,.66); }
+  #effectif .cadre { position: absolute; left: 120px; right: 120px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 22px; }
+  #effectif .tete { align-self: flex-start; display: flex; align-items: stretch; filter: drop-shadow(0 8px 22px rgba(0,0,0,.45)); }
+  #effectif .tete .n { font-family: var(--cond); font-weight: 800; font-size: 64px; line-height: 1.1; letter-spacing: 1px; text-transform: uppercase; padding: 8px 56px 8px 28px; --biais: 22px; }
+  #effectif .tete .s { margin-left: -16px; display: flex; align-items: center; background: var(--braise); color: var(--encre); font-family: var(--cond); font-weight: 700; font-size: 30px; letter-spacing: 2px; text-transform: uppercase; padding: 0 40px 0 36px; --biais: 22px; }
+  #effectif .grille { display: grid; gap: 14px 18px; }
+  #effectif .j { display: flex; height: 126px; filter: drop-shadow(0 6px 14px rgba(0,0,0,.4)); min-width: 0; }
+  #effectif .num { flex: 0 0 100px; display: flex; align-items: center; justify-content: center; font-family: var(--cond); font-weight: 800; font-size: 58px; line-height: 1; padding-right: 8px; --biais: 16px; }
+  #effectif .infos { flex: 1 1 auto; min-width: 0; margin-left: -12px; background: var(--nuit); padding: 8px 30px 8px 28px; display: flex; flex-direction: column; justify-content: center; gap: 1px; --biais: 16px; }
+  #effectif .prenom { font-family: var(--cond); font-weight: 700; font-size: 25px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #effectif .nomj { font-family: var(--cond); font-weight: 800; font-size: 38px; line-height: 1.15; letter-spacing: .5px; white-space: nowrap; }
+  #effectif .detail { display: flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; line-height: 1.2; }
+  #effectif .poste { color: var(--braise); font-family: var(--cond); font-weight: 700; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
+  #effectif .badge { font-family: var(--cond); font-weight: 800; font-size: 19px; background: var(--texte); color: var(--encre); padding: 0 7px; line-height: 24px; }
+  #effectif .floc { font-family: var(--cond); font-weight: 600; font-size: 21px; color: var(--doux); overflow: hidden; text-overflow: ellipsis; }
+  #effectif .floc b { color: var(--texte); font-weight: 700; letter-spacing: .5px; }
 
   /* ---------- Récap des sets (bas centre) ---------- */
   #recap { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 4px; filter: drop-shadow(0 8px 22px rgba(0,0,0,.45)); }
   #recap .tete { align-self: flex-start; background: var(--braise); color: var(--encre); font-family: var(--cond); font-weight: 800; font-size: 28px; letter-spacing: 2px; padding: 6px 36px 6px 22px; --biais: 14px; text-transform: uppercase; }
   #recap .ligne { display: flex; height: 76px; }
   #recap .nom { width: 360px; display: flex; align-items: center; padding: 0 34px 0 22px; font-family: var(--cond); font-weight: 800; line-height: 1; }
-  #recap .nom span { display: block; width: 100%; font-size: 44px; white-space: nowrap; overflow: hidden; }
+  #recap .nom span { display: block; width: 100%; font-size: 44px; line-height: 1.15; white-space: nowrap; overflow: hidden; }
   #recap .c { margin-left: -14px; width: 92px; display: flex; align-items: center; justify-content: center; background: var(--nuit); font-family: var(--cond); font-weight: 700; font-size: 44px; color: #8F867A; font-variant-numeric: tabular-nums; }
   #recap .c.g { color: var(--texte); }
   #recap .c.tot { width: 104px; background: var(--nuit-2); color: var(--braise); font-weight: 800; font-size: 52px; }
@@ -85,7 +88,7 @@
   #victoire .tete { align-self: flex-start; background: var(--braise); color: var(--encre); font-family: var(--cond); font-weight: 800; font-size: 34px; letter-spacing: 4px; padding: 6px 40px 6px 24px; --biais: 16px; }
   #victoire .corps { display: flex; height: 150px; --biais: 26px; }
   #victoire .gagnant { display: flex; flex-direction: column; justify-content: center; padding: 0 70px 0 36px; min-width: 640px; max-width: 1180px; }
-  #victoire .gagnant .n { font-family: var(--cond); font-weight: 800; font-size: 96px; line-height: .95; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+  #victoire .gagnant .n { font-family: var(--cond); font-weight: 800; font-size: 96px; line-height: 1.1; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
   #victoire .gagnant .f { font-size: 26px; font-weight: 600; opacity: .92; }
   #victoire .sc { margin-left: -20px; background: var(--nuit); display: flex; align-items: center; gap: 18px; padding: 0 64px 0 56px; font-family: var(--cond); font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
   #victoire .sc .g { font-size: 110px; color: var(--texte); }
@@ -128,7 +131,7 @@
   </div>
   <div id="cote" class="bloc gauche cache bz-d">CHANGEMENT DE CÔTÉ</div>
 
-  <div id="carte" class="bloc gauche cache"></div>
+  <div id="effectif" class="bloc cache" aria-hidden="true"></div>
   <div id="recap" class="bloc bas cache"></div>
   <div id="victoire" class="bloc bas cache"></div>
 </div>
@@ -149,7 +152,7 @@ api.ecouter("live", (v) => { live = v || {}; surSignalRecharge(live.recharger); 
 
 const montrer = (el, oui) => el.classList.toggle("cache", !oui);
 const couleurs = (el, eq) => { el.style.background = eq.couleur; el.style.color = eq.texte; };
-let cleAffiche = "", cleRecap = "", cleVictoire = "", cleCarte = "";
+let cleAffiche = "", cleRecap = "", cleVictoire = "", cleEffectif = "";
 
 function rendre() {
   const m = live.match;
@@ -161,6 +164,18 @@ function rendre() {
   const type = h?.type || null;
   const expire = h?.duree && now - (h.ts || 0) > h.duree;
   const hType = expire ? null : type;
+
+  // --- Effectif : toute l'équipe d'un coup ---
+  let effVisible = false;
+  if (hType === "joueurs") {
+    const eq = m[h.eq || m.suivi || "A"];
+    if (eq?.joueurs?.length) {
+      const cle = JSON.stringify([h.eq, eq]);
+      if (cle !== cleEffectif) { cleEffectif = cle; $("#effectif").innerHTML = htmlEffectif(eq); ajusterNoms(); }
+      effVisible = true;
+    }
+  }
+  montrer($("#effectif"), visible && effVisible);
 
   // --- Plaque de score ---
   $("#sCompet").textContent = m.competition || "";
@@ -180,11 +195,11 @@ function rendre() {
   $("#lB").classList.toggle("mene", etat.fini ? etat.gagnant === "B" : ptsB >= ptsA);
   const histo = etat.sets.map((s, i) => `<div class="${i ? "bz" : "bz-d"}">S${i + 1} · ${s.A}-${s.B}</div>`).join("");
   if ($("#histo").innerHTML !== histo) $("#histo").innerHTML = histo;
-  montrer($("#score"), visible && hType !== "affiche");
+  montrer($("#score"), visible && hType !== "affiche" && !effVisible);
 
   // --- Changement de côté au tie-break ---
   const coteActif = etat.dernierChangeCote && now - (live.dernierPoint || 0) < CFG.affichage.coteSec * 1000;
-  montrer($("#cote"), visible && coteActif && hType !== "affiche");
+  montrer($("#cote"), visible && coteActif && hType !== "affiche" && hType !== "joueurs");
 
   // --- Affiche ---
   if (hType === "affiche") {
@@ -192,24 +207,6 @@ function rendre() {
     if (cle !== cleAffiche) { cleAffiche = cle; $("#affiche").innerHTML = htmlAffiche(m); ajuster("#affiche .txt .n", 44, 270); }
   }
   montrer($("#affiche"), visible && hType === "affiche");
-
-  // --- Cartes joueurs ---
-  let carteVisible = false;
-  if (hType === "joueurs") {
-    const eq = m[h.eq || m.suivi || "A"];
-    const js = eq?.joueurs || [];
-    if (js.length) {
-      const dur = CFG.affichage.carteJoueurSec * 1000;
-      const ecoule = Math.max(0, now - (h.ts || now));
-      const i = Math.floor(ecoule / dur) % js.length;
-      const cle = (h.eq || "") + "|" + i + "|" + JSON.stringify(js[i]) + eq.couleur;
-      if (cle !== cleCarte) { cleCarte = cle; $("#carte").innerHTML = htmlCarte(eq, js[i]); ajuster("#carte .nomj", 36); }
-      const prog = $("#carte .progres div");
-      if (prog) prog.style.width = ((ecoule % dur) / dur) * 100 + "%";
-      carteVisible = true;
-    }
-  }
-  montrer($("#carte"), visible && carteVisible);
 
   // --- Récap des sets ---
   if (hType === "recap") {
@@ -253,18 +250,47 @@ function htmlAffiche(m) {
     ${infos.length ? `<div class="infos"><div>${infos.map((x) => `<span>${esc(x)}</span>`).join("<i></i>")}</div></div>` : ""}`;
 }
 
-function htmlCarte(eq, j) {
-  const badges = (j.capitaine ? `<span class="badge">C</span>` : "") + (j.libero && j.poste !== "Libéro" ? `<span class="badge">L</span>` : "");
-  return `<div class="tete bz-d" style="background:${esc(eq.couleur)};color:${esc(eq.texte)}">${esc(eq.nom)}${eq.sousTitre ? " · " + esc(eq.sousTitre) : ""}</div>
-    <div class="corps">
-      <div class="numero bz-d" style="background:${esc(eq.couleur)};color:${esc(eq.texte)};--biais:22px">${esc(j.num)}</div>
-      <div class="infos bz" style="--biais:22px">
-        ${j.prenom ? `<div class="prenom">${esc(j.prenom)}</div>` : ""}
+const ORDRE_POSTES = ["Passeur", "Pointu", "Réceptionneur-attaquant", "Central", "Polyvalent", "Libéro", ""];
+const sansAccent = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+
+function htmlEffectif(eq) {
+  // Triés par poste comme une compo, puis par numéro
+  const js = eq.joueurs.slice().sort((a, b) =>
+    (ORDRE_POSTES.indexOf(a.poste || "") - ORDRE_POSTES.indexOf(b.poste || "")) || (Number(a.num) - Number(b.num)));
+  const n = js.length;
+  const cols = n <= 6 ? 3 : n <= 16 ? 4 : 5;
+  const carte = (j) => {
+    // Flocage identique au nom (ex. « SALIM ») : rien à ajouter
+    const floc = j.flocage && !sansAccent(j.flocage).includes(sansAccent(j.nom)) ? j.flocage : "";
+    const badges = (j.capitaine ? `<span class="badge">C</span>` : "") + (j.libero && j.poste !== "Libéro" ? `<span class="badge">L</span>` : "");
+    return `<div class="j">
+      <div class="num bz-d" style="background:${esc(eq.couleur)};color:${esc(eq.texte)}">${esc(j.num)}</div>
+      <div class="infos bz">
+        ${j.nom && j.prenom ? `<div class="prenom">${esc(j.prenom)}</div>` : ""}
         <div class="nomj">${esc(j.nom || j.prenom)}</div>
-        <div class="detail">${j.poste ? `<span class="poste">${esc(j.poste)}</span>` : ""}${badges}${j.flocage ? `<span class="floc">Flocage <b>${esc(j.flocage)}</b></span>` : ""}</div>
-      </div>
-    </div>
-    <div class="progres"><div></div></div>`;
+        <div class="detail">${j.poste ? `<span class="poste">${esc(j.poste === "Réceptionneur-attaquant" ? "Récep-attaque" : j.poste)}</span>` : ""}${badges}${floc ? `<span class="floc">Flocage <b>${esc(floc)}</b></span>` : ""}</div>
+      </div></div>`;
+  };
+  return `<div class="voile"></div><div class="cadre">
+    <div class="tete"><div class="n bz-d" style="background:${esc(eq.couleur)};color:${esc(eq.texte)}">${esc(eq.nom)}</div>${eq.sousTitre ? `<div class="s bz">${esc(eq.sousTitre)}</div>` : ""}</div>
+    <div class="grille" style="grid-template-columns:repeat(${cols}, minmax(0, 1fr))">${js.map(carte).join("")}</div></div>`;
+}
+
+// Le nom entier doit rester lisible : on réduit la police plutôt que de couper
+function ajusterNoms() {
+  const el = document.querySelector("#effectif");
+  el.classList.remove("cache");               // mesurable même pendant le fondu
+  const etait = el.style.visibility; el.style.visibility = "hidden";
+  document.querySelectorAll("#effectif .nomj").forEach((x) => {
+    let t = 38; x.style.fontSize = t + "px";
+    while (x.scrollWidth > x.clientWidth + 1 && t > 22) { t -= 1; x.style.fontSize = t + "px"; }
+  });
+  // Le flocage aussi : on le réduit un peu avant de le couper
+  document.querySelectorAll("#effectif .floc").forEach((x) => {
+    let t = 21; x.style.fontSize = t + "px";
+    while (x.scrollWidth > x.clientWidth + 1 && t > 16) { t -= 1; x.style.fontSize = t + "px"; }
+  });
+  el.style.visibility = etait;
 }
 
 function htmlRecap(m, etat, h) {

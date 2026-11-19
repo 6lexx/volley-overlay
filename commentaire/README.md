@@ -7,7 +7,7 @@ et le tournoi (`tournoi/`) ne sont pas touchés.
 
 | Page | Appareil | Rôle |
 |---|---|---|
-| `preparation.html?key=CLÉ` | PC ou tablette | Import des réponses du formulaire, fiches d'équipe, matchs, joueurs présents, mise en direct |
+| `preparation.html?key=CLÉ` | PC ou tablette | Import des réponses du formulaire, fiches d'équipe, matchs, composition, mise en direct |
 | `controle.html?key=CLÉ` | Tablette (paysage) ou téléphone | Points, Annuler, service, habillages, antisèche, effectifs, notes, chat Twitch, aperçu |
 | `overlay.html` | Streamlabs | **La seule source à ajouter**, transparente, en 1920 × 1080 |
 
@@ -76,7 +76,7 @@ Vérification : ouvre la Préparation avec la clé, le point en haut à droite p
    - **Couleur** : devinée d'après le mot du formulaire, à corriger avec le sélecteur ;
    - **Joueurs** : prénom / nom devinés d'après les majuscules, poste, C (capitaine), L (libéro) ;
    - **Flocages** : repris des anecdotes (« Jules n°14 N.FERRAILLE ») ; la case
-     « Montrer les flocages » les affiche sur les cartes joueurs ;
+     « Montrer les flocages » les affiche dans l'effectif à l'écran ;
    - **Logo** : chemin d'une image du dépôt (facultatif, sinon l'abréviation dans un rond).
 3. Une réponse déjà importée est reconnue (« déjà importée ») : la réimporter remplace la fiche.
 4. Adversaire sans formulaire : « + Équipe à la main » (nom, abréviation, couleur suffisent).
@@ -85,7 +85,8 @@ Vérification : ouvre la Préparation avec la clé, le point en haut à droite p
 
 1. **Créer un match** : équipe A (à gauche sur le score), équipe B, club suivi, compétition
    (s'affiche sur le score), date, heure, salle, format.
-2. **Joueurs présents** : coche les joueurs du jour (aucun coché = toute la liste).
+2. **Composition du match** : par défaut toute l'équipe est cochée ; décoche les absents.
+   « Tout le monde » remet toute l'équipe. Si le match est déjà en direct, l'overlay suit tout de suite.
 3. **Mettre en direct**. Une modification de fiche après coup ? « Mettre à jour l'overlay »
    (le score ne bouge pas).
 
@@ -101,18 +102,19 @@ Dans Streamlabs : une source navigateur `overlay.html`, **plein écran en 1920 �
 - Automatique : fin de set (volet « Fin du set » 20 s), tie-break, rappel « Changement de côté »
   à 8 points au tie-break, fin du match (bandeau Victoire, reste jusqu'à ce que tu le retires),
   résultat enregistré dans le match.
-- **Habillages** : Affiche (échauffement, caméra assombrie), Joueurs (cartes qui défilent, 6 s
-  chacune), Récap des sets (reste affiché), Victoire, Tout retirer. Affiche, cartes et récap
-  se retirent tout seuls au point suivant.
+- **Habillages** : Affiche (échauffement, caméra assombrie), Joueurs (tout l'effectif d'un coup,
+  trié par poste, caméra assombrie), Récap des sets (reste affiché), Victoire, Tout retirer.
+  Affiche, effectif et récap se retirent tout seuls au point suivant.
 - **Overlay visible / MASQUÉ** : coupe tout l'overlay d'un coup.
 - **Antisèche** : balle de set / de match, série en cours, plus gros écart, rappel du tie-break.
-- Panneau de droite : **Effectifs** (présents en clair, flocages), **Notes** (coach, anecdotes,
+- Panneau de droite : **Effectifs** (touche un joueur pour l'ajouter ou le retirer de la compo :
+  l'effectif à l'écran suit tout de suite ; flocages), **Notes** (coach, anecdotes,
   droit à l'image), **Chat** Twitch, **Aperçu** de l'overlay et « Recharger l'overlay ».
 - La page garde l'écran de la tablette allumé.
 
 ## 6. Réglages (`config.js`)
 
 `formats` (3 sets gagnants, 2 sets, set unique en 21 ou 25), durées d'affichage
-(`recapSetSec`, `coteSec`, `carteJoueurSec`) et la chaîne Twitch du chat.
+(`recapSetSec`, `coteSec`) et la chaîne Twitch du chat.
 
 Les polices (Barlow, licence OFL) sont dans `assets/fonts/` : rien à charger depuis Google en 4G.
