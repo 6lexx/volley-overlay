@@ -26,6 +26,18 @@ window.COMMENTAIRE_CONFIG = {
     "unique21": { nom: "Set unique en 21",                         setsGagnants: 1, points: 21, tieBreak: 21, ecart: 2 }
   },
 
+  // Bandeau commentateur (bouton « Commentateur » du contrôle, entre les sets)
+  commentateur: {
+    titre:     "Au micro",
+    prenom:    "Matthys",
+    instagram: "@matthys62245",
+    reseaux: [                         // défilent à droite du prénom
+      { type: "twitch",  texte: "silex62", legende: "En direct sur Twitch" },
+      { type: "youtube", texte: "@6silex", legende: "Replays sur YouTube" }
+    ],
+    rotationSec: 8
+  },
+
   affichage: {
     recapSetSec:     20,   // volet de fin de set, lancé tout seul
     coteSec:         12,   // rappel « changement de côté » au tie-break
