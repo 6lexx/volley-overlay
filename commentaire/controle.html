@@ -46,7 +46,7 @@
   .milieu .btn { min-height: 52px; }
 
   /* Habillages */
-  .habillages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+  .habillages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
   .habillages .btn { min-height: 62px; flex-direction: column; gap: 2px; font-size: 16px; line-height: 1.15; text-align: center; }
   .habillages .btn small { font-size: 12px; font-weight: 600; color: var(--doux); }
   .habillages .btn[aria-pressed="true"] small { color: #3A2410; }
@@ -151,6 +151,7 @@
         <button class="btn" type="button" data-tm="B" id="tmB">Temps mort<small id="tmBs"></small></button>
         <button class="btn" type="button" data-hab="victoire" id="hVict">Victoire<small>fin du match</small></button>
         <button class="btn" type="button" id="serieAuto" aria-pressed="true">Bandeau série<small id="serieAutos">auto à 5 points</small></button>
+        <button class="btn" type="button" id="comBtn" aria-pressed="false">Commentateur<small id="comBtns">entre les sets</small></button>
         <button class="btn retirer" type="button" data-hab="">Tout retirer<small>score seul</small></button>
       </div>
     </div>
@@ -277,6 +278,8 @@ function rendre() {
   }
   $("#serieAuto").setAttribute("aria-pressed", String(!live.serieCoupee));
   $("#serieAutos").textContent = live.serieCoupee ? "coupé" : `auto à ${CFG.affichage.serieMin} points`;
+  $("#comBtn").setAttribute("aria-pressed", String(!!live.commentateur));
+  $("#comBtns").textContent = live.commentateur ? "affiché · retirer" : "entre les sets";
   $$("[data-hab]").forEach((b) => {
     const t = b.dataset.hab;
     const on = t ? (actif?.type === t && (t !== "joueurs" || actif.eq === b.dataset.eq)) : false;
@@ -306,6 +309,7 @@ function marquer(c) {
   const h = live.habillage;
   if (h && ["affiche", "joueurs", "recap", "honneur"].includes(h.type)) u["live/habillage"] = null;
   if (live.tempsMort) u["live/tempsMort"] = null;
+  if (live.commentateur) u["live/commentateur"] = null;   // le jeu reprend : on retire le bandeau
   if (e.fini) {
     u["live/habillage"] = { type: "victoire", ts: api.ts() };
     u["live/termine"] = true;
@@ -357,7 +361,8 @@ $("#habillages").addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-hab]");
   if (!b || b.disabled) return;
   const t = b.dataset.hab;
-  if (!t || b.getAttribute("aria-pressed") === "true") { envoyer({ "live/habillage": null }); return; }
+  if (!t) { envoyer({ "live/habillage": null, "live/commentateur": null }); return; }   // Tout retirer
+  if (b.getAttribute("aria-pressed") === "true") { envoyer({ "live/habillage": null }); return; }
   const h = { type: t, ts: api.ts() };
   if (t === "joueurs") h.eq = b.dataset.eq;
   if (t === "honneur") h.eq = live.match.suivi || "A";
@@ -370,6 +375,12 @@ $("#habillages").addEventListener("click", (ev) => {
 });
 
 $("#masque").addEventListener("click", () => envoyer({ "live/masque": !live.masque }));
+
+$("#comBtn").addEventListener("click", () => {
+  live.commentateur = live.commentateur ? null : { ts: Date.now() };
+  rendre();
+  envoyer({ "live/commentateur": live.commentateur ? { ts: api.ts() } : null });
+});
 
 // ================= Temps morts =================
 $$("[data-tm]").forEach((b) => b.addEventListener("click", () => {
