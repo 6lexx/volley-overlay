@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>silex62 · liens</title>
+<meta name="description" content="Volley amateur commenté en direct sur Twitch : soutien, lives, replays.">
+<meta name="theme-color" content="#16130F">
+<meta property="og:title" content="silex62 · volley commenté en direct">
+<meta property="og:description" content="Les lives, les replays et le Tipeee de silex62.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Barlow:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     Page de liens silex62 — bio Instagram
+     Pour modifier un lien : change le href et le texte dans le
+     bloc LIENS plus bas. Rien d'autre à toucher.
+     ========================================================= */
+  :root {
+    --nuit: #16130F;
+    --carte: #221D18;
+    --carte-hover: #2B251F;
+    --texte: #F5EFE6;
+    --doux: #C9C0B3;
+    --braise: #F08A24;
+    --cond: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --corps: "Barlow", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--nuit); }
+  body {
+    margin: 0; min-height: 100vh; min-height: 100dvh;
+    background: var(--nuit); color: var(--texte);
+    font-family: var(--corps); -webkit-font-smoothing: antialiased;
+    display: flex; justify-content: center;
+    padding: max(40px, env(safe-area-inset-top)) 20px max(32px, env(safe-area-inset-bottom));
+    position: relative; overflow-x: hidden;
+  }
+  main { width: 100%; max-width: 460px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 28px; }
+
+  /* Braises qui montent, très discrètes */
+  .braises { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .braises i { position: absolute; bottom: -20px; width: 6px; height: 6px; background: var(--braise); transform: rotate(45deg); opacity: 0; animation: monte 14s linear infinite; }
+  .braises i:nth-child(1) { left: 8%;  animation-delay: 0s;   }
+  .braises i:nth-child(2) { left: 22%; animation-delay: 4s;   width: 4px; height: 4px; animation-duration: 18s; }
+  .braises i:nth-child(3) { left: 47%; animation-delay: 8s;   }
+  .braises i:nth-child(4) { left: 68%; animation-delay: 2s;   width: 5px; height: 5px; animation-duration: 16s; }
+  .braises i:nth-child(5) { left: 86%; animation-delay: 10s;  width: 4px; height: 4px; }
+  .braises i:nth-child(6) { left: 95%; animation-delay: 6s;   animation-duration: 20s; }
+  @keyframes monte {
+    0%   { transform: translate(0, 0) rotate(45deg); opacity: 0; }
+    10%  { opacity: .55; }
+    70%  { opacity: .25; }
+    100% { transform: translate(-30px, -105vh) rotate(225deg); opacity: 0; }
+  }
+
+  /* En-tête */
+  header { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; }
+  .avatar {
+    width: 104px; height: 104px; border-radius: 50%;
+    border: 4px solid var(--braise); background: var(--carte);
+    display: grid; place-items: center; overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .avatar span { font: 900 46px/1 var(--cond); color: var(--braise); }
+  h1 { margin: 0; font: 900 44px/1 var(--cond); letter-spacing: 1px; text-transform: uppercase; }
+  .accroche { margin: 0; font-size: 17px; line-height: 1.45; color: var(--doux); max-width: 340px; }
+  .accroche strong { color: var(--texte); font-weight: 600; }
+
+  /* Liens */
+  nav { display: flex; flex-direction: column; gap: 14px; }
+  .lien {
+    display: flex; align-items: stretch; text-decoration: none; color: var(--texte);
+    transform: skewX(-8deg); background: var(--carte);
+    min-height: 76px; transition: background .2s ease, transform .2s ease;
+  }
+  .lien:hover, .lien:focus-visible { background: var(--carte-hover); transform: skewX(-8deg) translateX(4px); }
+  .lien:focus-visible { outline: 3px solid var(--braise); outline-offset: 3px; }
+  .ic { flex: none; width: 64px; background: var(--braise); display: grid; place-items: center; }
+  .ic svg { transform: skewX(8deg); width: 30px; height: 30px; color: var(--nuit); }
+  .tx { flex: 1; min-width: 0; padding: 14px 8px 12px 18px; display: flex; flex-direction: column; justify-content: center; gap: 4px; transform: skewX(8deg); }
+  .titre { font: 800 24px/1.05 var(--cond); text-transform: uppercase; letter-spacing: .5px; overflow-wrap: anywhere; }
+  .sous { font-size: 15px; color: var(--doux); }
+  .fleche { flex: none; width: 36px; display: grid; place-items: center; transform: skewX(8deg); color: var(--braise); }
+  .fleche svg { width: 22px; height: 22px; }
+
+  /* Lien mis en avant : le Tipeee */
+  .lien.vedette { background: var(--braise); color: var(--nuit); min-height: 92px; }
+  .lien.vedette:hover, .lien.vedette:focus-visible { background: #F59A3E; }
+  .lien.vedette .ic { background: rgba(22, 19, 15, .16); }
+  .lien.vedette .ic svg { color: var(--nuit); }
+  .lien.vedette .titre { font-size: 28px; }
+  .lien.vedette .sous { color: #3A2A1A; font-weight: 600; }
+  .lien.vedette .fleche { color: var(--nuit); }
+
+  .etiquette { font: 700 14px/1 var(--cond); letter-spacing: 4px; text-transform: uppercase; color: var(--doux); display: flex; align-items: center; gap: 10px; margin: 6px 0 -4px; }
+  .etiquette::before { content: ""; width: 8px; height: 8px; background: var(--braise); transform: rotate(45deg); }
+
+  footer { text-align: center; font: 700 14px/1 var(--cond); letter-spacing: 4px; text-transform: uppercase; color: #8C8275; padding-top: 8px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .braises { display: none; }
+    .lien { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="braises" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<main>
+  <header>
+    <!-- Photo de profil : mets un fichier avatar.jpg dans ce dossier.
+         Sans fichier, l'initiale s'affiche à la place. -->
+    <div class="avatar"><img src="avatar.jpg" alt="" onerror="this.remove()"><span aria-hidden="true">S</span></div>
+    <h1>silex62</h1>
+    <p class="accroche"><strong>Le volley amateur commenté en direct</strong>, comme à la télé. Et le soir, des jeux en mode chill.</p>
+  </header>
+
+  <!-- ====================== LIENS ====================== -->
+  <nav aria-label="Liens">
+    <a class="lien vedette" href="https://fr.tipeee.com/silex62/">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></span>
+      <span class="tx"><span class="titre">Soutenir les commentaires</span><span class="sous">Le Tipeee est ouvert · dès 1&#160;€</span></span>
+      <span class="fleche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+
+    <div class="etiquette">Regarder</div>
+
+    <a class="lien" href="https://www.twitch.tv/silex62">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.5 2 3 5.8V20h4.8v2.5h2.7L13 20h3.8L21 15.8V2H4.5Zm14.6 12.9-2.9 2.9h-4.4l-2.5 2.5v-2.5H5.6V3.9h13.5v11Z"/><path d="M15.5 7.2h1.9v5.5h-1.9zM10.4 7.2h1.9v5.5h-1.9z"/></svg></span>
+      <span class="tx"><span class="titre">Les matchs en direct</span><span class="sous">twitch.tv/silex62</span></span>
+      <span class="fleche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+
+    <a class="lien" href="https://www.youtube.com/@6silex">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 7.2a3 3 0 0 0-2.1-2.1C19 4.6 12 4.6 12 4.6s-7 0-8.9.5A3 3 0 0 0 1 7.2 31 31 0 0 0 .5 12a31 31 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.1c1.9.5 8.9.5 8.9.5s7 0 8.9-.5a3 3 0 0 0 2.1-2.1 31 31 0 0 0 .5-4.8 31 31 0 0 0-.5-4.8ZM9.8 15.1V8.9l5.8 3.1-5.8 3.1Z"/></svg></span>
+      <span class="tx"><span class="titre">Les replays des matchs</span><span class="sous">YouTube · @6silex</span></span>
+      <span class="fleche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+
+    <div class="etiquette">Clubs</div>
+
+    <a class="lien" href="https://ig.me/m/silex62_twitch">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></span>
+      <span class="tx"><span class="titre">Faire commenter vos matchs</span><span class="sous">Écrivez-moi sur Instagram</span></span>
+      <span class="fleche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
+  </nav>
+  <!-- ==================== FIN LIENS ==================== -->
+
+  <footer>silex62 · Volley · Toulouse</footer>
+</main>
+</body>
+</html>
